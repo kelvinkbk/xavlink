@@ -1,17 +1,37 @@
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
-const seedAdmin = require("./seed-admin");
 
 const prisma = new PrismaClient();
 
+async function seedAdmin() {
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: "admin@xavlink.com" },
+  });
+
+  if (!existingAdmin) {
+    const hashed = await bcrypt.hash("admin123456", 10);
+    await prisma.user.create({
+      data: {
+        name: "Admin",
+        email: "admin@xavlink.com",
+        password: hashed,
+        role: "admin",
+        bio: "System administrator",
+        course: "Admin",
+        year: 0,
+      },
+    });
+
+    console.log("✓ Admin seeded");
+  }
+}
+
 async function main() {
-  // 1️⃣ Admin
   await seedAdmin();
 
-  // 2️⃣ Demo user
+  // optional demo user
   const hashed = await bcrypt.hash("password123", 10);
-
-  const alice = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "alice@example.com" },
     update: {},
     create: {
@@ -20,36 +40,11 @@ async function main() {
       password: hashed,
       course: "Computer Science",
       year: 3,
-      bio: "Early contributor for XavLink.",
-      profilePic: null,
+      bio: "Early contributor",
     },
   });
-
-  // 3️⃣ Chat + message
-  const chat = await prisma.chat.create({
-    data: {
-      participants: {
-        create: [{ userId: alice.id }],
-      },
-    },
-  });
-
-  await prisma.message.create({
-    data: {
-      chatId: chat.id,
-      senderId: alice.id,
-      text: "Welcome to XavLink!",
-    },
-  });
-
-  console.log("✓ Seed completed successfully");
 }
 
 main()
-  .catch((err) => {
-    console.error("Seed failed:", err);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());
