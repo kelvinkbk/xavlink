@@ -51,6 +51,9 @@ exports.register = async (req, res, next) => {
     const verificationToken = crypto.randomBytes(32).toString("hex");
     const verificationTokenExpiry = new Date(Date.now() + 24 * 3600000); // 24 hours
 
+    // Auto-verify email if EMAIL_PROVIDER is not configured
+    const emailVerified = !process.env.EMAIL_PROVIDER;
+
     const user = await prisma.user.create({
       data: {
         name,
@@ -61,19 +64,24 @@ exports.register = async (req, res, next) => {
         year: yearValue,
         bio,
         profilePic,
-        emailVerified: false,
+        emailVerified,
         verificationToken,
         verificationTokenExpiry,
       },
     });
 
-    const verificationLink = `${
-      process.env.FRONTEND_URL || "http://localhost:5173"
-    }/verify-email?token=${verificationToken}`;
-    await sendVerificationEmail(user.email, user.name, verificationLink);
+    // Only send verification email if EMAIL_PROVIDER is configured
+    if (process.env.EMAIL_PROVIDER) {
+      const verificationLink = `${
+        process.env.FRONTEND_URL || "http://localhost:5173"
+      }/verify-email?token=${verificationToken}`;
+      await sendVerificationEmail(user.email, user.name, verificationLink);
+    }
 
     res.status(201).json({
-      message: "Registration successful. Please verify your email.",
+      message: emailVerified
+        ? "Registration successful"
+        : "Registration successful. Please verify your email.",
       user: sanitizeUser(user),
     });
   } catch (err) {
@@ -104,7 +112,8 @@ exports.login = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    if (!user.emailVerified) {
+    // Only enforce email verification if EMAIL_PROVIDER is configured
+    if (!user.emailVerified && process.env.EMAIL_PROVIDER) {
       const needsNewToken =
         !user.verificationToken ||
         !user.verificationTokenExpiry ||
