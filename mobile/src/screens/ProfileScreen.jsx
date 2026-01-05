@@ -460,7 +460,8 @@ const ProfileScreen = ({ route, navigation }) => {
         setViewedUser(data);
         const followRes = await userService.getFollowStatus(viewedUserId);
         setFollowStatus({
-          isFollowing: followRes.data?.isFollowing || followRes?.isFollowing || false,
+          isFollowing:
+            followRes.data?.isFollowing || followRes?.isFollowing || false,
         });
       } catch (error) {
         console.error("Failed to refresh profile:", error);
