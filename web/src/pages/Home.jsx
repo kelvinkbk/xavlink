@@ -1,0 +1,551 @@
+import { useState, useEffect } from "react";
+import PageTransition from "../components/PageTransition";
+import LoadingSpinner from "../components/LoadingSpinner";
+import SkeletonLoader from "../components/SkeletonLoader";
+import ReportModal from "../components/ReportModal";
+import { postService } from "../services/api";
+import api from "../services/api";
+// Removed direct Toast component usage; using useToast hook instead
+import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+
+function PostCard({ post, onLike, onComment, onReport }) {
+  const { isAuthenticated, user } = useAuth();
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+
+  const defaultAvatar =
+    "https://ui-avatars.com/api/?name=" +
+    encodeURIComponent(post.user?.name || "User") +
+    "&background=3b82f6&color=fff";
+
+  const handleToggleComments = async () => {
+    if (!showComments) {
+      setLoadingComments(true);
+      try {
+        const { data } = await postService.getComments(post.id);
+        setComments(data);
+      } catch (e) {
+        console.error("Error loading comments:", e);
+      } finally {
+        setLoadingComments(false);
+      }
+    }
+    setShowComments(!showComments);
+  };
+
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+
+    try {
+      const { data } = await postService.addComment(post.id, newComment.trim());
+      setComments([...comments, data]);
+      setNewComment("");
+      onComment(post.id);
+    } catch (e) {
+      console.error("Error adding comment:", e);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6 mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          <img
+            src={post.user?.profilePic || defaultAvatar}
+            alt={post.user?.name || "User"}
+            className="w-12 h-12 rounded-full mr-3"
+          />
+          <div>
+            <h3 className="font-semibold text-secondary">
+              {post.user?.name || "Anonymous"}
+            </h3>
+            <p className="text-sm text-gray-500">{post.user?.course || ""}</p>
+          </div>
+        </div>
+        {user && user.id !== post.user?.id && (
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="text-gray-500 hover:text-gray-700 text-xl px-2"
+            >
+              ⋮
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onReport(
+                      post.id,
+                      post.content?.substring(0, 50) + "..." || "Post"
+                    );
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                >
+                  🚩 Report Post
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {post.image && (
+        <img
+          src={post.image}
+          alt="post"
+          className="w-full h-64 object-cover rounded-lg mb-3"
+        />
+      )}
+
+      <p className="text-gray-700 mb-3">{post.content}</p>
+
+      <div className="flex items-center gap-6 py-2 border-t border-gray-200">
+        <button
+          onClick={() => onLike(post.id)}
+          disabled={!isAuthenticated}
+          className={`flex items-center gap-2 ${
+            post.isLiked ? "text-red-500" : "text-gray-600"
+          } hover:text-red-500 transition ${
+            !isAuthenticated ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+        >
+          <span className="text-xl">{post.isLiked ? "❤️" : "🤍"}</span>
+          <span className="font-semibold">{post.likesCount || 0}</span>
+        </button>
+
+        <button
+          onClick={handleToggleComments}
+          className="flex items-center gap-2 text-gray-600 hover:text-primary transition"
+        >
+          <span className="text-xl">💬</span>
+          <span className="font-semibold">{post.commentsCount || 0}</span>
+        </button>
+      </div>
+
+      {showComments && (
+        <div className="mt-4 border-t border-gray-200 pt-4">
+          {loadingComments ? (
+            <div className="flex justify-center py-4">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-2">
+                    <img
+                      src={
+                        comment.user?.profilePic ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          comment.user?.name || "User"
+                        )}&background=3b82f6&color=fff&size=32`
+                      }
+                      alt={comment.user?.name}
+                      className="w-8 h-8 rounded-full flex-shrink-0"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm">
+                        <span className="font-semibold text-secondary">
+                          {comment.user?.name}
+                        </span>{" "}
+                        {comment.text}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(comment.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {user && user.id !== comment.user?.id && (
+                      <button
+                        onClick={() =>
+                          onReport(
+                            comment.id,
+                            `Comment by ${comment.user?.name}`,
+                            "Comment"
+                          )
+                        }
+                        className="text-gray-400 hover:text-red-500 text-sm"
+                        title="Report comment"
+                      >
+                        🚩
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {comments.length === 0 && (
+                  <p className="text-center text-gray-500 text-sm">
+                    No comments yet
+                  </p>
+                )}
+              </div>
+
+              {isAuthenticated && (
+                <form onSubmit={handleAddComment} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a comment..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-gray-900"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newComment.trim()}
+                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition disabled:opacity-50"
+                  >
+                    Post
+                  </button>
+                </form>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      <p className="text-xs text-gray-400 mt-2">
+        {new Date(post.createdAt).toLocaleDateString()}
+      </p>
+    </div>
+  );
+}
+
+export default function Home() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [newPost, setNewPost] = useState({ content: "", image: "" });
+  const [posting, setPosting] = useState(false);
+  const [likingPosts, setLikingPosts] = useState(new Set()); // Track which posts are being liked
+  const [feedFilter, setFeedFilter] = useState("all");
+  const { showToast } = useToast();
+  const [reportModal, setReportModal] = useState({
+    isOpen: false,
+    targetId: "",
+    targetName: "",
+    targetType: "Post",
+  });
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setLoading(true);
+      try {
+        const { data } = await postService.getAllPosts(feedFilter);
+        setPosts(data);
+      } catch (e) {
+        console.error("Error fetching posts:", e);
+        setError("Failed to load posts");
+        showToast("Failed to load posts", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feedFilter]);
+
+  const handleCreatePost = async (e) => {
+    e.preventDefault();
+    if (!newPost.content.trim()) return;
+
+    setPosting(true);
+    try {
+      const { data } = await postService.createPost(newPost);
+      setPosts([
+        { ...data, likesCount: 0, commentsCount: 0, isLiked: false },
+        ...posts,
+      ]);
+      setNewPost({ content: "", image: "" });
+      setError("");
+      showToast("Post created", "success");
+    } catch (e) {
+      console.error("Error creating post:", e);
+      setError("Failed to create post");
+      showToast("Failed to create post", "error");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const handleLike = async (postId) => {
+    // Prevent duplicate requests
+    if (likingPosts.has(postId)) return;
+
+    const post = posts.find((p) => p.id === postId);
+    if (!post) return;
+
+    const wasLiked = post.isLiked;
+
+    // Mark as liking in progress
+    setLikingPosts(new Set(likingPosts).add(postId));
+
+    // Optimistic update
+    setPosts(
+      posts.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              isLiked: !wasLiked,
+              likesCount: p.likesCount + (wasLiked ? -1 : 1),
+            }
+          : p
+      )
+    );
+
+    try {
+      if (wasLiked) {
+        await postService.unlikePost(postId);
+        showToast("Unliked post", "success");
+      } else {
+        await postService.likePost(postId);
+        showToast("Liked post", "success");
+      }
+      // Fire unread badge update event (best-effort)
+      try {
+        const userId = JSON.parse(localStorage.getItem("user"))?.id;
+        if (userId) {
+          const { data } = await api.get(
+            `/notifications/${userId}/unread-count`
+          );
+          window.dispatchEvent(
+            new CustomEvent("unread-updated", {
+              detail: { unread: data.unreadCount },
+            })
+          );
+        }
+      } catch {
+        // Silently ignore notification update errors
+      }
+    } catch (e) {
+      console.error("Error toggling like:", e);
+      showToast("Failed to update like", "error");
+      // Revert on error
+      setPosts(
+        posts.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                isLiked: wasLiked,
+                likesCount: p.likesCount + (wasLiked ? 1 : -1),
+              }
+            : p
+        )
+      );
+    } finally {
+      // Remove from liking set
+      setLikingPosts((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleCommentAdded = (postId) => {
+    setPosts(
+      posts.map((p) =>
+        p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
+      )
+    );
+    showToast("Comment posted", "success");
+    // Update unread badge
+    try {
+      const userId = JSON.parse(localStorage.getItem("user"))?.id;
+      if (userId) {
+        api.get(`/notifications/${userId}/unread-count`).then(({ data }) =>
+          window.dispatchEvent(
+            new CustomEvent("unread-updated", {
+              detail: { unread: data.unreadCount },
+            })
+          )
+        );
+      }
+    } catch {
+      // Silently ignore notification update errors
+    }
+  };
+
+  if (loading)
+    return (
+      <PageTransition>
+        <div className="max-w-2xl mx-auto py-8 px-4">
+          <SkeletonLoader type="card" />
+          <SkeletonLoader type="card" />
+          <div className="flex justify-center py-6">
+            <LoadingSpinner />
+          </div>
+        </div>
+      </PageTransition>
+    );
+
+  return (
+    <PageTransition>
+      <div className="max-w-2xl mx-auto py-8 px-4">
+        {/* Toasts are handled globally via ToastProvider/useToast */}
+        <h1 className="text-3xl font-bold text-secondary mb-6">Campus Feed</h1>
+
+        {/* Feed Filter Toggle */}
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFeedFilter("all")}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition ${
+                feedFilter === "all"
+                  ? "bg-primary text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              All Posts
+            </button>
+            <button
+              onClick={() => setFeedFilter("following")}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition ${
+                feedFilter === "following"
+                  ? "bg-primary text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Following
+            </button>
+          </div>
+        </div>
+
+        {/* Create Post Form */}
+        <div
+          className="bg-white rounded-lg shadow p-6 mb-6"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h2 className="text-lg font-semibold text-secondary mb-4">
+            Create a Post
+          </h2>
+          <form onSubmit={handleCreatePost} className="space-y-4">
+            <textarea
+              value={newPost.content}
+              onChange={(e) =>
+                setNewPost({ ...newPost, content: e.target.value })
+              }
+              placeholder="What's on your mind?"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+              rows="3"
+            />
+            <input
+              type="url"
+              value={newPost.image}
+              onChange={(e) =>
+                setNewPost({ ...newPost, image: e.target.value })
+              }
+              placeholder="Image URL (optional)"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+            <button
+              type="submit"
+              disabled={posting || !newPost.content.trim()}
+              className="w-full bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition disabled:opacity-50"
+            >
+              {posting ? "Posting..." : "Post"}
+            </button>
+          </form>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded mb-4 flex items-center justify-between">
+            <span>{error}</span>
+            <button
+              onClick={() => {
+                setError("");
+                setLoading(true);
+                // re-run fetch for current filter
+                (async () => {
+                  try {
+                    const { data } = await postService.getAllPosts(feedFilter);
+                    setPosts(data);
+                    showToast("Feed refreshed", "success");
+                  } catch (e) {
+                    console.error("Retry failed:", e);
+                    setError("Failed to load posts");
+                    showToast("Failed to load posts", "error");
+                  } finally {
+                    setLoading(false);
+                  }
+                })();
+              }}
+              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {posts.length === 0 ? (
+          <div
+            className="bg-white p-8 rounded-lg shadow text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <p className="text-gray-500">
+              No posts yet. Be the first to share!
+            </p>
+          </div>
+        ) : (
+          <div
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: {
+                transition: {
+                  staggerChildren: 0.1,
+                },
+              },
+            }}
+          >
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0 },
+                }}
+              >
+                <PostCard
+                  post={post}
+                  onLike={handleLike}
+                  onComment={handleCommentAdded}
+                  onReport={(postId, postName, type = "Post") =>
+                    setReportModal({
+                      isOpen: true,
+                      targetId: postId,
+                      targetName: postName,
+                      targetType: type,
+                    })
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <ReportModal
+          isOpen={reportModal.isOpen}
+          onClose={() =>
+            setReportModal({
+              isOpen: false,
+              targetId: "",
+              targetName: "",
+              targetType: "Post",
+            })
+          }
+          targetType={reportModal.targetType}
+          targetId={reportModal.targetId}
+          targetName={reportModal.targetName}
+        />
+      </div>
+    </PageTransition>
+  );
+}

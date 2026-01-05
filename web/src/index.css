@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #3b82f6;
+  --secondary: #1e293b;
+  --surface: #f8fafc;
+  --text: #0f172a;
+  --muted: #475569;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Dark theme overrides using data-theme flag */
+[data-theme="dark"] {
+  --primary: #60a5fa;
+  --secondary: #0f172a;
+  --surface: #0b1223;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+}
+
+[data-theme="dark"] body {
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+/* Tailwind class overrides for dark mode surfaces/text */
+[data-theme="dark"] .bg-gray-50 {
+  background-color: #0b1223 !important;
+}
+[data-theme="dark"] .bg-white {
+  background-color: #111827 !important;
+}
+[data-theme="dark"] .bg-secondary {
+  background-color: var(--secondary) !important;
+}
+[data-theme="dark"] .bg-primary {
+  background-color: var(--primary) !important;
+}
+[data-theme="dark"] .text-primary {
+  color: var(--primary) !important;
+}
+[data-theme="dark"] .text-secondary {
+  color: var(--text) !important;
+}
+[data-theme="dark"] .text-gray-600 {
+  color: var(--muted) !important;
+}
+[data-theme="dark"] .text-gray-700 {
+  color: var(--muted) !important;
+}
+[data-theme="dark"] .border-gray-200 {
+  border-color: #1f2937 !important;
+}
+[data-theme="dark"] .border-gray-300 {
+  border-color: #334155 !important;
+}
+[data-theme="dark"] .shadow-lg {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45),
+    0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+}

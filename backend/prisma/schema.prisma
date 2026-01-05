@@ -1,0 +1,328 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  moderator
+  admin
+}
+
+enum RequestStatus {
+  pending
+  accepted
+  rejected
+}
+
+enum NotificationType {
+  request_received
+  request_accepted
+  request_rejected
+  login_alert
+  post_liked
+  post_commented
+  message_received
+  follow
+}
+
+enum ReportStatus {
+  pending
+  resolved
+  dismissed
+}
+
+enum AuditAction {
+  user_suspended
+  user_unsuspended
+  user_deleted
+  user_role_changed
+  post_deleted
+  comment_deleted
+  review_deleted
+  report_created
+  report_resolved
+}
+
+model User {
+  id                String            @id @default(uuid()) @db.Uuid
+  name              String
+  email             String            @unique
+  password          String
+  role              Role              @default(user)
+  isSuspended       Boolean           @default(false)
+  suspensionEndsAt  DateTime?
+  course            String?
+  year              Int?
+  bio               String?
+  profilePic        String?
+  followersCount    Int               @default(0)
+  followingCount    Int               @default(0)
+  postsCount        Int               @default(0)
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  emailVerified     Boolean           @default(false)
+  verificationToken String?
+  verificationTokenExpiry DateTime?
+  twoFactorSecret   String?
+  twoFactorEnabled  Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  skills            Skill[]
+  posts             Post[]
+  sentRequests      Request[]         @relation("RequestsSent")
+  receivedRequests  Request[]         @relation("RequestsReceived")
+  messages          Message[]         @relation("UserMessages")
+  chatParticipants  ChatParticipant[]
+  notifications     Notification[]
+  settings          UserSettings?
+  followers         Follow[]          @relation("Following")
+  following         Follow[]          @relation("Followers")
+  likes             Like[]
+  comments          Comment[]
+  reviewsGiven      Review[]          @relation("ReviewsGiven")
+  reviewsReceived   Review[]          @relation("ReviewsReceived")
+  postReviewsGiven  PostReview[]      @relation("PostReviewsGiven")
+
+  reportsCreated   Report[]          @relation("ReportsCreated")
+  reportsReceived  Report[]          @relation("ReportsReceived")
+  reportsResolved  Report[]          @relation("ReportsResolved")
+  auditLogs        AuditLog[]        @relation("AuditLogsActor")
+}
+
+model Skill {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  category    String
+  priceRange  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  requests    Request[]
+
+  @@index([title])
+  @@index([category])
+}
+
+model Post {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content      String
+  image        String?
+  likesCount   Int       @default(0)
+  commentsCount Int      @default(0)
+  createdAt    DateTime  @default(now())
+  likes        Like[]
+  comments     Comment[]
+  postReviews  PostReview[] @relation("PostReviews")
+}
+
+model Like {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @db.Uuid
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @db.Uuid
+  userId    String   @db.Uuid
+  text      String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model Request {
+  id         String         @id @default(uuid()) @db.Uuid
+  fromUserId String         @db.Uuid
+  toUserId   String         @db.Uuid
+  skillId    String         @db.Uuid
+  status     RequestStatus  @default(pending)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  fromUser   User           @relation("RequestsSent", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User           @relation("RequestsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  skill      Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+}
+
+model Chat {
+  id            String            @id @default(uuid()) @db.Uuid
+    name          String?
+    isGroupChat   Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  messages      Message[]
+  participants  ChatParticipant[]
+}
+
+model ChatParticipant {
+  id       String   @id @default(uuid()) @db.Uuid
+  chatId   String   @db.Uuid
+  userId   String   @db.Uuid
+  chat     Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
+
+  @@unique([chatId, userId])
+}
+
+model Message {
+  id            String   @id @default(uuid()) @db.Uuid
+  chatId        String   @db.Uuid
+  senderId      String   @db.Uuid
+  text          String
+  attachmentUrl String?
+  timestamp     DateTime @default(now())
+  chat          Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender        User     @relation("UserMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@index([senderId])
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType
+  title     String
+  message   String
+  relatedId String?           // ID of related resource (request, user, etc)
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model UserSettings {
+  id                     String   @id @default(uuid()) @db.Uuid
+  userId                 String   @unique @db.Uuid
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Privacy Settings
+  isPrivateProfile       Boolean  @default(false)
+  allowMessages          String   @default("everyone") // everyone, followers, none
+  allowRequestsFromAll   Boolean  @default(true)
+  
+  // Notification Settings
+  emailNotifications     Boolean  @default(true)
+  pushNotifications      Boolean  @default(true)
+  requestNotifications   Boolean  @default(true)
+  messageNotifications   Boolean  @default(true)
+  activityNotifications  Boolean  @default(true)
+  
+  // Appearance Settings
+  theme                  String   @default("light") // light, dark, auto
+  language               String   @default("en")
+  
+  // Security Settings
+  twoFactorEnabled       Boolean  @default(false)
+  lastLoginAt            DateTime?
+  updatedAt              DateTime @updatedAt
+}
+
+model Follow {
+  id          String   @id @default(uuid()) @db.Uuid
+  followerId  String   @db.Uuid
+  followingId String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Review {
+  id        String   @id @default(uuid()) @db.Uuid
+  authorId  String   @db.Uuid
+  userId    String   @db.Uuid
+  rating    Int      // 1-5 stars
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User @relation("ReviewsGiven", fields: [authorId], references: [id], onDelete: Cascade)
+  user   User @relation("ReviewsReceived", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([authorId, userId])
+  @@index([userId])
+  @@index([authorId])
+}
+
+model PostReview {
+  id        String   @id @default(uuid()) @db.Uuid
+  authorId  String   @db.Uuid
+  postId    String   @db.Uuid
+  rating    Int      // 1-5 stars
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User  @relation("PostReviewsGiven", fields: [authorId], references: [id], onDelete: Cascade)
+  post   Post  @relation("PostReviews", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([authorId, postId])
+  @@index([postId])
+  @@index([authorId])
+}
+
+model Report {
+  id            String        @id @default(uuid()) @db.Uuid
+  reporterId    String        @db.Uuid
+  reason        String
+  description   String
+  reportedUserId String?       @db.Uuid
+  reportedPostId String?       @db.Uuid
+  status        ReportStatus  @default(pending)
+  resolvedBy    String?       @db.Uuid
+  resolutionNote String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  reporter     User  @relation("ReportsCreated", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User? @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  resolvedByUser User? @relation("ReportsResolved", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([reportedPostId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id         String      @id @default(uuid()) @db.Uuid
+  action     AuditAction
+  actorId    String      @db.Uuid
+  targetId   String?     @db.Uuid
+  targetType String?
+  details    String?
+  createdAt  DateTime    @default(now())
+
+  actor User @relation("AuditLogsActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}

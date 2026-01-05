@@ -1,0 +1,17 @@
+{
+  "name": "xavlink-monorepo",
+  "version": "1.0.0",
+  "description": "XavLink - Campus Skills Marketplace",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm -C backend start\" \"npm -C web run dev\" \"npm -C mobile start\" --kill-others-on-fail",
+    "dev:backend": "npm -C backend start",
+    "dev:web": "npm -C web run dev",
+    "dev:mobile": "npm -C mobile start",
+    "build:web": "npm -C web run build",
+    "build:mobile": "npm -C mobile run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

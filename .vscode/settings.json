@@ -1,0 +1,19 @@
+{
+  "css.lint.unknownAtRules": "ignore",
+  "css.lint.vendorPrefix": "ignore",
+  "css.lint.propertyIgnoredDueToDisplay": "ignore",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsx]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "chat.agent.maxRequests": 3000000000000,
+  "json.schemaDownload.enable": false,
+  "chat.extensionUnification.enabled": true
+}
