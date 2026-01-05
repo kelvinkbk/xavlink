@@ -3,25 +3,24 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-async function main() {
-  // Check if admin already exists
+async function seedAdmin() {
   const existingAdmin = await prisma.user.findUnique({
     where: { email: "admin@xavlink.com" },
   });
 
   if (existingAdmin) {
-    console.log("Admin user already exists");
+    console.log("✓ Admin already exists");
     return;
   }
 
-  // Create admin user
   const hashed = await bcrypt.hash("admin123456", 10);
+
   const admin = await prisma.user.create({
     data: {
       name: "Admin",
       email: "admin@xavlink.com",
       password: hashed,
-      role: "admin",
+      role: "admin", // make sure this matches schema enum/casing
       bio: "System administrator",
       course: "Admin",
       year: 0,
@@ -29,16 +28,6 @@ async function main() {
   });
 
   console.log("✓ Admin user created:", admin.email);
-  console.log("  Email: admin@xavlink.com");
-  console.log("  Password: admin123456");
-  console.log("  (Change password after first login)");
 }
 
-main()
-  .catch((e) => {
-    console.error("Error:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+module.exports = seedAdmin;
