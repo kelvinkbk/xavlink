@@ -5,6 +5,7 @@ import { socket } from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ReportModal from "../components/ReportModal";
+import MessageReactions from "../components/MessageReactions";
 import { uploadService, reportService } from "../services/api";
 
 export default function ChatPage() {
@@ -318,28 +319,11 @@ export default function ChatPage() {
                         </span>
                         {isOwn && <span className="text-blue-100">✓</span>}
                       </div>
-                      {messageReactions[message.id] &&
-                        Object.keys(messageReactions[message.id]).length >
-                          0 && (
-                          <div className="flex gap-1 flex-wrap mt-2">
-                            {Object.entries(messageReactions[message.id]).map(
-                              ([emoji, count]) => (
-                                <button
-                                  key={emoji}
-                                  onClick={() =>
-                                    handleReactToMessage(message.id, emoji)
-                                  }
-                                  className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs border border-gray-300 dark:bg-gray-600 dark:border-gray-500"
-                                >
-                                  <span>{emoji}</span>
-                                  <span className="text-gray-600 dark:text-gray-300">
-                                    {count}
-                                  </span>
-                                </button>
-                              )
-                            )}
-                          </div>
-                        )}
+                      <MessageReactions
+                        messageId={message.id}
+                        onReact={handleReactToMessage}
+                        reactions={messageReactions[message.id] || {}}
+                      />
                     </div>
                   </div>
                   <div className="flex flex-col gap-1 px-1">
