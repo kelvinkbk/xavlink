@@ -48,13 +48,15 @@ export default function ChatPage() {
 
   // Load pending messages from localStorage on mount or chatId change
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !chatId) return;
     try {
       const stored = localStorage.getItem(`pending_${chatId}`);
       const pending = stored ? JSON.parse(stored) : [];
       setPendingMessages(pending);
       if (pending.length > 0) {
-        console.log(`📂 Loaded ${pending.length} pending messages from localStorage`);
+        console.log(
+          `📂 Loaded ${pending.length} pending messages from localStorage`
+        );
       }
     } catch (e) {
       console.error("Failed to load pending messages from localStorage:", e);
@@ -64,7 +66,7 @@ export default function ChatPage() {
 
   // Persist pending messages to localStorage whenever they change
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !chatId) return;
     try {
       if (pendingMessages.length > 0) {
         localStorage.setItem(
