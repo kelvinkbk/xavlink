@@ -46,6 +46,13 @@ export default function ChatPage() {
   const toastTimerRef = useRef(null);
   const searchTimeoutRef = useRef(null);
 
+  // Toast helper (define early so callbacks can reference it)
+  const showToast = useCallback((message, type = "info", duration = 3000) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, type });
+    toastTimerRef.current = setTimeout(() => setToast(null), duration);
+  }, []);
+
   // Load pending messages from localStorage on mount or chatId change
   useEffect(() => {
     if (typeof window === "undefined" || !chatId) return;
@@ -166,11 +173,7 @@ export default function ChatPage() {
     });
   }, []);
 
-  const showToast = useCallback((message, type = "info", duration = 3000) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ message, type });
-    toastTimerRef.current = setTimeout(() => setToast(null), duration);
-  }, []);
+  
 
   // Send a pending message with retry/backoff
   const sendPendingMessage = useCallback(
