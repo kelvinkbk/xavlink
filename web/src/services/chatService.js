@@ -88,4 +88,5 @@ export const chatService = {
       params: { query, limit },
     });
     return response.data;
-  },};
+  },
+};

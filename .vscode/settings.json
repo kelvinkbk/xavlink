@@ -15,5 +15,7 @@
   },
   "chat.agent.maxRequests": 3000000000000,
   "json.schemaDownload.enable": false,
-  "chat.extensionUnification.enabled": true
+  "chat.extensionUnification.enabled": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.skipLibCheck": true
 }
