@@ -635,3 +635,76 @@ exports.markChatAsRead = async (req, res, next) => {
     next(error);
   }
 };
+/**
+ * Search messages in a chat
+ */
+exports.searchMessages = async (req, res, next) => {
+  try {
+    const { chatId } = req.params;
+    const { query, limit = 50 } = req.query;
+    const userId = req.user.id;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({ message: "Search query is required" });
+    }
+
+    // Verify user is a participant
+    const participant = await prisma.chatParticipant.findFirst({
+      where: { chatId, userId },
+    });
+
+    if (!participant) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to view this chat" });
+    }
+
+    // Search messages using case-insensitive contains
+    const messages = await prisma.message.findMany({
+      where: {
+        chatId,
+        text: {
+          contains: query,
+          mode: "insensitive",
+        },
+      },
+      orderBy: { timestamp: "desc" },
+      take: parseInt(limit),
+      include: {
+        sender: {
+          select: { id: true, name: true, profilePic: true },
+        },
+        reactions: {
+          select: {
+            emoji: true,
+            userId: true,
+          },
+        },
+        readReceipts: {
+          select: {
+            userId: true,
+            readAt: true,
+          },
+        },
+      },
+    });
+
+    // Format reactions
+    const formatted = messages.map((msg) => {
+      const reactionCounts = {};
+      msg.reactions.forEach((r) => {
+        reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
+      });
+
+      return {
+        ...msg,
+        reactionCounts,
+        reactions: msg.reactions,
+      };
+    });
+
+    res.json(formatted.reverse());
+  } catch (error) {
+    next(error);
+  }
+};

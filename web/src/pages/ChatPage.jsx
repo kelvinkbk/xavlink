@@ -23,6 +23,8 @@ export default function ChatPage() {
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [messageToReport, setMessageToReport] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [messageReactions, setMessageReactions] = useState({});
   const [pendingMessages, setPendingMessages] = useState([]); // optimistic queue
   const [toast, setToast] = useState(null);
@@ -42,6 +44,36 @@ export default function ChatPage() {
   const markChatReadTimeoutRef = useRef(null);
   const pendingTimersRef = useRef({});
   const toastTimerRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
+
+  // Handle search with debounce
+  const handleSearch = useCallback(
+    (query) => {
+      setSearchQuery(query);
+
+      if (!query.trim()) {
+        setSearchResults([]);
+        return;
+      }
+
+      // Debounce search
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+      setSearchLoading(true);
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const results = await chatService.searchMessages(chatId, query);
+          setSearchResults(results);
+        } catch (error) {
+          console.error("Search failed:", error);
+          showToast("Search failed", "error", 3000);
+        } finally {
+          setSearchLoading(false);
+        }
+      }, 300); // Wait 300ms after user stops typing
+    },
+    [chatId, showToast]
+  );
 
   // Auto-mark messages as read when viewed
   const markVisibleMessagesAsRead = useCallback(() => {
@@ -785,7 +817,7 @@ export default function ChatPage() {
           type="text"
           placeholder="🔍 Search messages..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => handleSearch(e.target.value)}
           className="px-3 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600"
         />
         {!selectionMode ? (
@@ -856,22 +888,51 @@ export default function ChatPage() {
         )}
         <div ref={messagesStartRef} className="h-1" />
         {(() => {
-          const filteredMessages = [...messages, ...pendingMessages].filter(
-            (msg) =>
-              !searchQuery ||
-              msg.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              msg.sender?.name
-                ?.toLowerCase()
-                .includes(searchQuery.toLowerCase())
-          );
+          // Use search results if search is active
+          const isSearching = searchQuery.trim().length > 0;
+          const displayMessages = isSearching ? searchResults : [...messages, ...pendingMessages];
+
+          const filteredMessages = isSearching
+            ? displayMessages // Already filtered by backend
+            : displayMessages.filter(
+                (msg) =>
+                  !searchQuery ||
+                  msg.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  msg.sender?.name
+                    ?.toLowerCase()
+                    .includes(searchQuery.toLowerCase())
+              );
 
           const pinnedMessages = filteredMessages.filter((m) => m.isPinned);
           const unpinnedMessages = filteredMessages.filter((m) => !m.isPinned);
 
           return (
             <>
+              {/* Search Results Header */}
+              {isSearching && (
+                <div className="text-center py-2 mb-4 border-b border-gray-300 dark:border-gray-600">
+                  <div className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    {searchLoading ? (
+                      "Searching..."
+                    ) : (
+                      <>
+                        {filteredMessages.length} result
+                        {filteredMessages.length !== 1 ? "s" : ""} for "{searchQuery}"
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* No Results */}
+              {isSearching && !searchLoading && filteredMessages.length === 0 && (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No messages found
+                </div>
+              )}
+
               {/* Pinned Messages Section */}
-              {pinnedMessages.length > 0 && (
+              {!isSearching && pinnedMessages.length > 0 && (
                 <div className="pb-4 border-b-2 border-yellow-200 dark:border-yellow-800">
                   <div className="text-xs text-yellow-700 dark:text-yellow-400 font-semibold mb-2 flex items-center gap-1">
                     📌 PINNED MESSAGES

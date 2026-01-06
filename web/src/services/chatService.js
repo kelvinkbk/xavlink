@@ -81,4 +81,11 @@ export const chatService = {
     const response = await api.post(`/chats/${chatId}/read`);
     return response.data;
   },
-};
+
+  // Search messages in a chat
+  async searchMessages(chatId, query, limit = 50) {
+    const response = await api.get(`/chats/${chatId}/search`, {
+      params: { query, limit },
+    });
+    return response.data;
+  },

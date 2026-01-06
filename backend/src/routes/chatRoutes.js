@@ -22,5 +22,6 @@ router.patch(
 );
 router.post("/:chatId/messages/:messageId/read", chatController.markAsRead);
 router.post("/:chatId/read", chatController.markChatAsRead);
+router.get("/:chatId/search", chatController.searchMessages);
 
 module.exports = router;
