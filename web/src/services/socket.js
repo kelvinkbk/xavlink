@@ -7,7 +7,7 @@ const baseURL =
 
 export const socket = io(baseURL, {
   withCredentials: true,
-  autoConnect: false,
+  autoConnect: true, // Auto-connect on initialization
   transports: ["polling"], // Use polling only for Render compatibility
   reconnectionAttempts: 10,
   reconnectionDelay: 1000,

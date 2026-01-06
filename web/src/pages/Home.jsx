@@ -270,25 +270,38 @@ export default function Home() {
 
   // Listen for real-time like/unlike events
   useEffect(() => {
+    // Ensure socket is connected
+    if (!socket.connected) {
+      console.log("🔌 Connecting socket for real-time updates");
+      socket.connect();
+    } else {
+      console.log("✅ Socket already connected");
+    }
+
     const handlePostLiked = ({ postId, likesCount }) => {
+      console.log("❤️ Post liked real-time:", { postId, likesCount });
       setPosts((prevPosts) =>
         prevPosts.map((p) => (p.id === postId ? { ...p, likesCount } : p))
       );
     };
 
     const handlePostUnliked = ({ postId, likesCount }) => {
+      console.log("🤍 Post unliked real-time:", { postId, likesCount });
       setPosts((prevPosts) =>
         prevPosts.map((p) => (p.id === postId ? { ...p, likesCount } : p))
       );
     };
 
     const handlePostDeleted = ({ postId }) => {
+      console.log("🗑️ Post deleted real-time:", { postId });
       setPosts((prevPosts) => prevPosts.filter((p) => p.id !== postId));
     };
 
     socket.on("post_liked", handlePostLiked);
     socket.on("post_unliked", handlePostUnliked);
     socket.on("post_deleted", handlePostDeleted);
+
+    console.log("📡 Real-time listeners registered");
 
     return () => {
       socket.off("post_liked", handlePostLiked);
