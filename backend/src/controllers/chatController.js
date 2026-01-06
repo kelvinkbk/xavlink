@@ -201,8 +201,9 @@ exports.sendMessage = async (req, res, next) => {
     const { chatId, text, attachmentUrl } = req.body;
     const senderId = req.user.id;
 
-    if (!chatId || !text) {
-      return res.status(400).json({ message: "chatId and text are required" });
+    // Require either text or attachment
+    if (!chatId || (!text && !attachmentUrl)) {
+      return res.status(400).json({ message: "chatId and either text or attachmentUrl are required" });
     }
 
     // Verify user is a participant
@@ -217,11 +218,11 @@ exports.sendMessage = async (req, res, next) => {
     }
 
     const message = await prisma.message.create({
-      data: { 
-        chatId, 
-        senderId, 
-        text,
-        attachmentUrl: attachmentUrl || null
+      data: {
+        chatId,
+        senderId,
+        text: text || "",
+        attachmentUrl: attachmentUrl || null,
       },
       include: {
         sender: {
