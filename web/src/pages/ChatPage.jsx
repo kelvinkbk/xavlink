@@ -25,6 +25,7 @@ export default function ChatPage() {
   const [messageReactions, setMessageReactions] = useState({});
   const [pendingMessages, setPendingMessages] = useState([]); // optimistic queue
   const [toast, setToast] = useState(null);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState(new Set());
   const messagesEndRef = useRef(null);
@@ -88,6 +89,12 @@ export default function ChatPage() {
     });
   }, []);
 
+  const showToast = useCallback((message, type = "info", duration = 3000) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, type });
+    toastTimerRef.current = setTimeout(() => setToast(null), duration);
+  }, []);
+
   // Send a pending message with retry/backoff
   const sendPendingMessage = useCallback(
     async (pending) => {
@@ -119,6 +126,7 @@ export default function ChatPage() {
         );
         upsertMessage(response);
       } catch (error) {
+        console.error("Send message failed:", error);
         const attempts = (pending.attempts || 0) + 1;
         const willRetry = attempts < 4;
         setPendingMessages((prev) =>
@@ -135,6 +143,7 @@ export default function ChatPage() {
 
         if (willRetry) {
           const backoffMs = Math.min(5000, 500 * Math.pow(2, attempts));
+          showToast(`Retrying... (attempt ${attempts}/3)`, "info", 2000);
           if (pendingTimersRef.current[pending.tempId]) {
             clearTimeout(pendingTimersRef.current[pending.tempId]);
           }
@@ -144,7 +153,7 @@ export default function ChatPage() {
         }
 
         if (!willRetry) {
-          showToast("Message failed to send. Tap retry.", "error", 4000);
+          showToast("❌ Message failed to send. Tap retry.", "error", 5000);
         }
       }
     },
@@ -182,6 +191,16 @@ export default function ChatPage() {
       }
     },
     [chatId, upsertMessage, user.id]
+  );
+
+  const handleRetryPending = useCallback(
+    (tempId) => {
+      const pending = pendingMessages.find((m) => m.tempId === tempId);
+      if (pending) {
+        sendPendingMessage({ ...pending, attempts: 0, status: "sending" });
+      }
+    },
+    [pendingMessages, sendPendingMessage]
   );
 
   const loadMessages = useCallback(async () => {
@@ -337,6 +356,8 @@ export default function ChatPage() {
   // Flush queued/failed messages when coming online
   useEffect(() => {
     const handleOnline = () => {
+      setIsOnline(true);
+      showToast("✓ You're back online", "success", 2000);
       setPendingMessages((prev) => {
         const toSend = prev.filter(
           (m) => m.status === "queued" || m.status === "failed"
@@ -352,9 +373,18 @@ export default function ChatPage() {
       });
     };
 
+    const handleOffline = () => {
+      setIsOnline(false);
+      showToast("⚠ You're offline", "warning", 2000);
+    };
+
     window.addEventListener("online", handleOnline);
-    return () => window.removeEventListener("online", handleOnline);
-  }, [sendPendingMessage]);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [sendPendingMessage, showToast]);
 
   useEffect(() => {
     scrollToBottom();
@@ -504,22 +534,6 @@ export default function ChatPage() {
   };
 
   if (loading) return <LoadingSpinner />;
-
-  const handleRetryPending = useCallback(
-    (tempId) => {
-      const pending = pendingMessages.find((m) => m.tempId === tempId);
-      if (pending) {
-        sendPendingMessage({ ...pending, attempts: 0, status: "sending" });
-      }
-    },
-    [pendingMessages, sendPendingMessage]
-  );
-
-  const showToast = useCallback((message, type = "info", duration = 3000) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ message, type });
-    toastTimerRef.current = setTimeout(() => setToast(null), duration);
-  }, []);
 
   const renderMessage = (message) => {
     const isOwn = message.sender.id === user.id;
@@ -671,6 +685,11 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] max-w-4xl mx-auto bg-white dark:bg-gray-800">
+      {!isOnline && (
+        <div className="bg-red-500 text-white px-4 py-2 text-sm font-semibold text-center">
+          ⚠ Offline – Messages will be sent when you reconnect
+        </div>
+      )}
       {toast && (
         <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded shadow-lg text-sm z-50">
           {toast.message}
