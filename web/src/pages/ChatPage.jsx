@@ -42,7 +42,16 @@ export default function ChatPage() {
   }, [chatId]);
 
   useEffect(() => {
+    // Ensure socket is connected
+    if (!socket.connected) {
+      console.log("🔌 Connecting socket for chat...");
+      socket.connect();
+    }
+
     loadMessages();
+
+    // Join chat room
+    console.log("📨 Joining chat room:", chatId);
     socket.emit("join_room", { chatId });
 
     socket.on("receive_message", handleReceiveMessage);
@@ -84,11 +93,31 @@ export default function ChatPage() {
     e.preventDefault();
     if ((!newMessage.trim() && !attachmentUrl) || sending) return;
 
+    // Check socket connection
+    if (!socket.connected) {
+      console.error("❌ Socket not connected! Attempting to reconnect...");
+      socket.connect();
+      setTimeout(() => {
+        if (!socket.connected) {
+          alert("Connection error. Please refresh the page.");
+          return;
+        }
+      }, 1000);
+      return;
+    }
+
     setSending(true);
     const messageText = newMessage.trim();
     const attachment = attachmentUrl;
     setNewMessage("");
     setAttachmentUrl("");
+
+    console.log("📤 Sending message:", {
+      chatId,
+      senderId: user.id,
+      text: messageText || "(attachment)",
+      attachmentUrl: attachment,
+    });
 
     try {
       socket.emit(
@@ -100,16 +129,21 @@ export default function ChatPage() {
           attachmentUrl: attachment,
         },
         (response) => {
-          if (response.error) {
+          console.log("📥 Message response:", response);
+          if (response?.error) {
             console.error("Failed to send message:", response.error);
+            alert(`Failed to send: ${response.error}`);
             setNewMessage(messageText);
             setAttachmentUrl(attachment);
+          } else {
+            console.log("✅ Message sent successfully");
           }
           setSending(false);
         }
       );
     } catch (error) {
       console.error("Failed to send message:", error);
+      alert(`Error: ${error.message}`);
       setNewMessage(messageText);
       setAttachmentUrl(attachment);
       setSending(false);
