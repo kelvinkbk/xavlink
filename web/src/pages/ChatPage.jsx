@@ -170,7 +170,14 @@ export default function ChatPage() {
 
   const handleBulkDelete = async () => {
     if (selectedMessages.size === 0) return;
-    if (!window.confirm(`Delete ${selectedMessages.size} message${selectedMessages.size > 1 ? 's' : ''}?`)) return;
+    if (
+      !window.confirm(
+        `Delete ${selectedMessages.size} message${
+          selectedMessages.size > 1 ? "s" : ""
+        }?`
+      )
+    )
+      return;
 
     const messagesToDelete = Array.from(selectedMessages);
     let successCount = 0;
@@ -187,7 +194,11 @@ export default function ChatPage() {
 
     setSelectedMessages(new Set());
     setSelectionMode(false);
-    alert(`Deleted ${successCount} of ${messagesToDelete.length} message${messagesToDelete.length > 1 ? 's' : ''}`);
+    alert(
+      `Deleted ${successCount} of ${messagesToDelete.length} message${
+        messagesToDelete.length > 1 ? "s" : ""
+      }`
+    );
   };
 
   const handleDeleteMessage = async (messageId) => {
@@ -285,7 +296,9 @@ export default function ChatPage() {
           <div className="flex gap-2">
             <button
               onClick={() => {
-                const myMessages = messages.filter(m => m.sender.id === user.id).map(m => m.id);
+                const myMessages = messages
+                  .filter((m) => m.sender.id === user.id)
+                  .map((m) => m.id);
                 setSelectedMessages(new Set(myMessages));
               }}
               className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
@@ -329,7 +342,9 @@ export default function ChatPage() {
             return (
               <div
                 key={message.id}
-                className={`flex ${isOwn ? "justify-end" : "justify-start"} gap-2`}
+                className={`flex ${
+                  isOwn ? "justify-end" : "justify-start"
+                } gap-2`}
               >
                 {selectionMode && isOwn && (
                   <input
