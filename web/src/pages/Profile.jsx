@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import PageTransition from "../components/PageTransition";
 import ReportModal from "../components/ReportModal";
 import api from "../services/api";
+import socket from "../services/socket";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../context/ToastContext";
@@ -65,6 +66,31 @@ export default function Profile() {
 
     fetchProfile();
   }, [userId, currentUser, isOwnProfile, showToast]);
+
+  // Listen for real-time follow/unfollow events
+  useEffect(() => {
+    if (!userId || isOwnProfile) return;
+
+    const handleUserFollowed = ({ followingId }) => {
+      if (followingId === userId) {
+        setUser((prev) => prev ? { ...prev, followersCount: (prev.followersCount || 0) + 1 } : prev);
+      }
+    };
+
+    const handleUserUnfollowed = ({ followingId }) => {
+      if (followingId === userId) {
+        setUser((prev) => prev ? { ...prev, followersCount: Math.max((prev.followersCount || 0) - 1, 0) } : prev);
+      }
+    };
+
+    socket.on("user_followed", handleUserFollowed);
+    socket.on("user_unfollowed", handleUserUnfollowed);
+
+    return () => {
+      socket.off("user_followed", handleUserFollowed);
+      socket.off("user_unfollowed", handleUserUnfollowed);
+    };
+  }, [userId, isOwnProfile]);
 
   const handleEditToggle = () => {
     setIsEditing(!isEditing);

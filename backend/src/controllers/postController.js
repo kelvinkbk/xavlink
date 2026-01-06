@@ -136,6 +136,15 @@ exports.likePost = async (req, res, next) => {
       }
     });
 
+    // Emit real-time update via Socket.io
+    if (global.io) {
+      global.io.emit("post_liked", {
+        postId: id,
+        userId,
+        likesCount: post.likesCount + 1,
+      });
+    }
+
     return res.status(200).json({ message: "Post liked" });
   } catch (err) {
     // Handle unique constraint violation gracefully (idempotent)
@@ -172,6 +181,19 @@ exports.unlikePost = async (req, res, next) => {
         data: { likesCount: { decrement: 1 } },
       });
     });
+
+    // Emit real-time update via Socket.io
+    const updatedPost = await prisma.post.findUnique({
+      where: { id },
+      select: { likesCount: true },
+    });
+    if (global.io) {
+      global.io.emit("post_unliked", {
+        postId: id,
+        userId,
+        likesCount: updatedPost?.likesCount || 0,
+      });
+    }
 
     return res.status(200).json({ message: "Post unliked" });
   } catch (err) {

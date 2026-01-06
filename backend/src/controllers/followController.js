@@ -67,6 +67,11 @@ exports.followUser = async (req, res) => {
       console.error("Failed to create follow notification:", notifErr);
     }
 
+    // Emit real-time update via Socket.io
+    if (global.io) {
+      global.io.emit("user_followed", { followerId, followingId });
+    }
+
     res.json({ message: "Successfully followed user" });
   } catch (error) {
     console.error("Follow error:", error);
@@ -109,6 +114,11 @@ exports.unfollowUser = async (req, res) => {
         data: { followersCount: { decrement: 1 } },
       }),
     ]);
+
+    // Emit real-time update via Socket.io
+    if (global.io) {
+      global.io.emit("user_unfollowed", { followerId, followingId });
+    }
 
     res.json({ message: "Successfully unfollowed user" });
   } catch (error) {

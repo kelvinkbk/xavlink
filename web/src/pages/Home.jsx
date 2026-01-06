@@ -5,6 +5,7 @@ import SkeletonLoader from "../components/SkeletonLoader";
 import ReportModal from "../components/ReportModal";
 import { postService } from "../services/api";
 import api from "../services/api";
+import socket from "../services/socket";
 // Removed direct Toast component usage; using useToast hook instead
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -248,6 +249,33 @@ export default function Home() {
     fetchPosts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedFilter]);
+
+  // Listen for real-time like/unlike events
+  useEffect(() => {
+    const handlePostLiked = ({ postId, likesCount }) => {
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId ? { ...p, likesCount } : p
+        )
+      );
+    };
+
+    const handlePostUnliked = ({ postId, likesCount }) => {
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId ? { ...p, likesCount } : p
+        )
+      );
+    };
+
+    socket.on("post_liked", handlePostLiked);
+    socket.on("post_unliked", handlePostUnliked);
+
+    return () => {
+      socket.off("post_liked", handlePostLiked);
+      socket.off("post_unliked", handlePostUnliked);
+    };
+  }, []);
 
   const handleCreatePost = async (e) => {
     e.preventDefault();

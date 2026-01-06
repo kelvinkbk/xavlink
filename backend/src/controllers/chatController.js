@@ -203,7 +203,11 @@ exports.sendMessage = async (req, res, next) => {
 
     // Require either text or attachment
     if (!chatId || (!text && !attachmentUrl)) {
-      return res.status(400).json({ message: "chatId and either text or attachmentUrl are required" });
+      return res
+        .status(400)
+        .json({
+          message: "chatId and either text or attachmentUrl are required",
+        });
     }
 
     // Verify user is a participant
