@@ -8,9 +8,10 @@ const baseURL =
 export const socket = io(baseURL, {
   withCredentials: true,
   autoConnect: false,
-  transports: ["polling", "websocket"], // Try polling first for Render compatibility
-  reconnectionAttempts: 5,
+  transports: ["polling"], // Use polling only for Render compatibility
+  reconnectionAttempts: 10,
   reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
 });
 
 // Join user's notification room

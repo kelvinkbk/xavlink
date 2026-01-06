@@ -41,7 +41,10 @@ const io = new Server(server, {
     },
     credentials: true,
   },
-  transports: ["websocket", "polling"], // Support both for compatibility
+  transports: ["polling"], // Only polling for Render - WebSocket may not work reliably
+  maxHttpBufferSize: 1e6, // 1MB
+  pingInterval: 25000,
+  pingTimeout: 60000,
 });
 
 // Make io available in controllers if needed
