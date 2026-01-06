@@ -36,3 +36,5 @@ export const sendTyping = (chatId, userId, userName) => {
 export const sendStopTyping = (chatId, userId) => {
   socket.emit("stop_typing", { chatId, userId });
 };
+
+export default socket;
