@@ -4,50 +4,42 @@ const app = require("./app");
 const prisma = require("./config/prismaClient");
 
 const PORT = process.env.PORT || 5000;
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
-  : ["http://localhost:5173"];
 
+/*
+  IMPORTANT:
+  - Render + Socket.io needs relaxed CORS initially
+  - You can lock this later once stable
+*/
 const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: "*", // IMPORTANT for Render + Vercel + Expo
     credentials: true,
   },
+  transports: ["websocket"], // avoid polling issues on Render
 });
 
-// Expose io globally for controllers
+// Make io available in controllers if needed
 global.io = io;
 
+/* -------------------------------
+   SOCKET CONNECTION
+-------------------------------- */
 io.on("connection", (socket) => {
-  console.log(`Socket connected: ${socket.id}`);
+  console.log("🔌 Socket connected:", socket.id);
 
-  // Join user's personal notification room
-  socket.on("join_user_room", ({ userId }) => {
-    if (!userId) return;
-    socket.join(`user:${userId}`);
-    console.log(`User ${userId} joined notification room`);
-  });
-
-  // Join chat room
-  socket.on("join_room", ({ chatId }) => {
-    if (!chatId) return;
-    socket.join(chatId);
-  });
-
-  // Typing indicator
-  socket.on("typing", ({ chatId, userId, userName }) => {
-    socket.to(chatId).emit("user_typing", { userId, userName });
-  });
-
-  socket.on("stop_typing", ({ chatId, userId }) => {
-    socket.to(chatId).emit("user_stopped_typing", { userId });
-  });
-
-  // User online status
+  /* -------------------------------
+     USER PRESENCE
+  -------------------------------- */
   socket.on("user_online", ({ userId }) => {
+    if (!userId) return;
     socket.userId = userId;
-    io.emit("user_status_change", { userId, status: "online" });
+    socket.join(`user:${userId}`);
+    io.emit("user_status_change", {
+      userId,
+      status: "online",
+    });
   });
 
   socket.on("disconnect", () => {
@@ -57,46 +49,99 @@ io.on("connection", (socket) => {
         status: "offline",
       });
     }
+    console.log("❌ Socket disconnected:", socket.id);
   });
 
+  /* -------------------------------
+     JOIN CHAT ROOM
+     (frontend MUST call this)
+  -------------------------------- */
+  socket.on("join_room", ({ chatId }) => {
+    if (!chatId) return;
+    socket.join(chatId);
+    console.log(`🟢 Joined chat room: ${chatId}`);
+  });
+
+  /* -------------------------------
+     TYPING INDICATOR
+  -------------------------------- */
+  socket.on("typing", ({ chatId, userId, userName }) => {
+    if (!chatId || !userId) return;
+    socket.to(chatId).emit("user_typing", {
+      userId,
+      userName,
+    });
+  });
+
+  socket.on("stop_typing", ({ chatId, userId }) => {
+    if (!chatId || !userId) return;
+    socket.to(chatId).emit("user_stopped_typing", {
+      userId,
+    });
+  });
+
+  /* -------------------------------
+     SEND MESSAGE
+     (chatId MUST exist)
+  -------------------------------- */
   socket.on("send_message", async (payload, callback) => {
     const { chatId, senderId, text, attachmentUrl } = payload || {};
-    if (!senderId || !text) {
-      callback?.({ error: "senderId and text are required" });
+
+    if (!chatId || !senderId || !text) {
+      callback?.({ error: "chatId, senderId and text are required" });
       return;
     }
 
     try {
-      const chatIdToUse = chatId || (await prisma.chat.create({ data: {} })).id;
+      // Save message
       const message = await prisma.message.create({
         data: {
-          chatId: chatIdToUse,
+          chatId,
           senderId,
           text,
           attachmentUrl: attachmentUrl || null,
         },
         include: {
           sender: {
-            select: { id: true, name: true, profilePic: true },
+            select: {
+              id: true,
+              name: true,
+              profilePic: true,
+            },
           },
         },
       });
 
-      socket.join(chatIdToUse);
-      io.to(chatIdToUse).emit("receive_message", message);
-      callback?.({ chatId: chatIdToUse, message });
-    } catch (err) {
-      console.error("send_message error", err);
+      // Broadcast message to room
+      io.to(chatId).emit("receive_message", message);
+
+      callback?.({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      console.error("❌ send_message error:", error);
       callback?.({ error: "Failed to send message" });
     }
   });
 });
 
+/* -------------------------------
+   START SERVER
+-------------------------------- */
 server.listen(PORT, () => {
-  console.log(`XavLink backend running on port ${PORT}`);
+  console.log(`🚀 XavLink backend running on port ${PORT}`);
 });
 
+/* -------------------------------
+   CLEAN SHUTDOWN
+-------------------------------- */
 process.on("SIGINT", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
   await prisma.$disconnect();
   process.exit(0);
 });
