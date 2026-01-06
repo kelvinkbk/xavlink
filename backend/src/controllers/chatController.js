@@ -608,15 +608,21 @@ exports.markChatAsRead = async (req, res, next) => {
       return res.status(404).json({ message: "Chat participant not found" });
     }
 
-    // Broadcast to all participants
+    // Broadcast to all participants and send unread count reset to current user
     if (global.io) {
       global.io.to(chatId).emit("chat_read", {
         chatId,
         userId,
       });
+
+      global.io.to(chatId).emit("unread_count_update", {
+        chatId,
+        userId,
+        unreadCount: 0,
+      });
     }
 
-    res.json({ message: "Chat marked as read" });
+    res.json({ message: "Chat marked as read", unreadCount: 0 });
   } catch (error) {
     next(error);
   }

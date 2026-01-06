@@ -30,6 +30,7 @@ export default function ChatPage() {
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const readTimeoutRef = useRef(null);
+  const markChatReadTimeoutRef = useRef(null);
 
   // Auto-mark messages as read when viewed
   const markVisibleMessagesAsRead = useCallback(() => {
@@ -87,6 +88,18 @@ export default function ChatPage() {
     (message) => {
       if (message.chatId === chatId) {
         upsertMessage(message);
+
+        // If user is viewing this chat, clear unread count quickly
+        if (markChatReadTimeoutRef.current) {
+          clearTimeout(markChatReadTimeoutRef.current);
+        }
+        markChatReadTimeoutRef.current = setTimeout(async () => {
+          try {
+            await chatService.markChatAsRead(chatId);
+          } catch (error) {
+            console.error("Failed to mark chat as read:", error);
+          }
+        }, 150);
       }
     },
     [chatId, upsertMessage]
@@ -116,12 +129,17 @@ export default function ChatPage() {
       });
       setMessageReactions(reactionsMap);
 
-      // Mark chat as read when opening
-      try {
-        await chatService.markChatAsRead(chatId);
-      } catch (error) {
-        console.error("Failed to mark chat as read:", error);
+      // Mark chat as read when opening (debounced)
+      if (markChatReadTimeoutRef.current) {
+        clearTimeout(markChatReadTimeoutRef.current);
       }
+      markChatReadTimeoutRef.current = setTimeout(async () => {
+        try {
+          await chatService.markChatAsRead(chatId);
+        } catch (error) {
+          console.error("Failed to mark chat as read:", error);
+        }
+      }, 200);
     } catch (error) {
       console.error("Failed to load messages:", error);
     } finally {
