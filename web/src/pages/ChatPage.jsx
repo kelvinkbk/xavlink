@@ -4,6 +4,7 @@ import { chatService } from "../services/chatService";
 import { socket } from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
+import ReportModal from "../components/ReportModal";
 import { uploadService, reportService } from "../services/api";
 
 export default function ChatPage() {
@@ -17,6 +18,8 @@ export default function ChatPage() {
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [attachmentUrl, setAttachmentUrl] = useState("");
   const [typingUsers, setTypingUsers] = useState(new Set());
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [messageToReport, setMessageToReport] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -171,22 +174,9 @@ export default function ChatPage() {
     }
   };
 
-  const handleReportMessage = async (message) => {
-    try {
-      await reportService.createReport({
-        // Valid reasons per backend: spam, harassment, inappropriate_content, misinformation, copyright, other
-        reason: "harassment",
-        description: `Reported message\nChat ID: ${chatId}\nMessage ID: ${
-          message.id
-        }\nText: ${message.text?.slice(0, 200) || "(no text)"}`,
-        reportedUserId: message.sender?.id,
-        reportedMessageId: message.id,
-      });
-      alert("Message reported to moderators.");
-    } catch (error) {
-      console.error("Failed to report message:", error);
-      alert("Failed to report message");
-    }
+  const handleReportMessage = (message) => {
+    setMessageToReport(message);
+    setReportModalOpen(true);
   };
 
   const handleTyping = (value) => {
@@ -418,6 +408,27 @@ export default function ChatPage() {
           </p>
         )}
       </form>
+
+      <ReportModal
+        isOpen={reportModalOpen}
+        onClose={() => {
+          setReportModalOpen(false);
+          setMessageToReport(null);
+        }}
+        targetType="Message"
+        targetId={messageToReport?.id}
+        targetName={`from ${messageToReport?.sender?.name || "Unknown"}`}
+        onSubmit={(reason, description) => {
+          reportService.createReport({
+            reason,
+            description: `${description}\n\n---\nMessage by: ${messageToReport?.sender?.name}\nChat ID: ${chatId}\nMessage ID: ${messageToReport?.id}`,
+            reportedUserId: messageToReport?.sender?.id,
+            reportedMessageId: messageToReport?.id,
+          });
+          setReportModalOpen(false);
+          setMessageToReport(null);
+        }}
+      />
     </div>
   );
 }

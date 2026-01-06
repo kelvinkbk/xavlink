@@ -635,6 +635,38 @@ function ReportsSection() {
     }
   };
 
+  const suspendReportedUser = async (report) => {
+    if (!report.reportedUserId) return;
+
+    const days = prompt("Suspend user for how many days?", "1");
+    if (!days || isNaN(days) || days < 1) return;
+
+    try {
+      await fetch(
+        `${import.meta.env.VITE_API_URL}/api/users/${
+          report.reportedUserId
+        }/suspend`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            suspensionDays: parseInt(days),
+            reason: `Reported for: ${report.reason}`,
+          }),
+        }
+      );
+
+      // Resolve the report
+      await updateStatus(report.id, "resolved");
+      alert(`User suspended for ${days} day(s)`);
+    } catch (e) {
+      setError(e?.message || "Failed to suspend user");
+    }
+  };
+
   return (
     <section className="space-y-3">
       <h2 className="text-xl font-semibold">Reports</h2>
@@ -674,7 +706,18 @@ function ReportsSection() {
                   )}
                   {r.reportedMessageId && (
                     <div className="text-sm">
-                      Message ID: {r.reportedMessageId}
+                      <span className="font-semibold">Message:</span>
+                      <div className="mt-1 p-2 bg-gray-50 rounded text-xs">
+                        {r.description?.split("\n")[0] || "Message report"}
+                      </div>
+                      {r.reportedUser && (
+                        <div className="text-xs text-gray-600 mt-1">
+                          From:{" "}
+                          <span className="font-medium">
+                            {r.reportedUser.name}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -682,10 +725,9 @@ function ReportsSection() {
                   {r.status}
                 </span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {r.status === "pending" && (
                   <>
-                    {" "}
                     {r.reportedMessageId && (
                       <button
                         className="px-2 py-1 bg-red-600 text-white rounded text-sm"
@@ -693,7 +735,15 @@ function ReportsSection() {
                       >
                         Delete Message
                       </button>
-                    )}{" "}
+                    )}
+                    {r.reportedUserId && (
+                      <button
+                        className="px-2 py-1 bg-orange-600 text-white rounded text-sm"
+                        onClick={() => suspendReportedUser(r)}
+                      >
+                        Suspend User
+                      </button>
+                    )}
                     <button
                       className="px-2 py-1 bg-green-600 text-white rounded text-sm"
                       onClick={() => updateStatus(r.id, "resolved")}

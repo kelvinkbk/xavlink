@@ -8,6 +8,7 @@ export default function ReportModal({
   targetType,
   targetId,
   targetName,
+  onSubmit,
 }) {
   const { showToast } = useToast();
   const [reason, setReason] = useState("");
@@ -44,9 +45,19 @@ export default function ReportModal({
         payload.reportedUserId = targetId;
       } else if (targetType === "Post") {
         payload.reportedPostId = targetId;
+      } else if (targetType === "Message") {
+        payload.reportedMessageId = targetId;
       }
       console.log("Sending report payload:", payload);
-      await reportService.createReport(payload);
+
+      // If onSubmit callback provided, use it (for custom handling)
+      if (onSubmit) {
+        await onSubmit(reason, description.trim());
+      } else {
+        // Otherwise, submit directly
+        await reportService.createReport(payload);
+      }
+
       showToast("Report submitted successfully", "success");
       onClose();
       // Reset form
