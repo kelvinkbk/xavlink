@@ -614,7 +614,7 @@ function ReportsSection() {
     if (window.confirm("Delete this reported message?")) {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/chats/${chatId}/messages/${
+          `${import.meta.env.VITE_API_URL}/chats/${chatId}/messages/${
             report.reportedMessageId
           }`,
           {
