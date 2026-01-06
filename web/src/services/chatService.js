@@ -28,10 +28,11 @@ export const chatService = {
   },
 
   // Send message (REST fallback)
-  async sendMessage(chatId, text) {
+  async sendMessage(chatId, text, attachmentUrl = null) {
     const response = await api.post(`/chats/${chatId}/messages`, {
       chatId,
       text,
+      attachmentUrl,
     });
     return response.data;
   },

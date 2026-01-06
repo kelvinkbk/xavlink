@@ -93,59 +93,41 @@ export default function ChatPage() {
     e.preventDefault();
     if ((!newMessage.trim() && !attachmentUrl) || sending) return;
 
-    // Check socket connection
-    if (!socket.connected) {
-      console.error("❌ Socket not connected! Attempting to reconnect...");
-      socket.connect();
-      setTimeout(() => {
-        if (!socket.connected) {
-          alert("Connection error. Please refresh the page.");
-          return;
-        }
-      }, 1000);
-      return;
-    }
-
     setSending(true);
     const messageText = newMessage.trim();
     const attachment = attachmentUrl;
     setNewMessage("");
     setAttachmentUrl("");
 
-    console.log("📤 Sending message:", {
+    console.log("📤 Sending message via REST API:", {
       chatId,
-      senderId: user.id,
       text: messageText || "(attachment)",
       attachmentUrl: attachment,
     });
 
     try {
-      socket.emit(
-        "send_message",
-        {
-          chatId,
-          senderId: user.id,
-          text: messageText || "(attachment)",
-          attachmentUrl: attachment,
-        },
-        (response) => {
-          console.log("📥 Message response:", response);
-          if (response?.error) {
-            console.error("Failed to send message:", response.error);
-            alert(`Failed to send: ${response.error}`);
-            setNewMessage(messageText);
-            setAttachmentUrl(attachment);
-          } else {
-            console.log("✅ Message sent successfully");
-          }
-          setSending(false);
-        }
+      // Use REST API to send message (more reliable than Socket.io on Render)
+      const response = await chatService.sendMessage(
+        chatId,
+        messageText,
+        attachment
       );
+      console.log("✅ Message sent successfully:", response);
+
+      // Add message to local state immediately
+      if (response) {
+        setMessages((prev) => [...prev, response]);
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
-      alert(`Error: ${error.message}`);
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to send message";
+      alert(`Error: ${errorMsg}`);
       setNewMessage(messageText);
       setAttachmentUrl(attachment);
+    } finally {
       setSending(false);
     }
   };
