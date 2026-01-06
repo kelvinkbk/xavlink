@@ -578,7 +578,8 @@ export default function ChatPage() {
     const MAX_BYTES_MEDIA = 50 * 1024 * 1024;
     const MAX_BYTES_PDF = 10 * 1024 * 1024;
     const fileType = getFileType(file.type);
-    const MAX_SIZE = file.type === "application/pdf" ? MAX_BYTES_PDF : MAX_BYTES_MEDIA;
+    const MAX_SIZE =
+      file.type === "application/pdf" ? MAX_BYTES_PDF : MAX_BYTES_MEDIA;
 
     if (!fileType) {
       showToast("Only images, videos, and PDFs are allowed", "error", 3000);
