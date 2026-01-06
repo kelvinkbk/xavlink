@@ -26,17 +26,7 @@ export default function ChatPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [messageReactions, setMessageReactions] = useState({});
-  // Initialize pendingMessages from localStorage
-  const [pendingMessages, setPendingMessages] = useState(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const stored = localStorage.getItem(`pending_${chatId}`);
-      return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      console.error("Failed to load pending messages from localStorage:", e);
-      return [];
-    }
-  });
+  const [pendingMessages, setPendingMessages] = useState([]);
   const [toast, setToast] = useState(null);
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true
@@ -56,13 +46,34 @@ export default function ChatPage() {
   const toastTimerRef = useRef(null);
   const searchTimeoutRef = useRef(null);
 
+  // Load pending messages from localStorage on mount or chatId change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = localStorage.getItem(`pending_${chatId}`);
+      const pending = stored ? JSON.parse(stored) : [];
+      setPendingMessages(pending);
+      if (pending.length > 0) {
+        console.log(`📂 Loaded ${pending.length} pending messages from localStorage`);
+      }
+    } catch (e) {
+      console.error("Failed to load pending messages from localStorage:", e);
+      setPendingMessages([]);
+    }
+  }, [chatId]);
+
   // Persist pending messages to localStorage whenever they change
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       if (pendingMessages.length > 0) {
-        localStorage.setItem(`pending_${chatId}`, JSON.stringify(pendingMessages));
-        console.log(`💾 Saved ${pendingMessages.length} pending messages to localStorage`);
+        localStorage.setItem(
+          `pending_${chatId}`,
+          JSON.stringify(pendingMessages)
+        );
+        console.log(
+          `💾 Saved ${pendingMessages.length} pending messages to localStorage`
+        );
       } else {
         localStorage.removeItem(`pending_${chatId}`);
       }
@@ -241,7 +252,10 @@ export default function ChatPage() {
           // Update localStorage immediately
           if (typeof window !== "undefined") {
             if (filtered.length > 0) {
-              localStorage.setItem(`pending_${chatId}`, JSON.stringify(filtered));
+              localStorage.setItem(
+                `pending_${chatId}`,
+                JSON.stringify(filtered)
+              );
             } else {
               localStorage.removeItem(`pending_${chatId}`);
             }
