@@ -27,6 +27,14 @@ export const chatService = {
     return response.data;
   },
 
+  // Get messages since a specific timestamp (for reconciliation)
+  async getChatMessagesSince(chatId, since) {
+    const response = await api.get(`/chats/${chatId}/messages`, {
+      params: { since },
+    });
+    return response.data;
+  },
+
   // Send message (REST fallback)
   async sendMessage(chatId, text, attachmentUrl = null) {
     const response = await api.post(`/chats/${chatId}/messages`, {

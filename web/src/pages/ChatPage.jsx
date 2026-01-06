@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { chatService } from "../services/chatService";
-import { socket } from "../services/socket";
+import {
+  socket,
+  reconcileMissedMessages,
+  updateLastMessageTimestamp,
+} from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ReportModal from "../components/ReportModal";
@@ -249,6 +253,9 @@ export default function ChatPage() {
       if (message.chatId === chatId) {
         upsertMessage(message);
 
+        // Update last message timestamp for reconciliation
+        updateLastMessageTimestamp(message.timestamp);
+
         // Remove matching pending if same sender and text
         setPendingMessages((prev) => {
           const filtered = prev.filter(
@@ -316,6 +323,12 @@ export default function ChatPage() {
       );
       setMessages(data);
       setHasMoreMessages(data.length >= 50);
+
+      // Update last message timestamp for reconciliation
+      if (data.length > 0) {
+        const latestTimestamp = data[data.length - 1].timestamp;
+        updateLastMessageTimestamp(latestTimestamp);
+      }
 
       // Load reactions from server data
       const reactionsMap = {};
@@ -468,6 +481,28 @@ export default function ChatPage() {
       setTypingUsers(new Set());
     });
 
+    // Handle reconnection - reconcile missed messages
+    socket.on("reconnect", async () => {
+      console.log("🔄 Reconnected! Checking for missed messages...");
+      showToast("✓ Reconnected", "success", 2000);
+      const missedMessages = await reconcileMissedMessages(chatId);
+      if (missedMessages.length > 0) {
+        console.log(`📬 Inserting ${missedMessages.length} missed message(s)`);
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newMessages = missedMessages.filter(
+            (m) => !existingIds.has(m.id)
+          );
+          return [...prev, ...newMessages];
+        });
+        showToast(
+          `📬 Caught up ${missedMessages.length} message(s)`,
+          "info",
+          2500
+        );
+      }
+    });
+
     return () => {
       socket.off("receive_message", handleReceiveMessage);
       socket.off("message_deleted");
@@ -477,6 +512,7 @@ export default function ChatPage() {
       socket.off("message_read");
       socket.off("user_typing");
       socket.off("user_stopped_typing");
+      socket.off("reconnect");
     };
   }, [chatId, handleReceiveMessage, loadMessages]);
 
