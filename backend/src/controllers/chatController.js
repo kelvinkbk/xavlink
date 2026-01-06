@@ -489,7 +489,9 @@ exports.markAsRead = async (req, res, next) => {
     const { chatId, messageId } = req.params;
     const userId = req.user.id;
 
-    console.log(`📖 markAsRead called: messageId=${messageId}, chatId=${chatId}, userId=${userId}`);
+    console.log(
+      `📖 markAsRead called: messageId=${messageId}, chatId=${chatId}, userId=${userId}`
+    );
 
     // Verify message exists
     const message = await prisma.message.findFirst({
@@ -524,7 +526,9 @@ exports.markAsRead = async (req, res, next) => {
       },
     });
 
-    console.log(`✅ Read receipt created for messageId=${messageId}, userId=${userId}`);
+    console.log(
+      `✅ Read receipt created for messageId=${messageId}, userId=${userId}`
+    );
 
     // Broadcast read receipt
     if (global.io) {

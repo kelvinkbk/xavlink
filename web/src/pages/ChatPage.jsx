@@ -52,20 +52,14 @@ export default function ChatPage() {
       for (const message of otherUsersMessages) {
         // Skip if already read
         if (message.readReceipts?.some((r) => r.userId === user.id)) {
-          console.log(
-            `⏭️ Message ${message.id} already read by current user`
-          );
+          console.log(`⏭️ Message ${message.id} already read by current user`);
           continue;
         }
 
         try {
-          console.log(
-            `📤 Marking message ${message.id} as read (API call)`
-          );
+          console.log(`📤 Marking message ${message.id} as read (API call)`);
           await chatService.markAsRead(chatId, message.id);
-          console.log(
-            `✅ Message ${message.id} marked as read successfully`
-          );
+          console.log(`✅ Message ${message.id} marked as read successfully`);
         } catch (error) {
           console.error(
             `❌ Failed to mark message ${message.id} as read:`,
@@ -96,6 +90,15 @@ export default function ChatPage() {
     try {
       setLoading(true);
       const data = await chatService.getChatMessages(chatId);
+      console.log(
+        `📚 Loaded ${data.length} messages:`,
+        data.map((m) => ({
+          id: m.id,
+          sender: m.sender.id,
+          readReceiptsCount: m.readReceipts?.length || 0,
+          readReceipts: m.readReceipts,
+        }))
+      );
       setMessages(data);
 
       // Load reactions from server data
@@ -448,9 +451,16 @@ export default function ChatPage() {
               </span>
               {isOwn && (
                 <span className="text-blue-100 text-xs">
-                  {message.readReceipts && message.readReceipts.length > 0
-                    ? `✓✓` // Double check for read
-                    : "✓"}{" "}
+                  {(() => {
+                    const hasReadReceipts =
+                      message.readReceipts && message.readReceipts.length > 0;
+                    console.log(
+                      `📧 Message ${message.id} check status: ${
+                        hasReadReceipts ? "✓✓" : "✓"
+                      } (readReceipts: ${message.readReceipts?.length || 0})`
+                    );
+                    return hasReadReceipts ? `✓✓` : `✓`;
+                  })()}{" "}
                   {/* Single check for sent */}
                 </span>
               )}
