@@ -67,11 +67,32 @@ export const skillService = {
 
 export const postService = {
   createPost: (data) => api.post("/posts/create", data),
-  getAllPosts: (filter = "all") => api.get(`/posts/all?filter=${filter}`),
+  getAllPosts: (filter = "all") => 
+    api.get(`/posts/all?filter=${filter}`).then((res) => ({
+      ...res,
+      data: res.data.map((post) => ({
+        ...post,
+        image: toAbsolute(post.image),
+        user: {
+          ...post.user,
+          profilePic: toAbsolute(post.user?.profilePic),
+        },
+      })),
+    })),
   likePost: (postId) => api.post(`/posts/${postId}/like`),
   unlikePost: (postId) => api.delete(`/posts/${postId}/like`),
   addComment: (postId, text) => api.post(`/posts/${postId}/comments`, { text }),
-  getComments: (postId) => api.get(`/posts/${postId}/comments`),
+  getComments: (postId) => 
+    api.get(`/posts/${postId}/comments`).then((res) => ({
+      ...res,
+      data: res.data.map((comment) => ({
+        ...comment,
+        user: {
+          ...comment.user,
+          profilePic: toAbsolute(comment.user?.profilePic),
+        },
+      })),
+    })),
 };
 
 const toAbsolute = (url) => {
