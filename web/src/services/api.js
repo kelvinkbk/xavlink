@@ -71,8 +71,10 @@ export const postService = {
 
 const toAbsolute = (url) => {
   if (!url) return url;
+  // Sanitize URL by removing whitespace and control characters
+  url = url.toString().trim().replace(/[\n\r\t]/g, '');
   if (/^https?:\/\//i.test(url)) return url;
-  return `${API_ORIGIN}${url}`;
+  return `${API_ORIGIN}${url}`.trim().replace(/[\n\r\t]/g, '');
 };
 
 export const uploadService = {
