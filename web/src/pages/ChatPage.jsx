@@ -24,6 +24,7 @@ export default function ChatPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [messageReactions, setMessageReactions] = useState({});
   const [pendingMessages, setPendingMessages] = useState([]); // optimistic queue
+  const [toast, setToast] = useState(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState(new Set());
   const messagesEndRef = useRef(null);
@@ -33,6 +34,7 @@ export default function ChatPage() {
   const readTimeoutRef = useRef(null);
   const markChatReadTimeoutRef = useRef(null);
   const pendingTimersRef = useRef({});
+  const toastTimerRef = useRef(null);
 
   // Auto-mark messages as read when viewed
   const markVisibleMessagesAsRead = useCallback(() => {
@@ -140,9 +142,13 @@ export default function ChatPage() {
             sendPendingMessage({ ...pending, attempts });
           }, backoffMs);
         }
+
+        if (!willRetry) {
+          showToast("Message failed to send. Tap retry.", "error", 4000);
+        }
       }
     },
-    [chatId, upsertMessage]
+    [chatId, upsertMessage, showToast]
   );
 
   const handleReceiveMessage = useCallback(
@@ -324,8 +330,31 @@ export default function ChatPage() {
         clearTimeout(t)
       );
       pendingTimersRef.current = {};
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
+
+  // Flush queued/failed messages when coming online
+  useEffect(() => {
+    const handleOnline = () => {
+      setPendingMessages((prev) => {
+        const toSend = prev.filter(
+          (m) => m.status === "queued" || m.status === "failed"
+        );
+        toSend.forEach((m) =>
+          sendPendingMessage({ ...m, attempts: 0, status: "sending" })
+        );
+        return prev.map((m) =>
+          m.status === "queued" || m.status === "failed"
+            ? { ...m, status: "sending" }
+            : m
+        );
+      });
+    };
+
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [sendPendingMessage]);
 
   useEffect(() => {
     scrollToBottom();
@@ -486,6 +515,12 @@ export default function ChatPage() {
     [pendingMessages, sendPendingMessage]
   );
 
+  const showToast = useCallback((message, type = "info", duration = 3000) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, type });
+    toastTimerRef.current = setTimeout(() => setToast(null), duration);
+  }, []);
+
   const renderMessage = (message) => {
     const isOwn = message.sender.id === user.id;
     const isPending = Boolean(message.tempId);
@@ -636,6 +671,11 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] max-w-4xl mx-auto bg-white dark:bg-gray-800">
+      {toast && (
+        <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded shadow-lg text-sm z-50">
+          {toast.message}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
         <button
