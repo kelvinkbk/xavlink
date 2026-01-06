@@ -23,6 +23,8 @@ export default function ChatPage() {
   const [messageToReport, setMessageToReport] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [messageReactions, setMessageReactions] = useState({});
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedMessages, setSelectedMessages] = useState(new Set());
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -166,6 +168,28 @@ export default function ChatPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedMessages.size === 0) return;
+    if (!window.confirm(`Delete ${selectedMessages.size} message${selectedMessages.size > 1 ? 's' : ''}?`)) return;
+
+    const messagesToDelete = Array.from(selectedMessages);
+    let successCount = 0;
+
+    for (const messageId of messagesToDelete) {
+      try {
+        await chatService.deleteMessage(chatId, messageId);
+        setMessages((prev) => prev.filter((m) => m.id !== messageId));
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to delete message ${messageId}:`, error);
+      }
+    }
+
+    setSelectedMessages(new Set());
+    setSelectionMode(false);
+    alert(`Deleted ${successCount} of ${messagesToDelete.length} message${messagesToDelete.length > 1 ? 's' : ''}`);
+  };
+
   const handleDeleteMessage = async (messageId) => {
     if (!window.confirm("Delete this message for everyone?")) return;
     try {
@@ -247,8 +271,46 @@ export default function ChatPage() {
           placeholder="🔍 Search messages..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="ml-auto px-3 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600"
+          className="px-3 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600"
         />
+        {!selectionMode ? (
+          <button
+            onClick={() => setSelectionMode(true)}
+            className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+            title="Select messages to delete"
+          >
+            Select
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                const myMessages = messages.filter(m => m.sender.id === user.id).map(m => m.id);
+                setSelectedMessages(new Set(myMessages));
+              }}
+              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            >
+              \u2713 All Mine
+            </button>
+            {selectedMessages.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                className="px-3 py-1 bg-red-600 text-white rounded text-sm font-semibold hover:bg-red-700"
+              >
+                \ud83d\uddd1\ufe0f Delete ({selectedMessages.size})
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setSelectionMode(false);
+                setSelectedMessages(new Set());
+              }}
+              className="px-3 py-1 bg-gray-400 text-white rounded text-sm hover:bg-gray-500"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Messages */}
@@ -267,8 +329,24 @@ export default function ChatPage() {
             return (
               <div
                 key={message.id}
-                className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+                className={`flex ${isOwn ? "justify-end" : "justify-start"} gap-2`}
               >
+                {selectionMode && isOwn && (
+                  <input
+                    type="checkbox"
+                    checked={selectedMessages.has(message.id)}
+                    onChange={(e) => {
+                      const newSet = new Set(selectedMessages);
+                      if (e.target.checked) {
+                        newSet.add(message.id);
+                      } else {
+                        newSet.delete(message.id);
+                      }
+                      setSelectedMessages(newSet);
+                    }}
+                    className="w-5 h-5 mt-2 cursor-pointer accent-blue-600"
+                  />
+                )}
                 <div
                   className={`flex items-end gap-2 max-w-[70%] ${
                     isOwn ? "flex-row-reverse" : "flex-row"

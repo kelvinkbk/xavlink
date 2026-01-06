@@ -23,7 +23,9 @@ export default function MessageReactions({
           className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-sm border border-gray-300 dark:border-gray-600"
         >
           <span className="text-base">{emoji}</span>
-          <span className="text-xs text-gray-600 dark:text-gray-300 font-semibold">{count}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-300 font-semibold">
+            {count}
+          </span>
         </button>
       ))}
 

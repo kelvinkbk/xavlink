@@ -749,7 +749,9 @@ function ReportsSection() {
           <>
             <button
               onClick={() => {
-                const allMessageIds = messageReports.map(r => r.reportedMessageId);
+                const allMessageIds = messageReports.map(
+                  (r) => r.reportedMessageId
+                );
                 setSelectedMessageIds(new Set(allMessageIds));
               }}
               className="px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
@@ -769,7 +771,8 @@ function ReportsSection() {
             onClick={bulkDeleteMessages}
             className="px-4 py-2 bg-red-600 text-white rounded text-sm font-semibold hover:bg-red-700"
           >
-            🗑️ Delete {selectedMessageIds.size} Message{selectedMessageIds.size > 1 ? 's' : ''}
+            🗑️ Delete {selectedMessageIds.size} Message
+            {selectedMessageIds.size > 1 ? "s" : ""}
           </button>
         )}
       </div>
