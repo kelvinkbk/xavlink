@@ -829,17 +829,21 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] max-w-4xl mx-auto bg-white dark:bg-gray-800">
-      {!isOnline && (
-        <div className="bg-red-500 text-white px-4 py-2 text-sm font-semibold text-center">
-          ⚠ Offline – Messages will be sent when you reconnect
-        </div>
-      )}
-      {toast && (
-        <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded shadow-lg text-sm z-50">
-          {toast.message}
-        </div>
-      )}
+    <>
+      {!chatId || !user ? (
+        <LoadingSpinner />
+      ) : (
+        <div className="flex flex-col h-[calc(100vh-64px)] max-w-4xl mx-auto bg-white dark:bg-gray-800">
+          {!isOnline && (
+            <div className="bg-red-500 text-white px-4 py-2 text-sm font-semibold text-center">
+              ⚠ Offline – Messages will be sent when you reconnect
+            </div>
+          )}
+          {toast && (
+            <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded shadow-lg text-sm z-50">
+              {toast.message}
+            </div>
+          )}
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
         <button
@@ -1122,6 +1126,8 @@ export default function ChatPage() {
           setMessageToReport(null);
         }}
       />
-    </div>
+        </div>
+      )}
+    </>
   );
 }
