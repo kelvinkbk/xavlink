@@ -11,5 +11,15 @@ router.get("/", chatController.getUserChats);
 router.get("/:chatId/messages", chatController.getChatMessages);
 router.post("/:chatId/messages", chatController.sendMessage);
 router.delete("/:chatId/messages/:messageId", chatController.deleteMessage);
+router.post("/:chatId/messages/:messageId/react", chatController.addReaction);
+router.get(
+  "/:chatId/messages/:messageId/reactions",
+  chatController.getReactions
+);
+router.patch(
+  "/:chatId/messages/:messageId/pin",
+  chatController.togglePinMessage
+);
+router.post("/:chatId/messages/:messageId/read", chatController.markAsRead);
 
 module.exports = router;

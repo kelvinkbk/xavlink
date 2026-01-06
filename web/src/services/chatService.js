@@ -42,4 +42,37 @@ export const chatService = {
     const response = await api.delete(`/chats/${chatId}/messages/${messageId}`);
     return response.data;
   },
+
+  // Add/remove reaction to message
+  async toggleReaction(chatId, messageId, emoji) {
+    const response = await api.post(
+      `/chats/${chatId}/messages/${messageId}/react`,
+      { emoji }
+    );
+    return response.data;
+  },
+
+  // Get reactions for a message
+  async getReactions(chatId, messageId) {
+    const response = await api.get(
+      `/chats/${chatId}/messages/${messageId}/reactions`
+    );
+    return response.data;
+  },
+
+  // Pin/unpin a message
+  async togglePin(chatId, messageId) {
+    const response = await api.patch(
+      `/chats/${chatId}/messages/${messageId}/pin`
+    );
+    return response.data;
+  },
+
+  // Mark message as read
+  async markAsRead(chatId, messageId) {
+    const response = await api.post(
+      `/chats/${chatId}/messages/${messageId}/read`
+    );
+    return response.data;
+  },
 };

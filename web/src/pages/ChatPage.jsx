@@ -51,6 +51,15 @@ export default function ChatPage() {
       setLoading(true);
       const data = await chatService.getChatMessages(chatId);
       setMessages(data);
+
+      // Load reactions from server data
+      const reactionsMap = {};
+      data.forEach((msg) => {
+        if (msg.reactionCounts && Object.keys(msg.reactionCounts).length > 0) {
+          reactionsMap[msg.id] = msg.reactionCounts;
+        }
+      });
+      setMessageReactions(reactionsMap);
     } catch (error) {
       console.error("Failed to load messages:", error);
     } finally {
@@ -75,6 +84,34 @@ export default function ChatPage() {
     socket.on("message_deleted", ({ messageId }) => {
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
     });
+    socket.on("reaction_added", ({ messageId, emoji }) => {
+      setMessageReactions((prev) => {
+        const current = prev[messageId] || {};
+        const count = current[emoji] || 0;
+        return {
+          ...prev,
+          [messageId]: { ...current, [emoji]: count + 1 },
+        };
+      });
+    });
+    socket.on("reaction_removed", ({ messageId, emoji }) => {
+      setMessageReactions((prev) => {
+        const current = prev[messageId] || {};
+        const newCount = (current[emoji] || 1) - 1;
+        const updated = { ...current };
+        if (newCount <= 0) {
+          delete updated[emoji];
+        } else {
+          updated[emoji] = newCount;
+        }
+        return { ...prev, [messageId]: updated };
+      });
+    });
+    socket.on("message_pinned", ({ messageId, isPinned }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, isPinned } : m))
+      );
+    });
     socket.on("user_typing", ({ userName }) => {
       setTypingUsers((prev) => {
         const next = new Set(prev);
@@ -89,6 +126,9 @@ export default function ChatPage() {
     return () => {
       socket.off("receive_message", handleReceiveMessage);
       socket.off("message_deleted");
+      socket.off("reaction_added");
+      socket.off("reaction_removed");
+      socket.off("message_pinned");
       socket.off("user_typing");
       socket.off("user_stopped_typing");
     };
@@ -226,19 +266,23 @@ export default function ChatPage() {
     }, 1500);
   };
 
-  const handleReactToMessage = (messageId, emoji) => {
-    setMessageReactions((prev) => {
-      const current = prev[messageId] || {};
-      const emojiCount = current[emoji] || 0;
-      return {
-        ...prev,
-        [messageId]: {
-          ...current,
-          [emoji]: emojiCount + 1,
-        },
-      };
-    });
-    // TODO: emit to socket or send to server for persistence
+  const handleReactToMessage = async (messageId, emoji) => {
+    try {
+      await chatService.toggleReaction(chatId, messageId, emoji);
+      // Socket will update UI when server broadcasts
+    } catch (error) {
+      console.error("Failed to toggle reaction:", error);
+    }
+  };
+
+  const handleTogglePin = async (messageId) => {
+    try {
+      await chatService.togglePin(chatId, messageId);
+      // Socket will update UI when server broadcasts
+    } catch (error) {
+      console.error("Failed to toggle pin:", error);
+      alert("Failed to pin/unpin message");
+    }
   };
 
   const formatTimestamp = (timestamp) => {
@@ -251,6 +295,117 @@ export default function ChatPage() {
   };
 
   if (loading) return <LoadingSpinner />;
+
+  const renderMessage = (message) => {
+    const isOwn = message.sender.id === user.id;
+    return (
+      <div
+        key={message.id}
+        className={`flex ${
+          isOwn ? "justify-end" : "justify-start"
+        } gap-2 ${message.isPinned ? "bg-yellow-50 dark:bg-yellow-900/10 p-2 rounded" : ""}`}
+      >
+        {selectionMode && isOwn && (
+          <input
+            type="checkbox"
+            checked={selectedMessages.has(message.id)}
+            onChange={(e) => {
+              const newSet = new Set(selectedMessages);
+              if (e.target.checked) {
+                newSet.add(message.id);
+              } else {
+                newSet.delete(message.id);
+              }
+              setSelectedMessages(newSet);
+            }}
+            className="w-5 h-5 mt-2 cursor-pointer accent-blue-600"
+          />
+        )}
+        <div
+          className={`flex items-end gap-2 max-w-[70%] ${
+            isOwn ? "flex-row-reverse" : "flex-row"
+          }`}
+        >
+          {!isOwn && (
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+              {message.sender.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="flex-1">
+            <div
+              className={`rounded-2xl px-4 py-2 ${
+                isOwn
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+              }`}
+            >
+              {!isOwn && (
+                <div className="text-sm font-semibold mb-1">
+                  {message.sender.name}
+                </div>
+              )}
+              {message.isPinned && (
+                <div className="text-xs opacity-75 mb-1">📌 Pinned</div>
+              )}
+              <div className="break-words">{message.text}</div>
+              {message.attachmentUrl && (
+                <a
+                  href={message.attachmentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block text-sm underline"
+                >
+                  📎 View Attachment
+                </a>
+              )}
+            </div>
+            <div className="flex items-center gap-2 px-2 mt-1">
+              <span
+                className={`text-xs ${
+                  isOwn
+                    ? "text-blue-100"
+                    : "text-gray-500 dark:text-gray-400"
+                }`}
+              >
+                {formatTimestamp(message.timestamp)}
+              </span>
+              {isOwn && <span className="text-blue-100">✓</span>}
+            </div>
+            <MessageReactions
+              messageId={message.id}
+              onReact={handleReactToMessage}
+              reactions={messageReactions[message.id] || {}}
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-1 px-1">
+          <button
+            type="button"
+            className="text-gray-400 hover:text-gray-600 text-lg p-1"
+            onClick={() => handleTogglePin(message.id)}
+            title={message.isPinned ? "Unpin" : "Pin"}
+          >
+            {message.isPinned ? "📌" : "📄"}
+          </button>
+          <button
+            type="button"
+            className="text-gray-400 hover:text-gray-600 text-lg"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isOwn) {
+                handleDeleteMessage(message.id);
+              } else {
+                handleReportMessage(message);
+              }
+            }}
+            title={isOwn ? "Delete" : "Report"}
+          >
+            ⋮
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] max-w-4xl mx-auto bg-white dark:bg-gray-800">
@@ -328,118 +483,36 @@ export default function ChatPage() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages
-          .filter(
+        {(() => {
+          const filteredMessages = messages.filter(
             (msg) =>
               !searchQuery ||
               msg.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
               msg.sender?.name
                 ?.toLowerCase()
                 .includes(searchQuery.toLowerCase())
-          )
-          .map((message) => {
-            const isOwn = message.sender.id === user.id;
-            return (
-              <div
-                key={message.id}
-                className={`flex ${
-                  isOwn ? "justify-end" : "justify-start"
-                } gap-2`}
-              >
-                {selectionMode && isOwn && (
-                  <input
-                    type="checkbox"
-                    checked={selectedMessages.has(message.id)}
-                    onChange={(e) => {
-                      const newSet = new Set(selectedMessages);
-                      if (e.target.checked) {
-                        newSet.add(message.id);
-                      } else {
-                        newSet.delete(message.id);
-                      }
-                      setSelectedMessages(newSet);
-                    }}
-                    className="w-5 h-5 mt-2 cursor-pointer accent-blue-600"
-                  />
-                )}
-                <div
-                  className={`flex items-end gap-2 max-w-[70%] ${
-                    isOwn ? "flex-row-reverse" : "flex-row"
-                  }`}
-                >
-                  {!isOwn && (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                      {message.sender.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    {!isOwn && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 px-3">
-                        {message.sender.name}
-                      </p>
-                    )}
-                    <div
-                      className={`rounded-2xl px-4 py-2 ${
-                        isOwn
-                          ? "bg-blue-500 text-white rounded-br-sm"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-sm"
-                      }`}
-                    >
-                      {message.attachmentUrl && (
-                        <div className="mb-2">
-                          <img
-                            src={message.attachmentUrl}
-                            alt="attachment"
-                            className="max-w-sm rounded-lg max-h-64 object-cover cursor-pointer"
-                            onClick={() =>
-                              window.open(message.attachmentUrl, "_blank")
-                            }
-                          />
-                        </div>
-                      )}
-                      <p className="text-sm whitespace-pre-wrap break-words">
-                        {message.text}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs mt-1">
-                        <span
-                          className={
-                            isOwn
-                              ? "text-blue-100"
-                              : "text-gray-500 dark:text-gray-400"
-                          }
-                        >
-                          {formatTimestamp(message.timestamp)}
-                        </span>
-                        {isOwn && <span className="text-blue-100">✓</span>}
-                      </div>
-                      <MessageReactions
-                        messageId={message.id}
-                        onReact={handleReactToMessage}
-                        reactions={messageReactions[message.id] || {}}
-                      />
-                    </div>
+          );
+          
+          const pinnedMessages = filteredMessages.filter(m => m.isPinned);
+          const unpinnedMessages = filteredMessages.filter(m => !m.isPinned);
+          
+          return (
+            <>
+              {/* Pinned Messages Section */}
+              {pinnedMessages.length > 0 && (
+                <div className="pb-4 border-b-2 border-yellow-200 dark:border-yellow-800">
+                  <div className="text-xs text-yellow-700 dark:text-yellow-400 font-semibold mb-2 flex items-center gap-1">
+                    📌 PINNED MESSAGES
                   </div>
-                  <div className="flex flex-col gap-1 px-1">
-                    <button
-                      type="button"
-                      className="text-gray-400 hover:text-gray-600 text-lg"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (isOwn) {
-                          handleDeleteMessage(message.id);
-                        } else {
-                          handleReportMessage(message);
-                        }
-                      }}
-                      title={isOwn ? "Delete" : "Report"}
-                    >
-                      ⋮
-                    </button>
-                  </div>
+                  {pinnedMessages.map((message) => renderMessage(message))}
                 </div>
-              </div>
-            );
-          })}
+              )}
+              
+              {/* Regular Messages */}
+              {unpinnedMessages.map((message) => renderMessage(message))}
+            </>
+          );
+        })()}
         <div ref={messagesEndRef} />
       </div>
 

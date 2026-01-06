@@ -184,10 +184,36 @@ exports.getChatMessages = async (req, res, next) => {
         sender: {
           select: { id: true, name: true, profilePic: true },
         },
+        reactions: {
+          select: {
+            emoji: true,
+            userId: true,
+          },
+        },
+        readReceipts: {
+          select: {
+            userId: true,
+            readAt: true,
+          },
+        },
       },
     });
 
-    res.json(messages.reverse());
+    // Format reactions as { messageId: { "👍": 5, "❤️": 3 } }
+    const formatted = messages.map((msg) => {
+      const reactionCounts = {};
+      msg.reactions.forEach((r) => {
+        reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
+      });
+
+      return {
+        ...msg,
+        reactionCounts,
+        reactions: msg.reactions, // Keep full data for who reacted
+      };
+    });
+
+    res.json(formatted.reverse());
   } catch (error) {
     next(error);
   }
@@ -285,6 +311,204 @@ exports.deleteMessage = async (req, res, next) => {
     }
 
     res.json({ message: "Message deleted" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Add reaction to a message
+ */
+exports.addReaction = async (req, res, next) => {
+  try {
+    const { chatId, messageId } = req.params;
+    const { emoji } = req.body;
+    const userId = req.user.id;
+
+    if (!emoji) {
+      return res.status(400).json({ message: "Emoji is required" });
+    }
+
+    // Verify message exists in chat
+    const message = await prisma.message.findFirst({
+      where: { id: messageId, chatId },
+    });
+
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    // Check if user already reacted with this emoji
+    const existing = await prisma.messageReaction.findUnique({
+      where: {
+        messageId_userId_emoji: {
+          messageId,
+          userId,
+          emoji,
+        },
+      },
+    });
+
+    if (existing) {
+      // Remove reaction (toggle off)
+      await prisma.messageReaction.delete({ where: { id: existing.id } });
+
+      // Broadcast reaction removed
+      if (global.io) {
+        global.io.to(chatId).emit("reaction_removed", {
+          messageId,
+          userId,
+          emoji,
+          chatId,
+        });
+      }
+
+      return res.json({ message: "Reaction removed" });
+    }
+
+    // Add new reaction
+    const reaction = await prisma.messageReaction.create({
+      data: {
+        messageId,
+        userId,
+        emoji,
+      },
+    });
+
+    // Broadcast reaction added
+    if (global.io) {
+      global.io.to(chatId).emit("reaction_added", {
+        messageId,
+        userId,
+        emoji,
+        chatId,
+      });
+    }
+
+    res.status(201).json(reaction);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get reactions for a message
+ */
+exports.getReactions = async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+
+    const reactions = await prisma.messageReaction.groupBy({
+      by: ["emoji"],
+      where: { messageId },
+      _count: { emoji: true },
+    });
+
+    // Format: { "👍": 5, "❤️": 3 }
+    const formatted = reactions.reduce((acc, r) => {
+      acc[r.emoji] = r._count.emoji;
+      return acc;
+    }, {});
+
+    res.json(formatted);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Pin/unpin a message
+ */
+exports.togglePinMessage = async (req, res, next) => {
+  try {
+    const { chatId, messageId } = req.params;
+    const userId = req.user.id;
+
+    // Verify message exists
+    const message = await prisma.message.findFirst({
+      where: { id: messageId, chatId },
+    });
+
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    // Update pin status
+    const updated = await prisma.message.update({
+      where: { id: messageId },
+      data: { isPinned: !message.isPinned },
+      include: {
+        sender: {
+          select: { id: true, name: true, profilePic: true },
+        },
+      },
+    });
+
+    // Broadcast pin status change
+    if (global.io) {
+      global.io.to(chatId).emit("message_pinned", {
+        messageId,
+        isPinned: updated.isPinned,
+        chatId,
+      });
+    }
+
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Mark message as read
+ */
+exports.markAsRead = async (req, res, next) => {
+  try {
+    const { chatId, messageId } = req.params;
+    const userId = req.user.id;
+
+    // Verify message exists
+    const message = await prisma.message.findFirst({
+      where: { id: messageId, chatId },
+    });
+
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    // Don't mark your own messages as read
+    if (message.senderId === userId) {
+      return res.json({ message: "Cannot mark own message as read" });
+    }
+
+    // Create or update read receipt
+    const read = await prisma.messageRead.upsert({
+      where: {
+        messageId_userId: {
+          messageId,
+          userId,
+        },
+      },
+      create: {
+        messageId,
+        userId,
+      },
+      update: {
+        readAt: new Date(),
+      },
+    });
+
+    // Broadcast read receipt
+    if (global.io) {
+      global.io.to(chatId).emit("message_read", {
+        messageId,
+        userId,
+        readAt: read.readAt,
+        chatId,
+      });
+    }
+
+    res.json(read);
   } catch (error) {
     next(error);
   }

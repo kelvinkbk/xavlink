@@ -183,17 +183,45 @@ model ChatParticipant {
 }
 
 model Message {
-  id            String   @id @default(uuid()) @db.Uuid
-  chatId        String   @db.Uuid
-  senderId      String   @db.Uuid
+  id            String            @id @default(uuid()) @db.Uuid
+  chatId        String            @db.Uuid
+  senderId      String            @db.Uuid
   text          String
   attachmentUrl String?
-  timestamp     DateTime @default(now())
-  chat          Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender        User     @relation("UserMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  isPinned      Boolean           @default(false)
+  timestamp     DateTime          @default(now())
+  chat          Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender        User              @relation("UserMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  reactions     MessageReaction[]
+  readReceipts  MessageRead[]
 
   @@index([chatId])
   @@index([senderId])
+  @@index([isPinned])
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @db.Uuid
+  userId    String   @db.Uuid
+  emoji     String
+  createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+}
+
+model MessageRead {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @db.Uuid
+  userId    String   @db.Uuid
+  readAt    DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
 }
 
 model Notification {
