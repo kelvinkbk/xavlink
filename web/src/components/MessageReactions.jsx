@@ -14,11 +14,6 @@ export default function MessageReactions({
     setShowPicker(false);
   };
 
-  const totalReactions = Object.values(reactions).reduce(
-    (sum, count) => sum + count,
-    0
-  );
-
   return (
     <div className="flex gap-1 items-center flex-wrap mt-2">
       {Object.entries(reactions).map(([emoji, count]) => (

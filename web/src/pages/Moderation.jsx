@@ -643,7 +643,7 @@ function ReportsSection() {
       return;
     }
 
-    if (!window.confirm(`Delete ${selectedMessageIds.size} messages?")) {
+    if (!window.confirm(`Delete ${selectedMessageIds.size} messages?`)) {
       return;
     }
 
