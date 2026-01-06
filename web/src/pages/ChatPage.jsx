@@ -11,6 +11,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ReportModal from "../components/ReportModal";
 import MessageReactions from "../components/MessageReactions";
 import { uploadService, reportService } from "../services/api";
+import { getCachedMessages, cacheMessages, initMessageCache } from "../services/messageCache";
 
 export default function ChatPage() {
   const { chatId } = useParams();
