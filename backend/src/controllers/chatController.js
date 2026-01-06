@@ -198,7 +198,7 @@ exports.getChatMessages = async (req, res, next) => {
  */
 exports.sendMessage = async (req, res, next) => {
   try {
-    const { chatId, text } = req.body;
+    const { chatId, text, attachmentUrl } = req.body;
     const senderId = req.user.id;
 
     if (!chatId || !text) {
@@ -217,7 +217,12 @@ exports.sendMessage = async (req, res, next) => {
     }
 
     const message = await prisma.message.create({
-      data: { chatId, senderId, text },
+      data: { 
+        chatId, 
+        senderId, 
+        text,
+        attachmentUrl: attachmentUrl || null
+      },
       include: {
         sender: {
           select: { id: true, name: true, profilePic: true },
