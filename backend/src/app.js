@@ -26,11 +26,13 @@ const {
 
 const app = express();
 
+// Parse allowed origins from env or use defaults
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
   : [
       "http://localhost:5173",
       "http://localhost:5174",
+      "http://localhost:8081", // Expo dev server
       "https://xavlink.vercel.app",
       "https://xavlink-kelvinkbks-projects.vercel.app",
     ];

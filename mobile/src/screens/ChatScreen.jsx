@@ -23,14 +23,14 @@ import {
   sendMessage,
   onMessage,
 } from "../services/socket";
-import { chatService, uploadService } from "../services/api";
-
-const API_BASE = __DEV__ ? "http://localhost:5000" : "https://api.xavlink.com";
+import { chatService, uploadService, API_BASE } from "../services/api";
 
 const toAbsoluteUrl = (url) => {
   if (!url) return url;
   if (/^https?:\/\//i.test(url)) return url;
-  return `${API_BASE}${url}`;
+  // Remove /api suffix if present and append the url
+  const baseUrl = API_BASE.replace(/\/api$/, "");
+  return `${baseUrl}${url}`;
 };
 
 const ChatScreen = ({ route }) => {

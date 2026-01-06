@@ -12,12 +12,36 @@ const PORT = process.env.PORT || 5000;
 */
 const server = http.createServer(app);
 
+// Parse allowed origins from env or use defaults
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+  : [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:8081", // Expo dev server
+      "https://xavlink.vercel.app",
+      "https://xavlink-kelvinkbks-projects.vercel.app",
+    ];
+
 const io = new Server(server, {
   cors: {
-    origin: "*", // IMPORTANT for Render + Vercel + Expo
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, etc.)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        // In production, be strict. In dev, be permissive.
+        if (process.env.NODE_ENV === 'production') {
+          callback(new Error("Not allowed by CORS"));
+        } else {
+          callback(null, true);
+        }
+      }
+    },
     credentials: true,
   },
-  transports: ["websocket"], // avoid polling issues on Render
+  transports: ["websocket", "polling"], // Support both for compatibility
 });
 
 // Make io available in controllers if needed
