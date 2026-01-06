@@ -23,14 +23,19 @@ const allowedOrigins = process.env.CORS_ORIGIN
       "https://xavlink-kelvinkbks-projects.vercel.app",
     ];
 
+console.log("🔧 Allowed Socket.io origins:", allowedOrigins);
+
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
+      console.log("🔍 Socket.io connection attempt from origin:", origin);
       // Allow requests with no origin (mobile apps, etc.)
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
+        console.log("✅ Origin allowed:", origin);
         callback(null, true);
       } else {
+        console.log("❌ Origin rejected:", origin);
         // In production, be strict. In dev, be permissive.
         if (process.env.NODE_ENV === "production") {
           callback(new Error("Not allowed by CORS"));
@@ -40,11 +45,13 @@ const io = new Server(server, {
       }
     },
     credentials: true,
+    methods: ["GET", "POST"],
   },
   transports: ["polling"], // Only polling for Render - WebSocket may not work reliably
   maxHttpBufferSize: 1e6, // 1MB
   pingInterval: 25000,
   pingTimeout: 60000,
+  allowEIO3: true, // Support older clients
 });
 
 // Make io available in controllers if needed
