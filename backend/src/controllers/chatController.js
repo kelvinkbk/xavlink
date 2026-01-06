@@ -252,7 +252,7 @@ exports.deleteMessage = async (req, res, next) => {
     const { chatId, messageId } = req.params;
     const userId = req.user.id;
 
-    // Verify message exists and belongs to requester
+    // Verify message exists and belongs to requester or user is moderator/admin
     const message = await prisma.message.findUnique({
       where: { id: messageId },
       select: { id: true, chatId: true, senderId: true },
@@ -262,7 +262,16 @@ exports.deleteMessage = async (req, res, next) => {
       return res.status(404).json({ message: "Message not found" });
     }
 
-    if (message.senderId !== userId) {
+    // Check if user is sender OR moderator/admin
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true },
+    });
+
+    const isSender = message.senderId === userId;
+    const isModOrAdmin = user?.role === "moderator" || user?.role === "admin";
+
+    if (!isSender && !isModOrAdmin) {
       return res
         .status(403)
         .json({ message: "Not authorized to delete this message" });
