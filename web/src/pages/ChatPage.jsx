@@ -95,7 +95,8 @@ export default function ChatPage() {
 
     setSending(true);
     const messageText = newMessage.trim();
-    const attachment = attachmentUrl;
+    // Sanitize attachment URL by removing whitespace/newlines
+    const attachment = attachmentUrl ? attachmentUrl.trim() : null;
     setNewMessage("");
     setAttachmentUrl("");
 
