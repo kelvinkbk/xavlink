@@ -82,7 +82,11 @@ function PostCard({ post, onLike, onComment, onReport, onDelete }) {
                   <button
                     onClick={() => {
                       setShowMenu(false);
-                      if (window.confirm("Are you sure you want to delete this post?")) {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this post?"
+                        )
+                      ) {
                         onDelete(post.id);
                       }
                     }}

@@ -57,29 +57,24 @@ exports.getAllPosts = async (req, res, next) => {
         _count: {
           select: { likes: true, comments: true },
         },
+        likes: currentUserId ? {
+          where: { userId: currentUserId },
+          select: { id: true }
+        } : false,
       },
     });
 
-    // Add isLiked flag for current user
-    const postsWithLikeStatus = await Promise.all(
-      posts.map(async (post) => {
-        let isLiked = false;
-        if (currentUserId) {
-          const like = await prisma.like.findUnique({
-            where: {
-              postId_userId: { postId: post.id, userId: currentUserId },
-            },
-          });
-          isLiked = !!like;
-        }
-        return {
-          ...post,
-          likesCount: post._count.likes,
-          commentsCount: post._count.comments,
-          isLiked,
-        };
-      })
-    );
+    // Map posts with isLiked flag
+    const postsWithLikeStatus = posts.map((post) => {
+      const isLiked = currentUserId && post.likes && post.likes.length > 0;
+      const { likes, _count, ...rest } = post;
+      return {
+        ...rest,
+        likesCount: _count.likes,
+        commentsCount: _count.comments,
+        isLiked: isLiked || false,
+      };
+    });
 
     res.json(postsWithLikeStatus);
   } catch (err) {
@@ -305,7 +300,9 @@ exports.deletePost = async (req, res, next) => {
     }
 
     if (post.userId !== userId) {
-      return res.status(403).json({ message: "Not authorized to delete this post" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this post" });
     }
 
     // Delete the post (cascade will handle likes, comments)

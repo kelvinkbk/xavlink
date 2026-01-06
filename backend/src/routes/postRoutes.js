@@ -9,11 +9,12 @@ const {
   deletePost,
 } = require("../controllers/postController");
 const authMiddleware = require("../middleware/authMiddleware");
+const { optionalAuthMiddleware } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 router.post("/create", authMiddleware, createPost);
-router.get("/all", getAllPosts);
+router.get("/all", optionalAuthMiddleware, getAllPosts);
 router.post("/:id/like", authMiddleware, likePost);
 router.delete("/:id/like", authMiddleware, unlikePost);
 router.post("/:id/comments", authMiddleware, addComment);

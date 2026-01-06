@@ -19,4 +19,28 @@ function authMiddleware(req, res, next) {
   }
 }
 
+// Optional authentication - doesn't fail if no token
+function optionalAuthMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.replace("Bearer ", "")
+    : req.cookies?.token;
+
+  if (token) {
+    try {
+      const payload = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = { id: payload.id, email: payload.email, role: payload.role };
+    } catch (err) {
+      // Token is invalid, but we don't fail - just continue without user
+      req.user = null;
+    }
+  } else {
+    req.user = null;
+  }
+  next();
+}
+
+module.exports = authMiddleware;
+module.exports.optionalAuthMiddleware = optionalAuthMiddleware;
+
 module.exports = authMiddleware;
