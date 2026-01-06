@@ -115,6 +115,7 @@ export default function ChatPage() {
 
   // Auto-mark messages as read when viewed
   const markVisibleMessagesAsRead = useCallback(() => {
+    if (!user?.id || !chatId) return;
     // Check socket connection
     if (!socket.connected) {
       console.log("⚠️ Socket not connected, skipping mark as read");
@@ -156,7 +157,7 @@ export default function ChatPage() {
         }
       }
     }, 500); // Wait 500ms before marking to reduce API calls
-  }, [messages, user.id, chatId]);
+  }, [messages, user?.id, chatId]);
 
   const upsertMessage = useCallback((message) => {
     setMessages((prev) => {
@@ -238,6 +239,7 @@ export default function ChatPage() {
 
   const handleReceiveMessage = useCallback(
     (message) => {
+      if (!user?.id || !chatId) return;
       if (message.chatId === chatId) {
         upsertMessage(message);
 
@@ -278,17 +280,18 @@ export default function ChatPage() {
         }, 150);
       }
     },
-    [chatId, upsertMessage, user.id]
+    [chatId, upsertMessage, user?.id]
   );
 
   const handleRetryPending = useCallback(
     (tempId) => {
+      if (!user?.id || !chatId) return;
       const pending = pendingMessages.find((m) => m.tempId === tempId);
       if (pending) {
         sendPendingMessage({ ...pending, attempts: 0, status: "sending" });
       }
     },
-    [pendingMessages, sendPendingMessage]
+    [pendingMessages, sendPendingMessage, user?.id, chatId]
   );
 
   const loadMessages = useCallback(async () => {
@@ -375,6 +378,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     // Ensure socket is connected
+    if (!chatId) return;
     if (!socket.connected) {
       console.log("🔌 Connecting socket for chat...");
       socket.connect();
@@ -483,7 +487,7 @@ export default function ChatPage() {
 
   // Intersection Observer to load older messages when scrolling to top
   useEffect(() => {
-    if (!messagesStartRef.current) return;
+    if (!messagesStartRef.current || !chatId) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -496,7 +500,7 @@ export default function ChatPage() {
 
     observer.observe(messagesStartRef.current);
     return () => observer.disconnect();
-  }, [loadOlderMessages, hasMoreMessages, loadingOlder]);
+  }, [loadOlderMessages, hasMoreMessages, loadingOlder, chatId]);
 
   // Flush queued/failed messages when coming online
   useEffect(() => {
@@ -563,6 +567,10 @@ export default function ChatPage() {
   const handleSend = async (e) => {
     e.preventDefault();
     if ((!newMessage.trim() && !attachmentUrl) || sending) return;
+    if (!user?.id || !chatId) {
+      showToast("Please wait, chat is still initializing", "warning", 2000);
+      return;
+    }
 
     socket.emit("stop_typing", { chatId, userId: user?.id });
 
@@ -844,217 +852,12 @@ export default function ChatPage() {
               {toast.message}
             </div>
           )}
-      {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => navigate("/chats")}
-          className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Chat
-        </h2>
-        <input
-          type="text"
-          placeholder="🔍 Search messages..."
-          value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
-          className="px-3 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600"
-        />
-        {!selectionMode ? (
-          <button
-            onClick={() => setSelectionMode(true)}
-            className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
-            title="Select messages to delete"
-          >
-            Select
-          </button>
-        ) : (
-          <div className="flex gap-2">
+          {/* Header */}
+          <div className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
             <button
-              onClick={() => {
-                const myMessages = messages
-                  .filter((m) => m.sender.id === user.id)
-                  .map((m) => m.id);
-                setSelectedMessages(new Set(myMessages));
-              }}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+              onClick={() => navigate("/chats")}
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
-              \u2713 All Mine
-            </button>
-            {selectedMessages.size > 0 && (
-              <button
-                onClick={handleBulkDelete}
-                className="px-3 py-1 bg-red-600 text-white rounded text-sm font-semibold hover:bg-red-700"
-              >
-                \ud83d\uddd1\ufe0f Delete ({selectedMessages.size})
-              </button>
-            )}
-            <button
-              onClick={() => {
-                setSelectionMode(false);
-                setSelectedMessages(new Set());
-              }}
-              className="px-3 py-1 bg-gray-400 text-white rounded text-sm hover:bg-gray-500"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Messages */}
-      <div
-        ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
-      >
-        {loadingOlder && (
-          <div className="text-center py-4">
-            <div className="inline-block">
-              <svg
-                className="w-6 h-6 animate-spin text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-            </div>
-          </div>
-        )}
-        <div ref={messagesStartRef} className="h-1" />
-        {(() => {
-          // Use search results if search is active
-          const isSearching = searchQuery.trim().length > 0;
-          const displayMessages = isSearching
-            ? searchResults
-            : [...messages, ...pendingMessages];
-
-          const filteredMessages = isSearching
-            ? displayMessages // Already filtered by backend
-            : displayMessages.filter(
-                (msg) =>
-                  !searchQuery ||
-                  msg.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  msg.sender?.name
-                    ?.toLowerCase()
-                    .includes(searchQuery.toLowerCase())
-              );
-
-          const pinnedMessages = filteredMessages.filter((m) => m.isPinned);
-          const unpinnedMessages = filteredMessages.filter((m) => !m.isPinned);
-
-          return (
-            <>
-              {/* Search Results Header */}
-              {isSearching && (
-                <div className="text-center py-2 mb-4 border-b border-gray-300 dark:border-gray-600">
-                  <div className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                    {searchLoading ? (
-                      "Searching..."
-                    ) : (
-                      <>
-                        {filteredMessages.length} result
-                        {filteredMessages.length !== 1 ? "s" : ""} for "
-                        {searchQuery}"
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* No Results */}
-              {isSearching &&
-                !searchLoading &&
-                filteredMessages.length === 0 && (
-                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    No messages found
-                  </div>
-                )}
-
-              {/* Pinned Messages Section */}
-              {!isSearching && pinnedMessages.length > 0 && (
-                <div className="pb-4 border-b-2 border-yellow-200 dark:border-yellow-800">
-                  <div className="text-xs text-yellow-700 dark:text-yellow-400 font-semibold mb-2 flex items-center gap-1">
-                    📌 PINNED MESSAGES
-                  </div>
-                  {pinnedMessages.map((message) => renderMessage(message))}
-                </div>
-              )}
-
-              {/* Regular Messages */}
-              {unpinnedMessages.map((message) => renderMessage(message))}
-            </>
-          );
-        })()}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input */}
-      <form
-        onSubmit={handleSend}
-        className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-      >
-        {attachmentUrl && (
-          <div className="mb-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-            <span>📎 Attachment ready</span>
-            <button
-              type="button"
-              onClick={() => setAttachmentUrl("")}
-              className="text-red-500 hover:text-red-600"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleAttachmentUpload}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingAttachment || sending}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Attach image"
-          >
-            {uploadingAttachment ? (
-              <svg
-                className="w-6 h-6 animate-spin"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-            ) : (
               <svg
                 className="w-6 h-6"
                 fill="none"
@@ -1065,67 +868,276 @@ export default function ChatPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                  d="M15 19l-7-7 7-7"
                 />
               </svg>
+            </button>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Chat
+            </h2>
+            <input
+              type="text"
+              placeholder="🔍 Search messages..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="px-3 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600"
+            />
+            {!selectionMode ? (
+              <button
+                onClick={() => setSelectionMode(true)}
+                className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                title="Select messages to delete"
+              >
+                Select
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const myMessages = messages
+                      .filter((m) => m.sender.id === user.id)
+                      .map((m) => m.id);
+                    setSelectedMessages(new Set(myMessages));
+                  }}
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                >
+                  \u2713 All Mine
+                </button>
+                {selectedMessages.size > 0 && (
+                  <button
+                    onClick={handleBulkDelete}
+                    className="px-3 py-1 bg-red-600 text-white rounded text-sm font-semibold hover:bg-red-700"
+                  >
+                    \ud83d\uddd1\ufe0f Delete ({selectedMessages.size})
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setSelectionMode(false);
+                    setSelectedMessages(new Set());
+                  }}
+                  className="px-3 py-1 bg-gray-400 text-white rounded text-sm hover:bg-gray-500"
+                >
+                  Cancel
+                </button>
+              </div>
             )}
-          </button>
-          <input
-            ref={inputRef}
-            type="text"
-            value={newMessage}
-            onChange={(e) => handleTyping(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={sending}
-          />
-          <button
-            type="submit"
-            disabled={(!newMessage.trim() && !attachmentUrl) || sending}
-            className="p-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-full transition-colors disabled:cursor-not-allowed"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
-          </button>
-        </div>
-        {typingUsers.size > 0 && (
-          <p className="text-xs text-gray-500 mt-2">
-            {Array.from(typingUsers).join(", ")} typing...
-          </p>
-        )}
-      </form>
+          </div>
 
-      <ReportModal
-        isOpen={reportModalOpen}
-        onClose={() => {
-          setReportModalOpen(false);
-          setMessageToReport(null);
-        }}
-        targetType="Message"
-        targetId={messageToReport?.id}
-        targetName={`from ${messageToReport?.sender?.name || "Unknown"}`}
-        onSubmit={(reason, description) => {
-          reportService.createReport({
-            reason,
-            description: `${description}\n\n---\nMessage by: ${messageToReport?.sender?.name}\nChat ID: ${chatId}\nMessage ID: ${messageToReport?.id}`,
-            reportedUserId: messageToReport?.sender?.id,
-            reportedMessageId: messageToReport?.id,
-          });
-          setReportModalOpen(false);
-          setMessageToReport(null);
-        }}
-      />
+          {/* Messages */}
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto p-4 space-y-4"
+          >
+            {loadingOlder && (
+              <div className="text-center py-4">
+                <div className="inline-block">
+                  <svg
+                    className="w-6 h-6 animate-spin text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                </div>
+              </div>
+            )}
+            <div ref={messagesStartRef} className="h-1" />
+            {(() => {
+              // Use search results if search is active
+              const isSearching = searchQuery.trim().length > 0;
+              const displayMessages = isSearching
+                ? searchResults
+                : [...messages, ...pendingMessages];
+
+              const filteredMessages = isSearching
+                ? displayMessages // Already filtered by backend
+                : displayMessages.filter(
+                    (msg) =>
+                      !searchQuery ||
+                      msg.text
+                        ?.toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                      msg.sender?.name
+                        ?.toLowerCase()
+                        .includes(searchQuery.toLowerCase())
+                  );
+
+              const pinnedMessages = filteredMessages.filter((m) => m.isPinned);
+              const unpinnedMessages = filteredMessages.filter(
+                (m) => !m.isPinned
+              );
+
+              return (
+                <>
+                  {/* Search Results Header */}
+                  {isSearching && (
+                    <div className="text-center py-2 mb-4 border-b border-gray-300 dark:border-gray-600">
+                      <div className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                        {searchLoading ? (
+                          "Searching..."
+                        ) : (
+                          <>
+                            {filteredMessages.length} result
+                            {filteredMessages.length !== 1 ? "s" : ""} for "
+                            {searchQuery}"
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No Results */}
+                  {isSearching &&
+                    !searchLoading &&
+                    filteredMessages.length === 0 && (
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                        No messages found
+                      </div>
+                    )}
+
+                  {/* Pinned Messages Section */}
+                  {!isSearching && pinnedMessages.length > 0 && (
+                    <div className="pb-4 border-b-2 border-yellow-200 dark:border-yellow-800">
+                      <div className="text-xs text-yellow-700 dark:text-yellow-400 font-semibold mb-2 flex items-center gap-1">
+                        📌 PINNED MESSAGES
+                      </div>
+                      {pinnedMessages.map((message) => renderMessage(message))}
+                    </div>
+                  )}
+
+                  {/* Regular Messages */}
+                  {unpinnedMessages.map((message) => renderMessage(message))}
+                </>
+              );
+            })()}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input */}
+          <form
+            onSubmit={handleSend}
+            className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+          >
+            {attachmentUrl && (
+              <div className="mb-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <span>📎 Attachment ready</span>
+                <button
+                  type="button"
+                  onClick={() => setAttachmentUrl("")}
+                  className="text-red-500 hover:text-red-600"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAttachmentUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAttachment || sending}
+                className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Attach image"
+              >
+                {uploadingAttachment ? (
+                  <svg
+                    className="w-6 h-6 animate-spin"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                    />
+                  </svg>
+                )}
+              </button>
+              <input
+                ref={inputRef}
+                type="text"
+                value={newMessage}
+                onChange={(e) => handleTyping(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={sending}
+              />
+              <button
+                type="submit"
+                disabled={(!newMessage.trim() && !attachmentUrl) || sending}
+                className="p-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-full transition-colors disabled:cursor-not-allowed"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  />
+                </svg>
+              </button>
+            </div>
+            {typingUsers.size > 0 && (
+              <p className="text-xs text-gray-500 mt-2">
+                {Array.from(typingUsers).join(", ")} typing...
+              </p>
+            )}
+          </form>
+
+          <ReportModal
+            isOpen={reportModalOpen}
+            onClose={() => {
+              setReportModalOpen(false);
+              setMessageToReport(null);
+            }}
+            targetType="Message"
+            targetId={messageToReport?.id}
+            targetName={`from ${messageToReport?.sender?.name || "Unknown"}`}
+            onSubmit={(reason, description) => {
+              reportService.createReport({
+                reason,
+                description: `${description}\n\n---\nMessage by: ${messageToReport?.sender?.name}\nChat ID: ${chatId}\nMessage ID: ${messageToReport?.id}`,
+                reportedUserId: messageToReport?.sender?.id,
+                reportedMessageId: messageToReport?.id,
+              });
+              setReportModalOpen(false);
+              setMessageToReport(null);
+            }}
+          />
         </div>
       )}
     </>
