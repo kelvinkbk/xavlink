@@ -10,15 +10,15 @@ const FLAGGED_KEYWORDS = [
 
 const checkForFlaggedContent = (text) => {
   if (!text) return null;
-  
+
   const lowerText = text.toLowerCase();
-  
+
   for (const keyword of FLAGGED_KEYWORDS) {
     if (lowerText.includes(keyword.toLowerCase())) {
       return keyword;
     }
   }
-  
+
   return null;
 };
 

@@ -29,6 +29,52 @@ export default function ChatPage() {
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const readTimeoutRef = useRef(null);
+
+  // Auto-mark messages as read when viewed
+  const markVisibleMessagesAsRead = useCallback(() => {
+    // Get all messages that don't belong to current user
+    const otherUsersMessages = messages.filter((m) => m.sender.id !== user.id);
+
+    if (otherUsersMessages.length === 0) {
+      console.log("📖 No other users' messages to mark as read");
+      return;
+    }
+
+    console.log(
+      `📖 markVisibleMessagesAsRead called with ${otherUsersMessages.length} messages`
+    );
+
+    // Debounce to avoid too many API calls
+    if (readTimeoutRef.current) clearTimeout(readTimeoutRef.current);
+
+    readTimeoutRef.current = setTimeout(async () => {
+      for (const message of otherUsersMessages) {
+        // Skip if already read
+        if (message.readReceipts?.some((r) => r.userId === user.id)) {
+          console.log(
+            `⏭️ Message ${message.id} already read by current user`
+          );
+          continue;
+        }
+
+        try {
+          console.log(
+            `📤 Marking message ${message.id} as read (API call)`
+          );
+          await chatService.markAsRead(chatId, message.id);
+          console.log(
+            `✅ Message ${message.id} marked as read successfully`
+          );
+        } catch (error) {
+          console.error(
+            `❌ Failed to mark message ${message.id} as read:`,
+            error
+          );
+        }
+      }
+    }, 500); // Wait 500ms before marking to reduce API calls
+  }, [messages, user.id, chatId]);
 
   const upsertMessage = useCallback((message) => {
     setMessages((prev) => {
@@ -113,6 +159,9 @@ export default function ChatPage() {
       );
     });
     socket.on("message_read", ({ messageId, userId, readAt }) => {
+      console.log(
+        `📖 Socket received message_read: messageId=${messageId}, userId=${userId}`
+      );
       setMessages((prev) =>
         prev.map((m) => {
           if (m.id === messageId) {
@@ -121,10 +170,17 @@ export default function ChatPage() {
               (r) => r.userId === userId
             );
             if (!alreadyRead) {
+              console.log(
+                `✅ Adding read receipt to message ${messageId} for user ${userId}`
+              );
               return {
                 ...m,
                 readReceipts: [...existingReceipts, { userId, readAt }],
               };
+            } else {
+              console.log(
+                `⏭️ Message ${messageId} already marked as read by user ${userId}`
+              );
             }
           }
           return m;
@@ -156,7 +212,8 @@ export default function ChatPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+    markVisibleMessagesAsRead();
+  }, [messages, markVisibleMessagesAsRead]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

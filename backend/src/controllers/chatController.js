@@ -248,7 +248,7 @@ exports.sendMessage = async (req, res, next) => {
 
     // Check for flagged content
     const flaggedWord = checkForFlaggedContent(text);
-    
+
     const message = await prisma.message.create({
       data: {
         chatId,
@@ -275,8 +275,10 @@ exports.sendMessage = async (req, res, next) => {
           status: "pending",
         },
       });
-      
-      console.log(`🚩 Auto-flagged message ${message.id} for keyword: ${flaggedWord}`);
+
+      console.log(
+        `🚩 Auto-flagged message ${message.id} for keyword: ${flaggedWord}`
+      );
     }
 
     // Broadcast via socket for real-time delivery
@@ -487,17 +489,21 @@ exports.markAsRead = async (req, res, next) => {
     const { chatId, messageId } = req.params;
     const userId = req.user.id;
 
+    console.log(`📖 markAsRead called: messageId=${messageId}, chatId=${chatId}, userId=${userId}`);
+
     // Verify message exists
     const message = await prisma.message.findFirst({
       where: { id: messageId, chatId },
     });
 
     if (!message) {
+      console.log(`❌ Message not found: ${messageId}`);
       return res.status(404).json({ message: "Message not found" });
     }
 
     // Don't mark your own messages as read
     if (message.senderId === userId) {
+      console.log(`⏭️ Skipping own message: ${messageId}`);
       return res.json({ message: "Cannot mark own message as read" });
     }
 
@@ -518,18 +524,24 @@ exports.markAsRead = async (req, res, next) => {
       },
     });
 
+    console.log(`✅ Read receipt created for messageId=${messageId}, userId=${userId}`);
+
     // Broadcast read receipt
     if (global.io) {
+      console.log(`📡 Broadcasting message_read to room ${chatId}`);
       global.io.to(chatId).emit("message_read", {
         messageId,
         userId,
         readAt: read.readAt,
         chatId,
       });
+    } else {
+      console.log(`⚠️ global.io not available!`);
     }
 
     res.json(read);
   } catch (error) {
+    console.error(`❌ markAsRead error:`, error);
     next(error);
   }
 };
