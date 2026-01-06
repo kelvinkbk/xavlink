@@ -136,12 +136,22 @@ export const uploadService = {
         user: res.data?.user,
       }));
   },
-  uploadChatAttachment: (file) => {
+  uploadChatAttachment: (file, onProgress, signal) => {
     const formData = new FormData();
     formData.append("file", file);
     return api
       .post("/uploads/chat-attachment", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (evt) => {
+          try {
+            if (!evt || !evt.total) return;
+            const percent = Math.round((evt.loaded / evt.total) * 100);
+            if (typeof onProgress === "function") onProgress(percent);
+          } catch {
+            // ignore progress errors
+          }
+        },
+        signal,
       })
       .then((res) => ({ ...res.data, url: toAbsolute(res.data?.url) }));
   },

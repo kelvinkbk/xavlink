@@ -18,6 +18,7 @@ export default function ChatPage() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [sending, setSending] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [attachmentUrl, setAttachmentUrl] = useState("");
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -172,8 +173,6 @@ export default function ChatPage() {
       return [...prev, message];
     });
   }, []);
-
-  
 
   // Send a pending message with retry/backoff
   const sendPendingMessage = useCallback(
@@ -551,19 +550,37 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type & size (images up to 10MB)
+    const MAX_BYTES = 10 * 1024 * 1024;
+    if (!file.type?.startsWith("image/")) {
+      showToast("Only image files are allowed", "error", 3000);
+      e.target.value = "";
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      showToast("Image too large (max 10MB)", "error", 3000);
+      e.target.value = "";
+      return;
+    }
+
     setUploadingAttachment(true);
+    setUploadProgress(0);
     try {
-      const { url } = await uploadService.uploadChatAttachment(file);
+      const { url } = await uploadService.uploadChatAttachment(
+        file,
+        (percent) => setUploadProgress(percent)
+      );
       setAttachmentUrl(url);
+      showToast("Attachment uploaded", "success", 1500);
     } catch (error) {
       console.error("Failed to upload attachment:", error);
       const errorMsg =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to upload attachment";
-      alert(`Upload failed: ${errorMsg}`);
+        error?.response?.data?.message || error?.message || "Upload failed";
+      showToast(errorMsg, "error", 3500);
+      e.target.value = "";
     } finally {
       setUploadingAttachment(false);
+      setTimeout(() => setUploadProgress(0), 500);
     }
   };
 
@@ -1028,6 +1045,19 @@ export default function ChatPage() {
             onSubmit={handleSend}
             className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
           >
+            {uploadingAttachment && (
+              <div className="mb-2">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded h-2 overflow-hidden">
+                  <div
+                    className="bg-blue-500 h-2 transition-all"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Uploading {uploadProgress}%
+                </div>
+              </div>
+            )}
             {attachmentUrl && (
               <div className="mb-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <span>📎 Attachment ready</span>
@@ -1092,11 +1122,15 @@ export default function ChatPage() {
                 onChange={(e) => handleTyping(e.target.value)}
                 placeholder="Type a message..."
                 className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={sending}
+                disabled={sending || uploadingAttachment}
               />
               <button
                 type="submit"
-                disabled={(!newMessage.trim() && !attachmentUrl) || sending}
+                disabled={
+                  (!newMessage.trim() && !attachmentUrl) ||
+                  sending ||
+                  uploadingAttachment
+                }
                 className="p-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-full transition-colors disabled:cursor-not-allowed"
               >
                 <svg
