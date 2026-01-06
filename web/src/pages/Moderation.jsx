@@ -643,7 +643,7 @@ function ReportsSection() {
 
     try {
       await fetch(
-        `${import.meta.env.VITE_API_URL}/users/${
+        `${import.meta.env.VITE_API_URL}/mod/users/${
           report.reportedUserId
         }/suspend`,
         {
@@ -653,8 +653,8 @@ function ReportsSection() {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            suspensionDays: parseInt(days),
-            reason: `Reported for: ${report.reason}`,
+            isSuspended: true,
+            durationDays: parseInt(days),
           }),
         }
       );
