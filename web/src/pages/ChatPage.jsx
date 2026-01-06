@@ -33,6 +33,12 @@ export default function ChatPage() {
 
   // Auto-mark messages as read when viewed
   const markVisibleMessagesAsRead = useCallback(() => {
+    // Check socket connection
+    if (!socket.connected) {
+      console.log("⚠️ Socket not connected, skipping mark as read");
+      return;
+    }
+
     // Get all messages that don't belong to current user
     const otherUsersMessages = messages.filter((m) => m.sender.id !== user.id);
 
