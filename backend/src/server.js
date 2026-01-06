@@ -32,7 +32,7 @@ const io = new Server(server, {
         callback(null, true);
       } else {
         // In production, be strict. In dev, be permissive.
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.NODE_ENV === "production") {
           callback(new Error("Not allowed by CORS"));
         } else {
           callback(null, true);
