@@ -10,7 +10,7 @@ import socket from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
-function PostCard({ post, onLike, onComment, onReport }) {
+function PostCard({ post, onLike, onComment, onReport, onDelete }) {
   const { isAuthenticated, user } = useAuth();
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
@@ -68,7 +68,7 @@ function PostCard({ post, onLike, onComment, onReport }) {
             <p className="text-sm text-gray-500">{post.user?.course || ""}</p>
           </div>
         </div>
-        {user && user.id !== post.user?.id && (
+        {user && (
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
@@ -78,18 +78,32 @@ function PostCard({ post, onLike, onComment, onReport }) {
             </button>
             {showMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    onReport(
-                      post.id,
-                      post.content?.substring(0, 50) + "..." || "Post"
-                    );
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
-                >
-                  🚩 Report Post
-                </button>
+                {user.id === post.user?.id ? (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      if (window.confirm("Are you sure you want to delete this post?")) {
+                        onDelete(post.id);
+                      }
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                  >
+                    🗑️ Delete Post
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onReport(
+                        post.id,
+                        post.content?.substring(0, 50) + "..." || "Post"
+                      );
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                  >
+                    🚩 Report Post
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -254,26 +268,28 @@ export default function Home() {
   useEffect(() => {
     const handlePostLiked = ({ postId, likesCount }) => {
       setPosts((prevPosts) =>
-        prevPosts.map((p) =>
-          p.id === postId ? { ...p, likesCount } : p
-        )
+        prevPosts.map((p) => (p.id === postId ? { ...p, likesCount } : p))
       );
     };
 
     const handlePostUnliked = ({ postId, likesCount }) => {
       setPosts((prevPosts) =>
-        prevPosts.map((p) =>
-          p.id === postId ? { ...p, likesCount } : p
-        )
+        prevPosts.map((p) => (p.id === postId ? { ...p, likesCount } : p))
       );
+    };
+
+    const handlePostDeleted = ({ postId }) => {
+      setPosts((prevPosts) => prevPosts.filter((p) => p.id !== postId));
     };
 
     socket.on("post_liked", handlePostLiked);
     socket.on("post_unliked", handlePostUnliked);
+    socket.on("post_deleted", handlePostDeleted);
 
     return () => {
       socket.off("post_liked", handlePostLiked);
       socket.off("post_unliked", handlePostUnliked);
+      socket.off("post_deleted", handlePostDeleted);
     };
   }, []);
 
@@ -395,6 +411,17 @@ export default function Home() {
       }
     } catch {
       // Silently ignore notification update errors
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    try {
+      await postService.deletePost(postId);
+      setPosts(posts.filter((p) => p.id !== postId));
+      showToast("Post deleted", "success");
+    } catch (e) {
+      console.error("Error deleting post:", e);
+      showToast("Failed to delete post", "error");
     }
   };
 
@@ -545,6 +572,7 @@ export default function Home() {
                   post={post}
                   onLike={handleLike}
                   onComment={handleCommentAdded}
+                  onDelete={handleDeletePost}
                   onReport={(postId, postName, type = "Post") =>
                     setReportModal({
                       isOpen: true,

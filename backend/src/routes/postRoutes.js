@@ -6,6 +6,7 @@ const {
   unlikePost,
   addComment,
   getComments,
+  deletePost,
 } = require("../controllers/postController");
 const authMiddleware = require("../middleware/authMiddleware");
 
@@ -17,5 +18,6 @@ router.post("/:id/like", authMiddleware, likePost);
 router.delete("/:id/like", authMiddleware, unlikePost);
 router.post("/:id/comments", authMiddleware, addComment);
 router.get("/:id/comments", getComments);
+router.delete("/:id", authMiddleware, deletePost);
 
 module.exports = router;

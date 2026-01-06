@@ -73,13 +73,24 @@ export default function Profile() {
 
     const handleUserFollowed = ({ followingId }) => {
       if (followingId === userId) {
-        setUser((prev) => prev ? { ...prev, followersCount: (prev.followersCount || 0) + 1 } : prev);
+        setUser((prev) =>
+          prev
+            ? { ...prev, followersCount: (prev.followersCount || 0) + 1 }
+            : prev
+        );
       }
     };
 
     const handleUserUnfollowed = ({ followingId }) => {
       if (followingId === userId) {
-        setUser((prev) => prev ? { ...prev, followersCount: Math.max((prev.followersCount || 0) - 1, 0) } : prev);
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                followersCount: Math.max((prev.followersCount || 0) - 1, 0),
+              }
+            : prev
+        );
       }
     };
 
