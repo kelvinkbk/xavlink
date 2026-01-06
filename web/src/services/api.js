@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+// Sanitize API_BASE by removing any whitespace/newlines from environment variable
+const rawApiBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE = rawApiBase.toString().trim().replace(/[\n\r\t]/g, '');
 const API_ORIGIN = API_BASE.replace(/\/api$/, "");
 
 const api = axios.create({
@@ -72,9 +74,12 @@ export const postService = {
 const toAbsolute = (url) => {
   if (!url) return url;
   // Sanitize URL by removing whitespace and control characters
-  url = url.toString().trim().replace(/[\n\r\t]/g, '');
+  url = url
+    .toString()
+    .trim()
+    .replace(/[\n\r\t]/g, "");
   if (/^https?:\/\//i.test(url)) return url;
-  return `${API_ORIGIN}${url}`.trim().replace(/[\n\r\t]/g, '');
+  return `${API_ORIGIN}${url}`.trim().replace(/[\n\r\t]/g, "");
 };
 
 export const uploadService = {
