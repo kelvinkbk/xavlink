@@ -75,4 +75,10 @@ export const chatService = {
     );
     return response.data;
   },
+
+  // Mark entire chat as read
+  async markChatAsRead(chatId) {
+    const response = await api.post(`/chats/${chatId}/read`);
+    return response.data;
+  },
 };

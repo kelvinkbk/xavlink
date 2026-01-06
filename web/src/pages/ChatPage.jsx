@@ -115,6 +115,13 @@ export default function ChatPage() {
         }
       });
       setMessageReactions(reactionsMap);
+
+      // Mark chat as read when opening
+      try {
+        await chatService.markChatAsRead(chatId);
+      } catch (error) {
+        console.error("Failed to mark chat as read:", error);
+      }
     } catch (error) {
       console.error("Failed to load messages:", error);
     } finally {

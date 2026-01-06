@@ -30,10 +30,34 @@ export default function ChatListPage() {
       );
     });
 
+    // Listen for unread count updates
+    socket.on("unread_count_update", ({ chatId, userId, unreadCount }) => {
+      if (userId === user?.id) {
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.id === chatId ? { ...chat, unreadCount } : chat
+          )
+        );
+      }
+    });
+
+    // Listen for chat read events
+    socket.on("chat_read", ({ chatId, userId }) => {
+      if (userId === user?.id) {
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
+          )
+        );
+      }
+    });
+
     return () => {
       socket.off("receive_message");
+      socket.off("unread_count_update");
+      socket.off("chat_read");
     };
-  }, []);
+  }, [user?.id]);
 
   const loadChats = async () => {
     try {
@@ -127,9 +151,16 @@ export default function ChatListPage() {
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                    {getChatName(chat)}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                      {getChatName(chat)}
+                    </h3>
+                    {chat.unreadCount > 0 && (
+                      <span className="bg-blue-500 text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                        {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
+                      </span>
+                    )}
+                  </div>
                   {chat.messages[0] && (
                     <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                       {formatTime(chat.messages[0].timestamp)}

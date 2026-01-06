@@ -21,5 +21,6 @@ router.patch(
   chatController.togglePinMessage
 );
 router.post("/:chatId/messages/:messageId/read", chatController.markAsRead);
+router.post("/:chatId/read", chatController.markChatAsRead);
 
 module.exports = router;

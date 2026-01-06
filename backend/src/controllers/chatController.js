@@ -148,7 +148,16 @@ exports.getUserChats = async (req, res, next) => {
       orderBy: { createdAt: "desc" },
     });
 
-    res.json(chats);
+    // Add unread count for current user
+    const chatsWithUnread = chats.map((chat) => {
+      const participant = chat.participants.find((p) => p.userId === userId);
+      return {
+        ...chat,
+        unreadCount: participant?.unreadCount || 0,
+      };
+    });
+
+    res.json(chatsWithUnread);
   } catch (error) {
     next(error);
   }
@@ -281,9 +290,34 @@ exports.sendMessage = async (req, res, next) => {
       );
     }
 
+    // Increment unread count for all participants except sender
+    await prisma.chatParticipant.updateMany({
+      where: {
+        chatId,
+        userId: { not: senderId },
+      },
+      data: {
+        unreadCount: { increment: 1 },
+      },
+    });
+
     // Broadcast via socket for real-time delivery
     if (global.io) {
       global.io.to(chatId).emit("receive_message", message);
+
+      // Broadcast unread count update
+      const participants = await prisma.chatParticipant.findMany({
+        where: { chatId, userId: { not: senderId } },
+        select: { userId: true, unreadCount: true },
+      });
+
+      participants.forEach((p) => {
+        global.io.to(chatId).emit("unread_count_update", {
+          chatId,
+          userId: p.userId,
+          unreadCount: p.unreadCount,
+        });
+      });
     }
 
     res.status(201).json(message);
@@ -546,6 +580,44 @@ exports.markAsRead = async (req, res, next) => {
     res.json(read);
   } catch (error) {
     console.error(`❌ markAsRead error:`, error);
+    next(error);
+  }
+};
+
+/**
+ * Mark entire chat as read and reset unread count
+ */
+exports.markChatAsRead = async (req, res, next) => {
+  try {
+    const { chatId } = req.params;
+    const userId = req.user.id;
+
+    // Update participant's lastReadAt and reset unreadCount
+    const participant = await prisma.chatParticipant.updateMany({
+      where: {
+        chatId,
+        userId,
+      },
+      data: {
+        lastReadAt: new Date(),
+        unreadCount: 0,
+      },
+    });
+
+    if (participant.count === 0) {
+      return res.status(404).json({ message: "Chat participant not found" });
+    }
+
+    // Broadcast to all participants
+    if (global.io) {
+      global.io.to(chatId).emit("chat_read", {
+        chatId,
+        userId,
+      });
+    }
+
+    res.json({ message: "Chat marked as read" });
+  } catch (error) {
     next(error);
   }
 };
