@@ -890,7 +890,9 @@ export default function ChatPage() {
         {(() => {
           // Use search results if search is active
           const isSearching = searchQuery.trim().length > 0;
-          const displayMessages = isSearching ? searchResults : [...messages, ...pendingMessages];
+          const displayMessages = isSearching
+            ? searchResults
+            : [...messages, ...pendingMessages];
 
           const filteredMessages = isSearching
             ? displayMessages // Already filtered by backend
@@ -925,11 +927,13 @@ export default function ChatPage() {
               )}
 
               {/* No Results */}
-              {isSearching && !searchLoading && filteredMessages.length === 0 && (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  No messages found
-                </div>
-              )}
+              {isSearching &&
+                !searchLoading &&
+                filteredMessages.length === 0 && (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    No messages found
+                  </div>
+                )}
 
               {/* Pinned Messages Section */}
               {!isSearching && pinnedMessages.length > 0 && (
