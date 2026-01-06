@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   requestNotificationPermission,
   getNotificationPermission,
@@ -6,7 +6,9 @@ import {
 } from "../services/notificationService";
 
 export default function NotificationSettings() {
-  const [permission, setPermission] = useState("denied");
+  const [permission, setPermission] = useState(() =>
+    notificationsSupported() ? getNotificationPermission() : "denied"
+  );
   const [soundEnabled, setSoundEnabled] = useState(() => {
     try {
       const saved = localStorage.getItem("notification_sound_enabled");
@@ -16,11 +18,7 @@ export default function NotificationSettings() {
     }
   });
 
-  useEffect(() => {
-    if (notificationsSupported()) {
-      setPermission(getNotificationPermission());
-    }
-  }, []);
+  // Avoid setting state synchronously in effects; initialize via state initializer above.
 
   const handleRequestPermission = async () => {
     const granted = await requestNotificationPermission();

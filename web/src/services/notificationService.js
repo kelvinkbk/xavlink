@@ -25,7 +25,12 @@ export const requestNotificationPermission = async () => {
   return false;
 };
 
-export const sendMessageNotification = (senderName, messageText, chatId, onClickNavigate) => {
+export const sendMessageNotification = (
+  senderName,
+  messageText,
+  chatId,
+  onClickNavigate
+) => {
   if (typeof window === "undefined" || !("Notification" in window)) return;
 
   if (Notification.permission !== "granted") {
@@ -34,7 +39,10 @@ export const sendMessageNotification = (senderName, messageText, chatId, onClick
   }
 
   // Don't notify if focused on the same chat
-  if (document.hasFocus() && window.location.pathname.includes(`/chat/${chatId}`)) {
+  if (
+    document.hasFocus() &&
+    window.location.pathname.includes(`/chat/${chatId}`)
+  ) {
     console.log("📵 Skipping notification: already viewing this chat");
     return;
   }

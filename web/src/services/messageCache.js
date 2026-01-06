@@ -62,7 +62,9 @@ export const getCachedMessages = (chatId) => {
         const messages = (cached[0]?.messages || []).sort(
           (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
         );
-        console.log(`📦 Retrieved ${messages.length} cached messages for chat ${chatId}`);
+        console.log(
+          `📦 Retrieved ${messages.length} cached messages for chat ${chatId}`
+        );
         resolve(messages);
       };
     } catch (error) {

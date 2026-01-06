@@ -11,7 +11,12 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ReportModal from "../components/ReportModal";
 import MessageReactions from "../components/MessageReactions";
 import { uploadService, reportService } from "../services/api";
-import { getCachedMessages, cacheMessages, initMessageCache } from "../services/messageCache";
+import {
+  getCachedMessages,
+  cacheMessages,
+  initMessageCache,
+} from "../services/messageCache";
+import { sendMessageNotification } from "../services/notificationService";
 
 export default function ChatPage() {
   const { chatId } = useParams();
@@ -257,6 +262,20 @@ export default function ChatPage() {
         // Update last message timestamp for reconciliation
         updateLastMessageTimestamp(message.timestamp);
 
+        // Send desktop notification for incoming messages from others
+        if (message.sender?.id && message.sender.id !== user.id) {
+          try {
+            sendMessageNotification(
+              message.sender.name || "Someone",
+              message.text,
+              chatId,
+              navigate
+            );
+          } catch (err) {
+            console.error("Failed to send notification:", err);
+          }
+        }
+
         // Remove matching pending if same sender and text
         setPendingMessages((prev) => {
           const filtered = prev.filter(
@@ -294,7 +313,7 @@ export default function ChatPage() {
         }, 150);
       }
     },
-    [chatId, upsertMessage, user?.id]
+    [chatId, upsertMessage, user?.id, navigate]
   );
 
   const handleRetryPending = useCallback(
@@ -404,7 +423,32 @@ export default function ChatPage() {
       socket.connect();
     }
 
-    loadMessages();
+    // Hydrate from local cache first for faster initial render
+    (async () => {
+      try {
+        await initMessageCache().catch(() => {});
+        const cached = await getCachedMessages(chatId);
+        if (cached && cached.length > 0) {
+          setMessages(cached);
+          setHasMoreMessages(cached.length >= 50);
+          const reactionsMap = {};
+          cached.forEach((msg) => {
+            if (
+              msg.reactionCounts &&
+              Object.keys(msg.reactionCounts).length > 0
+            ) {
+              reactionsMap[msg.id] = msg.reactionCounts;
+            }
+          });
+          setMessageReactions(reactionsMap);
+        }
+      } catch (err) {
+        console.error("Cache hydration failed:", err);
+      } finally {
+        // Always fetch latest from server
+        loadMessages();
+      }
+    })();
 
     // Join chat room
     console.log("📨 Joining chat room:", chatId);
@@ -515,7 +559,16 @@ export default function ChatPage() {
       socket.off("user_stopped_typing");
       socket.off("reconnect");
     };
-  }, [chatId, handleReceiveMessage, loadMessages]);
+  }, [chatId, handleReceiveMessage, loadMessages, showToast]);
+
+  // Keep cache in sync with real messages (exclude optimistic pending)
+  useEffect(() => {
+    if (!chatId) return;
+    const realMessages = messages.filter((m) => !m.tempId);
+    if (realMessages.length > 0) {
+      cacheMessages(chatId, realMessages).catch(() => {});
+    }
+  }, [messages, chatId]);
 
   // Cleanup pending timers on unmount
   useEffect(() => {
