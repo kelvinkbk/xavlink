@@ -1,4 +1,5 @@
 const prisma = require("../config/prismaClient");
+const { checkForFlaggedContent } = require("../utils/contentFilter");
 
 /**
  * Get or create a 1-on-1 chat between two users
@@ -245,6 +246,9 @@ exports.sendMessage = async (req, res, next) => {
         .json({ message: "Not authorized to send messages to this chat" });
     }
 
+    // Check for flagged content
+    const flaggedWord = checkForFlaggedContent(text);
+    
     const message = await prisma.message.create({
       data: {
         chatId,
@@ -258,6 +262,22 @@ exports.sendMessage = async (req, res, next) => {
         },
       },
     });
+
+    // Auto-flag if inappropriate content detected
+    if (flaggedWord) {
+      await prisma.report.create({
+        data: {
+          reporterId: senderId, // System auto-report
+          reportedUserId: senderId,
+          reportedMessageId: message.id,
+          reason: "inappropriate_content",
+          description: `Auto-flagged for keyword: "${flaggedWord}". Message in chat ${chatId}: ${text}`,
+          status: "pending",
+        },
+      });
+      
+      console.log(`🚩 Auto-flagged message ${message.id} for keyword: ${flaggedWord}`);
+    }
 
     // Broadcast via socket for real-time delivery
     if (global.io) {

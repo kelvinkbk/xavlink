@@ -112,6 +112,25 @@ export default function ChatPage() {
         prev.map((m) => (m.id === messageId ? { ...m, isPinned } : m))
       );
     });
+    socket.on("message_read", ({ messageId, userId, readAt }) => {
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id === messageId) {
+            const existingReceipts = m.readReceipts || [];
+            const alreadyRead = existingReceipts.some(
+              (r) => r.userId === userId
+            );
+            if (!alreadyRead) {
+              return {
+                ...m,
+                readReceipts: [...existingReceipts, { userId, readAt }],
+              };
+            }
+          }
+          return m;
+        })
+      );
+    });
     socket.on("user_typing", ({ userName }) => {
       setTypingUsers((prev) => {
         const next = new Set(prev);
@@ -129,6 +148,7 @@ export default function ChatPage() {
       socket.off("reaction_added");
       socket.off("reaction_removed");
       socket.off("message_pinned");
+      socket.off("message_read");
       socket.off("user_typing");
       socket.off("user_stopped_typing");
     };
@@ -301,9 +321,11 @@ export default function ChatPage() {
     return (
       <div
         key={message.id}
-        className={`flex ${
-          isOwn ? "justify-end" : "justify-start"
-        } gap-2 ${message.isPinned ? "bg-yellow-50 dark:bg-yellow-900/10 p-2 rounded" : ""}`}
+        className={`flex ${isOwn ? "justify-end" : "justify-start"} gap-2 ${
+          message.isPinned
+            ? "bg-yellow-50 dark:bg-yellow-900/10 p-2 rounded"
+            : ""
+        }`}
       >
         {selectionMode && isOwn && (
           <input
@@ -362,14 +384,19 @@ export default function ChatPage() {
             <div className="flex items-center gap-2 px-2 mt-1">
               <span
                 className={`text-xs ${
-                  isOwn
-                    ? "text-blue-100"
-                    : "text-gray-500 dark:text-gray-400"
+                  isOwn ? "text-blue-100" : "text-gray-500 dark:text-gray-400"
                 }`}
               >
                 {formatTimestamp(message.timestamp)}
               </span>
-              {isOwn && <span className="text-blue-100">✓</span>}
+              {isOwn && (
+                <span className="text-blue-100 text-xs">
+                  {message.readReceipts && message.readReceipts.length > 0
+                    ? `✓✓` // Double check for read
+                    : "✓"}{" "}
+                  {/* Single check for sent */}
+                </span>
+              )}
             </div>
             <MessageReactions
               messageId={message.id}
@@ -492,10 +519,10 @@ export default function ChatPage() {
                 ?.toLowerCase()
                 .includes(searchQuery.toLowerCase())
           );
-          
-          const pinnedMessages = filteredMessages.filter(m => m.isPinned);
-          const unpinnedMessages = filteredMessages.filter(m => !m.isPinned);
-          
+
+          const pinnedMessages = filteredMessages.filter((m) => m.isPinned);
+          const unpinnedMessages = filteredMessages.filter((m) => !m.isPinned);
+
           return (
             <>
               {/* Pinned Messages Section */}
@@ -507,7 +534,7 @@ export default function ChatPage() {
                   {pinnedMessages.map((message) => renderMessage(message))}
                 </div>
               )}
-              
+
               {/* Regular Messages */}
               {unpinnedMessages.map((message) => renderMessage(message))}
             </>
