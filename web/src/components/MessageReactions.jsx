@@ -1,0 +1,60 @@
+import { useState } from "react";
+
+const EMOJI_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥", "👏"];
+
+export default function MessageReactions({
+  messageId,
+  onReact,
+  reactions = {},
+}) {
+  const [showPicker, setShowPicker] = useState(false);
+
+  const handleReact = (emoji) => {
+    onReact(messageId, emoji);
+    setShowPicker(false);
+  };
+
+  const totalReactions = Object.values(reactions).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+
+  return (
+    <div className="flex gap-1 items-center flex-wrap mt-2">
+      {Object.entries(reactions).map(([emoji, count]) => (
+        <button
+          key={emoji}
+          onClick={() => handleReact(emoji)}
+          className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm border border-gray-300"
+        >
+          <span>{emoji}</span>
+          <span className="text-xs text-gray-600">{count}</span>
+        </button>
+      ))}
+
+      <div className="relative">
+        <button
+          onClick={() => setShowPicker(!showPicker)}
+          className="text-xl hover:scale-110 transition"
+          title="Add reaction"
+        >
+          😊
+        </button>
+
+        {showPicker && (
+          <div className="absolute bottom-full left-0 mb-2 bg-white border rounded shadow-lg p-2 grid grid-cols-4 gap-1 z-20">
+            {EMOJI_REACTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => handleReact(emoji)}
+                className="text-xl hover:scale-125 transition"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

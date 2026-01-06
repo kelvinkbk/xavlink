@@ -572,6 +572,8 @@ function ReportsSection() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("pending");
   const [reports, setReports] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedMessageIds, setSelectedMessageIds] = useState(new Set());
 
   useEffect(() => {
     const load = async () => {
@@ -635,6 +637,57 @@ function ReportsSection() {
     }
   };
 
+  const bulkDeleteMessages = async () => {
+    if (selectedMessageIds.size === 0) {
+      alert("Select messages to delete");
+      return;
+    }
+
+    if (!window.confirm(`Delete ${selectedMessageIds.size} messages?")) {
+      return;
+    }
+
+    const selectedReports = reports.filter((r) =>
+      selectedMessageIds.has(r.reportedMessageId)
+    );
+
+    let deletedCount = 0;
+    for (const report of selectedReports) {
+      const chatIdMatch = report.description?.match(/Chat ID: ([a-f0-9-]+)/i);
+      if (!chatIdMatch) continue;
+
+      try {
+        await fetch(
+          `${import.meta.env.VITE_API_URL}/chats/${chatIdMatch[1]}/messages/${
+            report.reportedMessageId
+          }`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        await updateStatus(report.id, "resolved");
+        deletedCount++;
+      } catch (e) {
+        console.error("Failed to delete message:", e);
+      }
+    }
+
+    alert(`Deleted ${deletedCount} messages`);
+    setSelectedMessageIds(new Set());
+  };
+
+  const filteredReports = reports.filter(
+    (r) =>
+      r.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.reportedUser?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const messageReports = filteredReports.filter((r) => r.reportedMessageId);
+
   const suspendReportedUser = async (report) => {
     if (!report.reportedUserId) return;
 
@@ -670,7 +723,7 @@ function ReportsSection() {
   return (
     <section className="space-y-3">
       <h2 className="text-xl font-semibold">Reports</h2>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {["pending", "resolved", "dismissed"].map((s) => (
           <button
             key={s}
@@ -683,16 +736,51 @@ function ReportsSection() {
           </button>
         ))}
       </div>
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Search reports..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 px-3 py-2 border rounded text-sm"
+        />
+        {messageReports.length > 0 && selectedMessageIds.size > 0 && (
+          <button
+            onClick={bulkDeleteMessages}
+            className="px-3 py-2 bg-red-600 text-white rounded text-sm"
+          >
+            Delete {selectedMessageIds.size}
+          </button>
+        )}
+      </div>
+
       {error && <div className="text-red-600 text-sm">{error}</div>}
       <div className="space-y-3">
         {loading ? (
           <div>Loading...</div>
-        ) : reports.length === 0 ? (
+        ) : filteredReports.length === 0 ? (
           <div>No reports</div>
         ) : (
-          reports.map((r) => (
-            <div key={r.id} className="border rounded p-3">
-              <div className="flex justify-between items-start gap-3 mb-2">
+          filteredReports.map((r) => (
+            <div key={r.id} className="border rounded p-3 flex gap-3">
+              {r.reportedMessageId && (
+                <input
+                  type="checkbox"
+                  checked={selectedMessageIds.has(r.reportedMessageId)}
+                  onChange={(e) => {
+                    const newSet = new Set(selectedMessageIds);
+                    if (e.target.checked) {
+                      newSet.add(r.reportedMessageId);
+                    } else {
+                      newSet.delete(r.reportedMessageId);
+                    }
+                    setSelectedMessageIds(newSet);
+                  }}
+                  className="mt-1"
+                />
+              )}
+              <div className="flex-1">
                 <div>
                   <div className="font-semibold">Reason: {r.reason}</div>
                   <div className="text-sm text-gray-500">{r.description}</div>

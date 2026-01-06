@@ -20,6 +20,8 @@ export default function ChatPage() {
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [messageToReport, setMessageToReport] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [messageReactions, setMessageReactions] = useState({});
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -188,6 +190,21 @@ export default function ChatPage() {
     }, 1500);
   };
 
+  const handleReactToMessage = (messageId, emoji) => {
+    setMessageReactions((prev) => {
+      const current = prev[messageId] || {};
+      const emojiCount = current[emoji] || 0;
+      return {
+        ...prev,
+        [messageId]: {
+          ...current,
+          [emoji]: emojiCount + 1,
+        },
+      };
+    });
+    // TODO: emit to socket or send to server for persistence
+  };
+
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString("en-US", {
@@ -224,90 +241,120 @@ export default function ChatPage() {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
           Chat
         </h2>
+        <input
+          type="text"
+          placeholder="🔍 Search messages..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="ml-auto px-3 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600"
+        />
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => {
-          const isOwn = message.sender.id === user.id;
-          return (
-            <div
-              key={message.id}
-              className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
-            >
+        {messages
+          .filter(
+            (msg) =>
+              !searchQuery ||
+              msg.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              msg.sender?.name
+                ?.toLowerCase()
+                .includes(searchQuery.toLowerCase())
+          )
+          .map((message) => {
+            const isOwn = message.sender.id === user.id;
+            return (
               <div
-                className={`flex items-end gap-2 max-w-[70%] ${
-                  isOwn ? "flex-row-reverse" : "flex-row"
-                }`}
+                key={message.id}
+                className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
               >
-                {!isOwn && (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                    {message.sender.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div>
+                <div
+                  className={`flex items-end gap-2 max-w-[70%] ${
+                    isOwn ? "flex-row-reverse" : "flex-row"
+                  }`}
+                >
                   {!isOwn && (
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 px-3">
-                      {message.sender.name}
-                    </p>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                      {message.sender.name.charAt(0).toUpperCase()}
+                    </div>
                   )}
-                  <div
-                    className={`rounded-2xl px-4 py-2 ${
-                      isOwn
-                        ? "bg-blue-500 text-white rounded-br-sm"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-sm"
-                    }`}
-                  >
-                    {message.attachmentUrl && (
-                      <div className="mb-2">
-                        <img
-                          src={message.attachmentUrl}
-                          alt="attachment"
-                          className="max-w-sm rounded-lg max-h-64 object-cover cursor-pointer"
-                          onClick={() =>
-                            window.open(message.attachmentUrl, "_blank")
-                          }
-                        />
-                      </div>
+                  <div>
+                    {!isOwn && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 px-3">
+                        {message.sender.name}
+                      </p>
                     )}
-                    <p className="text-sm whitespace-pre-wrap break-words">
-                      {message.text}
-                    </p>
-                    <div className="flex items-center gap-2 text-xs mt-1">
-                      <span
-                        className={
-                          isOwn
-                            ? "text-blue-100"
-                            : "text-gray-500 dark:text-gray-400"
-                        }
-                      >
-                        {formatTimestamp(message.timestamp)}
-                      </span>
-                      {isOwn && <span className="text-blue-100">✓</span>}
+                    <div
+                      className={`rounded-2xl px-4 py-2 ${
+                        isOwn
+                          ? "bg-blue-500 text-white rounded-br-sm"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-sm"
+                      }`}
+                    >
+                      {message.attachmentUrl && (
+                        <div className="mb-2">
+                          <img
+                            src={message.attachmentUrl}
+                            alt="attachment"
+                            className="max-w-sm rounded-lg max-h-64 object-cover cursor-pointer"
+                            onClick={() =>
+                              window.open(message.attachmentUrl, "_blank")
+                            }
+                          />
+                        </div>
+                      )}
+                      <p className="text-sm whitespace-pre-wrap break-words">
+                        {message.text}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs mt-1">
+                        <span
+                          className={
+                            isOwn
+                              ? "text-blue-100"
+                              : "text-gray-500 dark:text-gray-400"
+                          }
+                        >
+                          {formatTimestamp(message.timestamp)}
+                        </span>
+                        {isOwn && <span className="text-blue-100">✓</span>}
+                      </div>
+                      {messageReactions[message.id] && Object.keys(messageReactions[message.id]).length > 0 && (
+                        <div className="flex gap-1 flex-wrap mt-2">
+                          {Object.entries(messageReactions[message.id]).map(([emoji, count]) => (
+                            <button
+                              key={emoji}
+                              onClick={() => handleReactToMessage(message.id, emoji)}
+                              className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs border border-gray-300 dark:bg-gray-600 dark:border-gray-500"
+                            >
+                              <span>{emoji}</span>
+                              <span className="text-gray-600 dark:text-gray-300">{count}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-                <div className="flex flex-col gap-1 px-1">
-                  <button
-                    type="button"
-                    className="text-gray-400 hover:text-gray-600 text-lg"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isOwn) {
-                        handleDeleteMessage(message.id);
-                      } else {
-                        handleReportMessage(message);
-                      }
-                    }}
-                    title={isOwn ? "Delete" : "Report"}
-                  >
-                    ⋮
-                  </button>
+                  <div className="flex flex-col gap-1 px-1">
+                    <button
+                      type="button"
+                      className="text-gray-400 hover:text-gray-600 text-lg"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isOwn) {
+                          handleDeleteMessage(message.id);
+                        } else {
+                          handleReportMessage(message);
+                        }
+                      }}
+                      title={isOwn ? "Delete" : "Report"}
+                    >
+                      ⋮
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
         <div ref={messagesEndRef} />
       </div>
 
