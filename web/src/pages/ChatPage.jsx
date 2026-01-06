@@ -23,6 +23,7 @@ export default function ChatPage() {
   const [messageToReport, setMessageToReport] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [messageReactions, setMessageReactions] = useState({});
+  const [pendingMessages, setPendingMessages] = useState([]); // optimistic queue
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState(new Set());
   const messagesEndRef = useRef(null);
@@ -31,6 +32,7 @@ export default function ChatPage() {
   const typingTimeoutRef = useRef(null);
   const readTimeoutRef = useRef(null);
   const markChatReadTimeoutRef = useRef(null);
+  const pendingTimersRef = useRef({});
 
   // Auto-mark messages as read when viewed
   const markVisibleMessagesAsRead = useCallback(() => {
@@ -84,10 +86,81 @@ export default function ChatPage() {
     });
   }, []);
 
+  // Send a pending message with retry/backoff
+  const sendPendingMessage = useCallback(
+    async (pending) => {
+      // offline -> keep queued
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        setPendingMessages((prev) =>
+          prev.map((m) =>
+            m.tempId === pending.tempId ? { ...m, status: "queued" } : m
+          )
+        );
+        return;
+      }
+
+      setPendingMessages((prev) =>
+        prev.map((m) =>
+          m.tempId === pending.tempId ? { ...m, status: "sending" } : m
+        )
+      );
+
+      try {
+        const response = await chatService.sendMessage(
+          chatId,
+          pending.text,
+          pending.attachmentUrl
+        );
+        // Remove pending and insert real message
+        setPendingMessages((prev) =>
+          prev.filter((m) => m.tempId !== pending.tempId)
+        );
+        upsertMessage(response);
+      } catch (error) {
+        const attempts = (pending.attempts || 0) + 1;
+        const willRetry = attempts < 4;
+        setPendingMessages((prev) =>
+          prev.map((m) =>
+            m.tempId === pending.tempId
+              ? {
+                  ...m,
+                  attempts,
+                  status: willRetry ? "retrying" : "failed",
+                }
+              : m
+          )
+        );
+
+        if (willRetry) {
+          const backoffMs = Math.min(5000, 500 * Math.pow(2, attempts));
+          if (pendingTimersRef.current[pending.tempId]) {
+            clearTimeout(pendingTimersRef.current[pending.tempId]);
+          }
+          pendingTimersRef.current[pending.tempId] = setTimeout(() => {
+            sendPendingMessage({ ...pending, attempts });
+          }, backoffMs);
+        }
+      }
+    },
+    [chatId, upsertMessage]
+  );
+
   const handleReceiveMessage = useCallback(
     (message) => {
       if (message.chatId === chatId) {
         upsertMessage(message);
+
+        // Remove matching pending if same sender and text
+        setPendingMessages((prev) =>
+          prev.filter(
+            (m) =>
+              !(
+                m.sender.id === user.id &&
+                m.text === message.text &&
+                m.attachmentUrl === message.attachmentUrl
+              )
+          )
+        );
 
         // If user is viewing this chat, clear unread count quickly
         if (markChatReadTimeoutRef.current) {
@@ -102,7 +175,7 @@ export default function ChatPage() {
         }, 150);
       }
     },
-    [chatId, upsertMessage]
+    [chatId, upsertMessage, user.id]
   );
 
   const loadMessages = useCallback(async () => {
@@ -244,6 +317,16 @@ export default function ChatPage() {
     };
   }, [chatId, handleReceiveMessage, loadMessages]);
 
+  // Cleanup pending timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(pendingTimersRef.current || {}).forEach((t) =>
+        clearTimeout(t)
+      );
+      pendingTimersRef.current = {};
+    };
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
     markVisibleMessagesAsRead();
@@ -279,44 +362,30 @@ export default function ChatPage() {
 
     socket.emit("stop_typing", { chatId, userId: user?.id });
 
-    setSending(true);
     const messageText = newMessage.trim();
-    // Sanitize attachment URL by removing whitespace/newlines
     const attachment = attachmentUrl ? attachmentUrl.trim() : null;
     setNewMessage("");
     setAttachmentUrl("");
 
-    console.log("📤 Sending message via REST API:", {
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage = {
+      tempId,
+      id: tempId,
       chatId,
-      text: messageText || "(attachment)",
+      text: messageText,
       attachmentUrl: attachment,
-    });
+      sender: { id: user.id, name: user.name || "You" },
+      timestamp: new Date().toISOString(),
+      status: "sending",
+      attempts: 0,
+      readReceipts: [],
+    };
 
-    try {
-      // Use REST API to send message (more reliable than Socket.io on Render)
-      const response = await chatService.sendMessage(
-        chatId,
-        messageText,
-        attachment
-      );
-      console.log("✅ Message sent successfully:", response);
+    setPendingMessages((prev) => [...prev, optimisticMessage]);
+    setSending(false);
 
-      // Add message to local state immediately
-      if (response) {
-        upsertMessage(response);
-      }
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      const errorMsg =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to send message";
-      alert(`Error: ${errorMsg}`);
-      setNewMessage(messageText);
-      setAttachmentUrl(attachment);
-    } finally {
-      setSending(false);
-    }
+    // Kick off send with retry/backoff
+    sendPendingMessage(optimisticMessage);
   };
 
   const handleBulkDelete = async () => {
@@ -407,8 +476,19 @@ export default function ChatPage() {
 
   if (loading) return <LoadingSpinner />;
 
+  const handleRetryPending = useCallback(
+    (tempId) => {
+      const pending = pendingMessages.find((m) => m.tempId === tempId);
+      if (pending) {
+        sendPendingMessage({ ...pending, attempts: 0, status: "sending" });
+      }
+    },
+    [pendingMessages, sendPendingMessage]
+  );
+
   const renderMessage = (message) => {
     const isOwn = message.sender.id === user.id;
+    const isPending = Boolean(message.tempId);
     return (
       <div
         key={message.id}
@@ -460,7 +540,9 @@ export default function ChatPage() {
               {message.isPinned && (
                 <div className="text-xs opacity-75 mb-1">📌 Pinned</div>
               )}
-              <div className="break-words">{message.text}</div>
+              <div className="break-words">
+                {message.text || (message.attachmentUrl ? "(attachment)" : "")}
+              </div>
               {message.attachmentUrl && (
                 <a
                   href={message.attachmentUrl}
@@ -480,7 +562,7 @@ export default function ChatPage() {
               >
                 {formatTimestamp(message.timestamp)}
               </span>
-              {isOwn && (
+              {isOwn && !isPending && (
                 <span className="text-blue-100 text-xs">
                   {(() => {
                     const hasReadReceipts =
@@ -493,6 +575,26 @@ export default function ChatPage() {
                     return hasReadReceipts ? `✓✓` : `✓`;
                   })()}{" "}
                   {/* Single check for sent */}
+                </span>
+              )}
+              {isPending && (
+                <span className="text-xs text-gray-300 flex items-center gap-2">
+                  {message.status === "failed"
+                    ? "Failed"
+                    : message.status === "retrying"
+                    ? "Retrying..."
+                    : message.status === "queued"
+                    ? "Queued (offline)"
+                    : "Sending..."}
+                  {message.status === "failed" && (
+                    <button
+                      type="button"
+                      onClick={() => handleRetryPending(message.tempId)}
+                      className="underline"
+                    >
+                      Retry
+                    </button>
+                  )}
                 </span>
               )}
             </div>
@@ -609,7 +711,7 @@ export default function ChatPage() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {(() => {
-          const filteredMessages = messages.filter(
+          const filteredMessages = [...messages, ...pendingMessages].filter(
             (msg) =>
               !searchQuery ||
               msg.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
