@@ -183,10 +183,18 @@ exports.getChatMessages = async (req, res, next) => {
         .json({ message: "Not authorized to view this chat" });
     }
 
+    // If 'before' is provided, fetch messages before this message ID
+    let beforeMessage = null;
+    if (before) {
+      beforeMessage = await prisma.message.findUnique({
+        where: { id: before },
+      });
+    }
+
     const messages = await prisma.message.findMany({
       where: {
         chatId,
-        ...(before && { timestamp: { lt: new Date(before) } }),
+        ...(beforeMessage && { timestamp: { lt: beforeMessage.timestamp } }),
       },
       orderBy: { timestamp: "desc" },
       take: parseInt(limit),

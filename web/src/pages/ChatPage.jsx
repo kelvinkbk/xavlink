@@ -15,6 +15,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [sending, setSending] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [attachmentUrl, setAttachmentUrl] = useState("");
@@ -25,10 +26,15 @@ export default function ChatPage() {
   const [messageReactions, setMessageReactions] = useState({});
   const [pendingMessages, setPendingMessages] = useState([]); // optimistic queue
   const [toast, setToast] = useState(null);
-  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState(new Set());
   const messagesEndRef = useRef(null);
+  const messagesStartRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -206,7 +212,8 @@ export default function ChatPage() {
   const loadMessages = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await chatService.getChatMessages(chatId);
+      // Load the latest 50 messages
+      const data = await chatService.getChatMessages(chatId, 50, null);
       console.log(
         `📚 Loaded ${data.length} messages:`,
         data.map((m) => ({
@@ -217,6 +224,7 @@ export default function ChatPage() {
         }))
       );
       setMessages(data);
+      setHasMoreMessages(data.length >= 50);
 
       // Load reactions from server data
       const reactionsMap = {};
@@ -244,6 +252,44 @@ export default function ChatPage() {
       setLoading(false);
     }
   }, [chatId]);
+
+  // Load older messages when scrolling to top
+  const loadOlderMessages = useCallback(async () => {
+    if (loadingOlder || !hasMoreMessages || messages.length === 0) return;
+
+    try {
+      setLoadingOlder(true);
+      const oldestMessage = messages[0];
+      const olderData = await chatService.getChatMessages(
+        chatId,
+        50,
+        oldestMessage.id
+      );
+
+      if (olderData.length === 0) {
+        setHasMoreMessages(false);
+        return;
+      }
+
+      console.log(`📚 Loaded ${olderData.length} older messages`);
+      setMessages((prev) => [...olderData, ...prev]);
+      setHasMoreMessages(olderData.length >= 50);
+
+      // Load reactions for older messages
+      olderData.forEach((msg) => {
+        if (msg.reactionCounts && Object.keys(msg.reactionCounts).length > 0) {
+          setMessageReactions((prev) => ({
+            ...prev,
+            [msg.id]: msg.reactionCounts,
+          }));
+        }
+      });
+    } catch (error) {
+      console.error("Failed to load older messages:", error);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [chatId, messages, loadingOlder, hasMoreMessages]);
 
   useEffect(() => {
     // Ensure socket is connected
@@ -352,6 +398,23 @@ export default function ChatPage() {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
+
+  // Intersection Observer to load older messages when scrolling to top
+  useEffect(() => {
+    if (!messagesStartRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreMessages && !loadingOlder) {
+          loadOlderMessages();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(messagesStartRef.current);
+    return () => observer.disconnect();
+  }, [loadOlderMessages, hasMoreMessages, loadingOlder]);
 
   // Flush queued/failed messages when coming online
   useEffect(() => {
@@ -768,7 +831,30 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+      >
+        {loadingOlder && (
+          <div className="text-center py-4">
+            <div className="inline-block">
+              <svg
+                className="w-6 h-6 animate-spin text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </div>
+          </div>
+        )}
+        <div ref={messagesStartRef} className="h-1" />
         {(() => {
           const filteredMessages = [...messages, ...pendingMessages].filter(
             (msg) =>
