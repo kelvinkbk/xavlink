@@ -176,11 +176,9 @@ export default function ChatPage() {
       await reportService.createReport({
         // Valid reasons per backend: spam, harassment, inappropriate_content, misinformation, copyright, other
         reason: "harassment",
-        description: `Reported message\nChat ID: ${
-          activeChat?.id
-        }\nMessage ID: ${message.id}\nText: ${
-          message.text?.slice(0, 200) || "(no text)"
-        }`,
+        description: `Reported message\nChat ID: ${chatId}\nMessage ID: ${
+          message.id
+        }\nText: ${message.text?.slice(0, 200) || "(no text)"}`,
         reportedUserId: message.sender?.id,
         reportedMessageId: message.id,
       });
