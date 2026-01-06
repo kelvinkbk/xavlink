@@ -26,7 +26,17 @@ export default function ChatPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [messageReactions, setMessageReactions] = useState({});
-  const [pendingMessages, setPendingMessages] = useState([]); // optimistic queue
+  // Initialize pendingMessages from localStorage
+  const [pendingMessages, setPendingMessages] = useState(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem(`pending_${chatId}`);
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error("Failed to load pending messages from localStorage:", e);
+      return [];
+    }
+  });
   const [toast, setToast] = useState(null);
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true
@@ -45,6 +55,21 @@ export default function ChatPage() {
   const pendingTimersRef = useRef({});
   const toastTimerRef = useRef(null);
   const searchTimeoutRef = useRef(null);
+
+  // Persist pending messages to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (pendingMessages.length > 0) {
+        localStorage.setItem(`pending_${chatId}`, JSON.stringify(pendingMessages));
+        console.log(`💾 Saved ${pendingMessages.length} pending messages to localStorage`);
+      } else {
+        localStorage.removeItem(`pending_${chatId}`);
+      }
+    } catch (e) {
+      console.error("Failed to save pending messages to localStorage:", e);
+    }
+  }, [pendingMessages, chatId]);
 
   // Handle search with debounce
   const handleSearch = useCallback(
@@ -204,16 +229,25 @@ export default function ChatPage() {
         upsertMessage(message);
 
         // Remove matching pending if same sender and text
-        setPendingMessages((prev) =>
-          prev.filter(
+        setPendingMessages((prev) => {
+          const filtered = prev.filter(
             (m) =>
               !(
                 m.sender.id === user.id &&
                 m.text === message.text &&
                 m.attachmentUrl === message.attachmentUrl
               )
-          )
-        );
+          );
+          // Update localStorage immediately
+          if (typeof window !== "undefined") {
+            if (filtered.length > 0) {
+              localStorage.setItem(`pending_${chatId}`, JSON.stringify(filtered));
+            } else {
+              localStorage.removeItem(`pending_${chatId}`);
+            }
+          }
+          return filtered;
+        });
 
         // If user is viewing this chat, clear unread count quickly
         if (markChatReadTimeoutRef.current) {
@@ -919,7 +953,8 @@ export default function ChatPage() {
                     ) : (
                       <>
                         {filteredMessages.length} result
-                        {filteredMessages.length !== 1 ? "s" : ""} for "{searchQuery}"
+                        {filteredMessages.length !== 1 ? "s" : ""} for "
+                        {searchQuery}"
                       </>
                     )}
                   </div>
