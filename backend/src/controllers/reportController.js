@@ -16,7 +16,13 @@ const VALID_REPORT_REASONS = [
 
 exports.createReport = async (req, res, next) => {
   try {
-    const { reason, description, reportedUserId, reportedPostId } = req.body;
+    const {
+      reason,
+      description,
+      reportedUserId,
+      reportedPostId,
+      reportedMessageId,
+    } = req.body;
 
     console.log("Report request body:", req.body);
     console.log("Extracted fields:", {
@@ -24,6 +30,7 @@ exports.createReport = async (req, res, next) => {
       description,
       reportedUserId,
       reportedPostId,
+      reportedMessageId,
     });
 
     if (!reason || !description) {
@@ -42,9 +49,10 @@ exports.createReport = async (req, res, next) => {
         .json({ message: "Description must be at least 10 characters" });
     }
 
-    if (!reportedUserId && !reportedPostId) {
+    if (!reportedUserId && !reportedPostId && !reportedMessageId) {
       return res.status(400).json({
-        message: "Either reportedUserId or reportedPostId is required",
+        message:
+          "Either reportedUserId, reportedPostId, or reportedMessageId is required",
       });
     }
 
@@ -59,6 +67,7 @@ exports.createReport = async (req, res, next) => {
         reporterId: req.user.id,
         reportedUserId: reportedUserId || undefined,
         reportedPostId: reportedPostId || undefined,
+        reportedMessageId: reportedMessageId || undefined,
         status: "pending",
       },
     });
@@ -76,6 +85,7 @@ exports.createReport = async (req, res, next) => {
         description,
         reportedUserId: reportedUserId || null,
         reportedPostId: reportedPostId || null,
+        reportedMessageId: reportedMessageId || null,
       },
       include: {
         reporter: { select: { id: true, name: true, email: true } },

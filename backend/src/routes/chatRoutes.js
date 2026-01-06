@@ -10,5 +10,6 @@ router.post("/group", chatController.createGroupChat);
 router.get("/", chatController.getUserChats);
 router.get("/:chatId/messages", chatController.getChatMessages);
 router.post("/:chatId/messages", chatController.sendMessage);
+router.delete("/:chatId/messages/:messageId", chatController.deleteMessage);
 
 module.exports = router;

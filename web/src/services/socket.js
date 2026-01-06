@@ -14,6 +14,11 @@ export const socket = io(baseURL, {
   reconnectionDelayMax: 5000,
 });
 
+// Debug connection issues
+socket.on("connect_error", (err) => {
+  console.error("⚠️ Socket connect_error:", err?.message, err);
+});
+
 // Join user's notification room
 export const joinUserRoom = (userId) => {
   if (userId) {

@@ -203,11 +203,9 @@ exports.sendMessage = async (req, res, next) => {
 
     // Require either text or attachment
     if (!chatId || (!text && !attachmentUrl)) {
-      return res
-        .status(400)
-        .json({
-          message: "chatId and either text or attachmentUrl are required",
-        });
+      return res.status(400).json({
+        message: "chatId and either text or attachmentUrl are required",
+      });
     }
 
     // Verify user is a participant
@@ -235,7 +233,49 @@ exports.sendMessage = async (req, res, next) => {
       },
     });
 
+    // Broadcast via socket for real-time delivery
+    if (global.io) {
+      global.io.to(chatId).emit("receive_message", message);
+    }
+
     res.status(201).json(message);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete a message (only sender can delete/unsend)
+ */
+exports.deleteMessage = async (req, res, next) => {
+  try {
+    const { chatId, messageId } = req.params;
+    const userId = req.user.id;
+
+    // Verify message exists and belongs to requester
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      select: { id: true, chatId: true, senderId: true },
+    });
+
+    if (!message || message.chatId !== chatId) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    if (message.senderId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this message" });
+    }
+
+    await prisma.message.delete({ where: { id: messageId } });
+
+    // Broadcast deletion to room
+    if (global.io) {
+      global.io.to(chatId).emit("message_deleted", { messageId, chatId });
+    }
+
+    res.json({ message: "Message deleted" });
   } catch (error) {
     next(error);
   }

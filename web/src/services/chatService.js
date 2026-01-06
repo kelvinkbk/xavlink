@@ -36,4 +36,10 @@ export const chatService = {
     });
     return response.data;
   },
+
+  // Delete/unsend a message (sender only)
+  async deleteMessage(chatId, messageId) {
+    const response = await api.delete(`/chats/${chatId}/messages/${messageId}`);
+    return response.data;
+  },
 };

@@ -4,7 +4,7 @@ import { chatService } from "../services/chatService";
 import { socket } from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { uploadService } from "../services/api";
+import { uploadService, reportService } from "../services/api";
 
 export default function ChatPage() {
   const { chatId } = useParams();
@@ -16,17 +16,26 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [typingUsers, setTypingUsers] = useState(new Set());
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+
+  const upsertMessage = useCallback((message) => {
+    setMessages((prev) => {
+      if (prev.some((m) => m.id === message.id)) return prev;
+      return [...prev, message];
+    });
+  }, []);
 
   const handleReceiveMessage = useCallback(
     (message) => {
       if (message.chatId === chatId) {
-        setMessages((prev) => [...prev, message]);
+        upsertMessage(message);
       }
     },
-    [chatId]
+    [chatId, upsertMessage]
   );
 
   const loadMessages = useCallback(async () => {
@@ -55,9 +64,25 @@ export default function ChatPage() {
     socket.emit("join_room", { chatId });
 
     socket.on("receive_message", handleReceiveMessage);
+    socket.on("message_deleted", ({ messageId }) => {
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    });
+    socket.on("user_typing", ({ userName }) => {
+      setTypingUsers((prev) => {
+        const next = new Set(prev);
+        next.add(userName || "Someone");
+        return next;
+      });
+    });
+    socket.on("user_stopped_typing", () => {
+      setTypingUsers(new Set());
+    });
 
     return () => {
       socket.off("receive_message", handleReceiveMessage);
+      socket.off("message_deleted");
+      socket.off("user_typing");
+      socket.off("user_stopped_typing");
     };
   }, [chatId, handleReceiveMessage, loadMessages]);
 
@@ -93,6 +118,8 @@ export default function ChatPage() {
     e.preventDefault();
     if ((!newMessage.trim() && !attachmentUrl) || sending) return;
 
+    socket.emit("stop_typing", { chatId, userId: user?.id });
+
     setSending(true);
     const messageText = newMessage.trim();
     // Sanitize attachment URL by removing whitespace/newlines
@@ -117,7 +144,7 @@ export default function ChatPage() {
 
       // Add message to local state immediately
       if (response) {
-        setMessages((prev) => [...prev, response]);
+        upsertMessage(response);
       }
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -131,6 +158,46 @@ export default function ChatPage() {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    if (!window.confirm("Delete this message for everyone?")) return;
+    try {
+      await chatService.deleteMessage(chatId, messageId);
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    } catch (error) {
+      console.error("Failed to delete message:", error);
+      alert("Failed to delete message");
+    }
+  };
+
+  const handleReportMessage = async (message) => {
+    try {
+      await reportService.createReport({
+        // Valid reasons per backend: spam, harassment, inappropriate_content, misinformation, copyright, other
+        reason: "harassment",
+        description: `Reported message\nChat ID: ${
+          activeChat?.id
+        }\nMessage ID: ${message.id}\nText: ${
+          message.text?.slice(0, 200) || "(no text)"
+        }`,
+        reportedUserId: message.sender?.id,
+        reportedMessageId: message.id,
+      });
+      alert("Message reported to moderators.");
+    } catch (error) {
+      console.error("Failed to report message:", error);
+      alert("Failed to report message");
+    }
+  };
+
+  const handleTyping = (value) => {
+    setNewMessage(value);
+    socket.emit("typing", { chatId, userId: user?.id, userName: user?.name });
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit("stop_typing", { chatId, userId: user?.id });
+    }, 1500);
   };
 
   const formatTimestamp = (timestamp) => {
@@ -204,25 +271,50 @@ export default function ChatPage() {
                     }`}
                   >
                     {message.attachmentUrl && (
-                      <img
-                        src={message.attachmentUrl}
-                        alt="attachment"
-                        className="max-w-sm rounded-lg mb-2 max-h-64 object-cover"
-                      />
+                      <div className="mb-2">
+                        <img
+                          src={message.attachmentUrl}
+                          alt="attachment"
+                          className="max-w-sm rounded-lg max-h-64 object-cover cursor-pointer"
+                          onClick={() =>
+                            window.open(message.attachmentUrl, "_blank")
+                          }
+                        />
+                      </div>
                     )}
                     <p className="text-sm whitespace-pre-wrap break-words">
                       {message.text}
                     </p>
-                    <p
-                      className={`text-xs mt-1 ${
-                        isOwn
-                          ? "text-blue-100"
-                          : "text-gray-500 dark:text-gray-400"
-                      }`}
-                    >
-                      {formatTimestamp(message.timestamp)}
-                    </p>
+                    <div className="flex items-center gap-2 text-xs mt-1">
+                      <span
+                        className={
+                          isOwn
+                            ? "text-blue-100"
+                            : "text-gray-500 dark:text-gray-400"
+                        }
+                      >
+                        {formatTimestamp(message.timestamp)}
+                      </span>
+                      {isOwn && <span className="text-blue-100">✓</span>}
+                    </div>
                   </div>
+                </div>
+                <div className="flex flex-col gap-1 px-1">
+                  <button
+                    type="button"
+                    className="text-gray-400 hover:text-gray-600 text-lg"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isOwn) {
+                        handleDeleteMessage(message.id);
+                      } else {
+                        handleReportMessage(message);
+                      }
+                    }}
+                    title={isOwn ? "Delete" : "Report"}
+                  >
+                    ⋮
+                  </button>
                 </div>
               </div>
             </div>
@@ -297,7 +389,7 @@ export default function ChatPage() {
             ref={inputRef}
             type="text"
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => handleTyping(e.target.value)}
             placeholder="Type a message..."
             className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={sending}
@@ -322,6 +414,11 @@ export default function ChatPage() {
             </svg>
           </button>
         </div>
+        {typingUsers.size > 0 && (
+          <p className="text-xs text-gray-500 mt-2">
+            {Array.from(typingUsers).join(", ")} typing...
+          </p>
+        )}
       </form>
     </div>
   );

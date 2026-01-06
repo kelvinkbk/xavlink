@@ -294,6 +294,7 @@ model Report {
   description   String
   reportedUserId String?       @db.Uuid
   reportedPostId String?       @db.Uuid
+  reportedMessageId String?    @db.Uuid
   status        ReportStatus  @default(pending)
   resolvedBy    String?       @db.Uuid
   resolutionNote String?
@@ -307,6 +308,7 @@ model Report {
   @@index([reporterId])
   @@index([reportedUserId])
   @@index([reportedPostId])
+  @@index([reportedMessageId])
   @@index([status])
   @@index([createdAt])
 }

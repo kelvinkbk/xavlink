@@ -150,7 +150,9 @@ function PostCard({ post, onLike, onComment, onReport, onDelete, onEdit }) {
             <button
               onClick={async () => {
                 try {
-                  await postService.updatePost(post.id, { content: editPostContent });
+                  await postService.updatePost(post.id, {
+                    content: editPostContent,
+                  });
                   onEdit(post.id, editPostContent);
                   setIsEditingPost(false);
                   showToast("Post updated", "success");
@@ -235,15 +237,24 @@ function PostCard({ post, onLike, onComment, onReport, onDelete, onEdit }) {
                             <button
                               onClick={async () => {
                                 try {
-                                  await postService.updateComment(comment.id, { text: editCommentText });
-                                  setComments(comments.map(c => 
-                                    c.id === comment.id ? { ...c, text: editCommentText } : c
-                                  ));
+                                  await postService.updateComment(comment.id, {
+                                    text: editCommentText,
+                                  });
+                                  setComments(
+                                    comments.map((c) =>
+                                      c.id === comment.id
+                                        ? { ...c, text: editCommentText }
+                                        : c
+                                    )
+                                  );
                                   setEditingCommentId(null);
                                   showToast("Comment updated", "success");
                                 } catch (e) {
                                   console.error("Error updating comment:", e);
-                                  showToast("Failed to update comment", "error");
+                                  showToast(
+                                    "Failed to update comment",
+                                    "error"
+                                  );
                                 }
                               }}
                               className="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-blue-600"
@@ -289,7 +300,9 @@ function PostCard({ post, onLike, onComment, onReport, onDelete, onEdit }) {
                             if (window.confirm("Delete this comment?")) {
                               try {
                                 await postService.deleteComment(comment.id);
-                                setComments(comments.filter(c => c.id !== comment.id));
+                                setComments(
+                                  comments.filter((c) => c.id !== comment.id)
+                                );
                                 onComment(post.id, -1);
                                 showToast("Comment deleted", "success");
                               } catch (e) {
@@ -537,7 +550,9 @@ export default function Home() {
   const handleCommentAdded = (postId, countChange = 1) => {
     setPosts(
       posts.map((p) =>
-        p.id === postId ? { ...p, commentsCount: p.commentsCount + countChange } : p
+        p.id === postId
+          ? { ...p, commentsCount: p.commentsCount + countChange }
+          : p
       )
     );
     if (countChange > 0) {

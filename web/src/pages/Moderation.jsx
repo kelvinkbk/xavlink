@@ -599,6 +599,42 @@ function ReportsSection() {
     }
   };
 
+  const deleteReportedMessage = async (report) => {
+    if (!report.reportedMessageId) return;
+
+    // Find chatId from description if available
+    const chatIdMatch = report.description?.match(/Chat ID: ([a-f0-9-]+)/i);
+    if (!chatIdMatch) {
+      alert("Cannot delete message: Chat ID not found in report");
+      return;
+    }
+
+    const chatId = chatIdMatch[1];
+
+    if (window.confirm("Delete this reported message?")) {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/chats/${chatId}/messages/${
+            report.reportedMessageId
+          }`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        if (!response.ok) throw new Error("Failed to delete message");
+
+        // Auto-resolve the report
+        await updateStatus(report.id, "resolved");
+        alert("Message deleted and report resolved");
+      } catch (e) {
+        setError(e?.message || "Failed to delete message");
+      }
+    }
+  };
+
   return (
     <section className="space-y-3">
       <h2 className="text-xl font-semibold">Reports</h2>
@@ -636,6 +672,11 @@ function ReportsSection() {
                   {r.reportedPostId && (
                     <div className="text-sm">Post ID: {r.reportedPostId}</div>
                   )}
+                  {r.reportedMessageId && (
+                    <div className="text-sm">
+                      Message ID: {r.reportedMessageId}
+                    </div>
+                  )}
                 </div>
                 <span className="px-2 py-1 bg-gray-100 rounded text-sm">
                   {r.status}
@@ -644,6 +685,15 @@ function ReportsSection() {
               <div className="flex gap-2">
                 {r.status === "pending" && (
                   <>
+                    {" "}
+                    {r.reportedMessageId && (
+                      <button
+                        className="px-2 py-1 bg-red-600 text-white rounded text-sm"
+                        onClick={() => deleteReportedMessage(r)}
+                      >
+                        Delete Message
+                      </button>
+                    )}{" "}
                     <button
                       className="px-2 py-1 bg-green-600 text-white rounded text-sm"
                       onClick={() => updateStatus(r.id, "resolved")}
