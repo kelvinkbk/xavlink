@@ -339,3 +339,161 @@ exports.deletePost = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.updatePost = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { content, image } = req.body;
+
+    if (!content) {
+      return res.status(400).json({ message: "Content is required" });
+    }
+
+    // Find the post and verify ownership
+    const post = await prisma.post.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (post.userId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to edit this post" });
+    }
+
+    // Update the post
+    const updatedPost = await prisma.post.update({
+      where: { id },
+      data: {
+        content,
+        ...(image !== undefined && { image }),
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, profilePic: true, course: true },
+        },
+      },
+    });
+
+    // Emit real-time update via Socket.io
+    if (global.io) {
+      console.log("📡 Broadcasting post_updated event:", { postId: id });
+      global.io.emit("post_updated", { postId: id, content, image });
+    } else {
+      console.warn("⚠️ global.io not available for post_updated");
+    }
+
+    res.json(updatedPost);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateComment = async (req, res, next) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user.id;
+    const { text } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ message: "Comment text is required" });
+    }
+
+    // Find the comment and verify ownership
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { userId: true, postId: true },
+    });
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (comment.userId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to edit this comment" });
+    }
+
+    // Update the comment
+    const updatedComment = await prisma.comment.update({
+      where: { id: commentId },
+      data: { text },
+      include: {
+        user: {
+          select: { id: true, name: true, profilePic: true },
+        },
+      },
+    });
+
+    // Emit real-time update via Socket.io
+    if (global.io) {
+      console.log("📡 Broadcasting comment_updated event:", { commentId });
+      global.io.emit("comment_updated", {
+        commentId,
+        postId: comment.postId,
+        text,
+      });
+    } else {
+      console.warn("⚠️ global.io not available for comment_updated");
+    }
+
+    res.json(updatedComment);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteComment = async (req, res, next) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user.id;
+
+    // Find the comment and verify ownership
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { userId: true, postId: true },
+    });
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (comment.userId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this comment" });
+    }
+
+    // Delete the comment
+    await prisma.comment.delete({
+      where: { id: commentId },
+    });
+
+    // Update post comments count
+    await prisma.post.update({
+      where: { id: comment.postId },
+      data: { commentsCount: { decrement: 1 } },
+    });
+
+    // Emit real-time update via Socket.io
+    if (global.io) {
+      console.log("📡 Broadcasting comment_deleted event:", { commentId });
+      global.io.emit("comment_deleted", {
+        commentId,
+        postId: comment.postId,
+      });
+    } else {
+      console.warn("⚠️ global.io not available for comment_deleted");
+    }
+
+    res.json({ message: "Comment deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+};

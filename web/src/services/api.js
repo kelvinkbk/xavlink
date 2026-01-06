@@ -94,6 +94,12 @@ export const postService = {
       })),
     })),
   deletePost: (postId) => api.delete(`/posts/${postId}`),
+  updatePost: (postId, data) =>
+    api.patch(`/posts/${postId}`, data).then((res) => res.data),
+  updateComment: (commentId, data) =>
+    api.patch(`/posts/comments/${commentId}`, data).then((res) => res.data),
+  deleteComment: (commentId) =>
+    api.delete(`/posts/comments/${commentId}`).then((res) => res.data),
 };
 
 const toAbsolute = (url) => {

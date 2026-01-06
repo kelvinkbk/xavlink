@@ -7,6 +7,9 @@ const {
   addComment,
   getComments,
   deletePost,
+  updatePost,
+  updateComment,
+  deleteComment,
 } = require("../controllers/postController");
 const authMiddleware = require("../middleware/authMiddleware");
 const { optionalAuthMiddleware } = require("../middleware/authMiddleware");
@@ -20,5 +23,8 @@ router.delete("/:id/like", authMiddleware, unlikePost);
 router.post("/:id/comments", authMiddleware, addComment);
 router.get("/:id/comments", getComments);
 router.delete("/:id", authMiddleware, deletePost);
+router.patch("/:id", authMiddleware, updatePost);
+router.patch("/comments/:commentId", authMiddleware, updateComment);
+router.delete("/comments/:commentId", authMiddleware, deleteComment);
 
 module.exports = router;

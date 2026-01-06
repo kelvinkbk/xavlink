@@ -10,13 +10,18 @@ import socket from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
-function PostCard({ post, onLike, onComment, onReport, onDelete }) {
+function PostCard({ post, onLike, onComment, onReport, onDelete, onEdit }) {
   const { isAuthenticated, user } = useAuth();
+  const { showToast } = useToast();
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [isEditingPost, setIsEditingPost] = useState(false);
+  const [editPostContent, setEditPostContent] = useState(post.content);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editCommentText, setEditCommentText] = useState("");
 
   const defaultAvatar =
     "https://ui-avatars.com/api/?name=" +
@@ -79,21 +84,32 @@ function PostCard({ post, onLike, onComment, onReport, onDelete }) {
             {showMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                 {user.id === post.user?.id ? (
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      if (
-                        window.confirm(
-                          "Are you sure you want to delete this post?"
-                        )
-                      ) {
-                        onDelete(post.id);
-                      }
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
-                  >
-                    🗑️ Delete Post
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        setIsEditingPost(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-50"
+                    >
+                      ✏️ Edit Post
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        if (
+                          window.confirm(
+                            "Are you sure you want to delete this post?"
+                          )
+                        ) {
+                          onDelete(post.id);
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 border-t border-gray-100"
+                    >
+                      🗑️ Delete Post
+                    </button>
+                  </>
                 ) : (
                   <button
                     onClick={() => {
@@ -122,7 +138,45 @@ function PostCard({ post, onLike, onComment, onReport, onDelete }) {
         />
       )}
 
-      <p className="text-gray-700 mb-3">{post.content}</p>
+      {isEditingPost ? (
+        <div className="mb-3">
+          <textarea
+            value={editPostContent}
+            onChange={(e) => setEditPostContent(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-gray-900"
+            rows="3"
+          />
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={async () => {
+                try {
+                  await postService.updatePost(post.id, { content: editPostContent });
+                  onEdit(post.id, editPostContent);
+                  setIsEditingPost(false);
+                  showToast("Post updated", "success");
+                } catch (e) {
+                  console.error("Error updating post:", e);
+                  showToast("Failed to update post", "error");
+                }
+              }}
+              className="px-4 py-1 bg-primary text-white rounded-lg hover:bg-blue-600"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => {
+                setIsEditingPost(false);
+                setEditPostContent(post.content);
+              }}
+              className="px-4 py-1 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-gray-700 mb-3">{post.content}</p>
+      )}
 
       <div className="flex items-center gap-6 py-2 border-t border-gray-200">
         <button
@@ -169,30 +223,103 @@ function PostCard({ post, onLike, onComment, onReport, onDelete }) {
                       className="w-8 h-8 rounded-full flex-shrink-0"
                     />
                     <div className="flex-1">
-                      <p className="text-sm">
-                        <span className="font-semibold text-secondary">
-                          {comment.user?.name}
-                        </span>{" "}
-                        {comment.text}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {new Date(comment.createdAt).toLocaleDateString()}
-                      </p>
+                      {editingCommentId === comment.id ? (
+                        <div>
+                          <textarea
+                            value={editCommentText}
+                            onChange={(e) => setEditCommentText(e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                            rows="2"
+                          />
+                          <div className="flex gap-2 mt-1">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await postService.updateComment(comment.id, { text: editCommentText });
+                                  setComments(comments.map(c => 
+                                    c.id === comment.id ? { ...c, text: editCommentText } : c
+                                  ));
+                                  setEditingCommentId(null);
+                                  showToast("Comment updated", "success");
+                                } catch (e) {
+                                  console.error("Error updating comment:", e);
+                                  showToast("Failed to update comment", "error");
+                                }
+                              }}
+                              className="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-blue-600"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingCommentId(null)}
+                              className="px-2 py-1 bg-gray-300 text-gray-700 rounded text-xs hover:bg-gray-400"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm">
+                            <span className="font-semibold text-secondary">
+                              {comment.user?.name}
+                            </span>{" "}
+                            {comment.text}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </p>
+                        </>
+                      )}
                     </div>
-                    {user && user.id !== comment.user?.id && (
-                      <button
-                        onClick={() =>
-                          onReport(
-                            comment.id,
-                            `Comment by ${comment.user?.name}`,
-                            "Comment"
-                          )
-                        }
-                        className="text-gray-400 hover:text-red-500 text-sm"
-                        title="Report comment"
-                      >
-                        🚩
-                      </button>
+                    {user && user.id === comment.user?.id ? (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => {
+                            setEditingCommentId(comment.id);
+                            setEditCommentText(comment.text);
+                          }}
+                          className="text-gray-400 hover:text-blue-500 text-sm"
+                          title="Edit comment"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (window.confirm("Delete this comment?")) {
+                              try {
+                                await postService.deleteComment(comment.id);
+                                setComments(comments.filter(c => c.id !== comment.id));
+                                onComment(post.id, -1);
+                                showToast("Comment deleted", "success");
+                              } catch (e) {
+                                console.error("Error deleting comment:", e);
+                                showToast("Failed to delete comment", "error");
+                              }
+                            }
+                          }}
+                          className="text-gray-400 hover:text-red-500 text-sm"
+                          title="Delete comment"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    ) : (
+                      user && (
+                        <button
+                          onClick={() =>
+                            onReport(
+                              comment.id,
+                              `Comment by ${comment.user?.name}`,
+                              "Comment"
+                            )
+                          }
+                          className="text-gray-400 hover:text-red-500 text-sm"
+                          title="Report comment"
+                        >
+                          🚩
+                        </button>
+                      )
                     )}
                   </div>
                 ))}
@@ -407,13 +534,15 @@ export default function Home() {
     }
   };
 
-  const handleCommentAdded = (postId) => {
+  const handleCommentAdded = (postId, countChange = 1) => {
     setPosts(
       posts.map((p) =>
-        p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
+        p.id === postId ? { ...p, commentsCount: p.commentsCount + countChange } : p
       )
     );
-    showToast("Comment posted", "success");
+    if (countChange > 0) {
+      showToast("Comment posted", "success");
+    }
     // Update unread badge
     try {
       const userId = JSON.parse(localStorage.getItem("user"))?.id;
@@ -440,6 +569,12 @@ export default function Home() {
       console.error("Error deleting post:", e);
       showToast("Failed to delete post", "error");
     }
+  };
+
+  const handleEditPost = (postId, newContent) => {
+    setPosts(
+      posts.map((p) => (p.id === postId ? { ...p, content: newContent } : p))
+    );
   };
 
   if (loading)
@@ -590,6 +725,7 @@ export default function Home() {
                   onLike={handleLike}
                   onComment={handleCommentAdded}
                   onDelete={handleDeletePost}
+                  onEdit={handleEditPost}
                   onReport={(postId, postName, type = "Post") =>
                     setReportModal({
                       isOpen: true,
