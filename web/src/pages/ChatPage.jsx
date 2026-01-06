@@ -20,6 +20,9 @@ export default function ChatPage() {
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [attachmentPreview, setAttachmentPreview] = useState(null);
+  const [attachmentFileName, setAttachmentFileName] = useState("");
+  const [attachmentType, setAttachmentType] = useState(null);
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [messageToReport, setMessageToReport] = useState(null);
@@ -40,6 +43,7 @@ export default function ChatPage() {
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const uploadAbortControllerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const readTimeoutRef = useRef(null);
   const markChatReadTimeoutRef = useRef(null);
@@ -546,42 +550,99 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const getFileType = (mimeType) => {
+    if (mimeType?.startsWith("image/")) return "Image";
+    if (mimeType?.startsWith("video/")) return "Video";
+    if (mimeType === "application/pdf") return "PDF";
+    return null;
+  };
+
+  const getFileTypeColor = (type) => {
+    switch (type) {
+      case "Image":
+        return "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300";
+      case "Video":
+        return "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300";
+      case "PDF":
+        return "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
+      default:
+        return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
+    }
+  };
+
   const handleAttachmentUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type & size (images up to 10MB)
-    const MAX_BYTES = 10 * 1024 * 1024;
-    if (!file.type?.startsWith("image/")) {
-      showToast("Only image files are allowed", "error", 3000);
+    // Validate file type & size (images/videos up to 50MB, PDF up to 10MB)
+    const MAX_BYTES_MEDIA = 50 * 1024 * 1024;
+    const MAX_BYTES_PDF = 10 * 1024 * 1024;
+    const fileType = getFileType(file.type);
+    const MAX_SIZE = file.type === "application/pdf" ? MAX_BYTES_PDF : MAX_BYTES_MEDIA;
+
+    if (!fileType) {
+      showToast("Only images, videos, and PDFs are allowed", "error", 3000);
       e.target.value = "";
       return;
     }
-    if (file.size > MAX_BYTES) {
-      showToast("Image too large (max 10MB)", "error", 3000);
+    if (file.size > MAX_SIZE) {
+      const maxMB = file.type === "application/pdf" ? "10" : "50";
+      showToast(`${fileType} too large (max ${maxMB}MB)`, "error", 3000);
       e.target.value = "";
       return;
     }
 
+    // Generate preview for images
+    if (fileType === "Image") {
+      const reader = new FileReader();
+      reader.onload = (evt) => setAttachmentPreview(evt.target.result);
+      reader.readAsDataURL(file);
+    }
+
+    setAttachmentFileName(file.name);
+    setAttachmentType(fileType);
     setUploadingAttachment(true);
     setUploadProgress(0);
+    uploadAbortControllerRef.current = new AbortController();
+
     try {
       const { url } = await uploadService.uploadChatAttachment(
         file,
-        (percent) => setUploadProgress(percent)
+        (percent) => setUploadProgress(percent),
+        uploadAbortControllerRef.current.signal
       );
       setAttachmentUrl(url);
-      showToast("Attachment uploaded", "success", 1500);
+      showToast("Attachment ready", "success", 1500);
     } catch (error) {
-      console.error("Failed to upload attachment:", error);
-      const errorMsg =
-        error?.response?.data?.message || error?.message || "Upload failed";
-      showToast(errorMsg, "error", 3500);
+      if (error?.name === "AbortError") {
+        showToast("Upload cancelled", "info", 2000);
+        setAttachmentPreview(null);
+      } else {
+        console.error("Failed to upload attachment:", error);
+        const errorMsg =
+          error?.response?.data?.message || error?.message || "Upload failed";
+        showToast(errorMsg, "error", 3500);
+        setAttachmentPreview(null);
+      }
       e.target.value = "";
     } finally {
       setUploadingAttachment(false);
       setTimeout(() => setUploadProgress(0), 500);
+      uploadAbortControllerRef.current = null;
     }
+  };
+
+  const handleCancelUpload = () => {
+    if (uploadAbortControllerRef.current) {
+      uploadAbortControllerRef.current.abort();
+    }
+  };
+
+  const handleClearAttachment = () => {
+    setAttachmentUrl("");
+    setAttachmentPreview(null);
+    setAttachmentFileName("");
+    setAttachmentType(null);
   };
 
   const handleSend = async (e) => {
@@ -597,7 +658,7 @@ export default function ChatPage() {
     const messageText = newMessage.trim();
     const attachment = attachmentUrl ? attachmentUrl.trim() : null;
     setNewMessage("");
-    setAttachmentUrl("");
+    handleClearAttachment();
 
     const tempId = `temp-${Date.now()}`;
     const optimisticMessage = {
@@ -1046,35 +1107,74 @@ export default function ChatPage() {
             className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
           >
             {uploadingAttachment && (
-              <div className="mb-2">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded h-2 overflow-hidden">
+              <div className="mb-3 p-3 bg-gray-100 dark:bg-gray-700 rounded">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Uploading {attachmentType && `(${attachmentType})`}...
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCancelUpload}
+                    className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <div className="w-full bg-gray-300 dark:bg-gray-600 rounded h-2 overflow-hidden">
                   <div
                     className="bg-blue-500 h-2 transition-all"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
                 <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                  Uploading {uploadProgress}%
+                  {uploadProgress}%
                 </div>
               </div>
             )}
             {attachmentUrl && (
-              <div className="mb-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <span>📎 Attachment ready</span>
-                <button
-                  type="button"
-                  onClick={() => setAttachmentUrl("")}
-                  className="text-red-500 hover:text-red-600"
-                >
-                  ✕
-                </button>
+              <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                <div className="flex items-start gap-3">
+                  {attachmentPreview && (
+                    <img
+                      src={attachmentPreview}
+                      alt="preview"
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                        {attachmentFileName || "Attachment"}
+                      </span>
+                      {attachmentType && (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${getFileTypeColor(
+                            attachmentType
+                          )}`}
+                        >
+                          {attachmentType}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      Ready to send
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleClearAttachment}
+                      className="text-xs text-red-500 hover:text-red-600 font-medium"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*,.pdf"
                 onChange={handleAttachmentUpload}
                 className="hidden"
               />
@@ -1083,7 +1183,7 @@ export default function ChatPage() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingAttachment || sending}
                 className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Attach image"
+                title="Attach image, video, or PDF"
               >
                 {uploadingAttachment ? (
                   <svg
