@@ -135,7 +135,11 @@ exports.likePost = async (req, res, next) => {
 
     // Emit real-time update via Socket.io
     if (global.io) {
-      console.log("📡 Broadcasting post_liked event:", { postId: id, userId, likesCount: post.likesCount + 1 });
+      console.log("📡 Broadcasting post_liked event:", {
+        postId: id,
+        userId,
+        likesCount: post.likesCount + 1,
+      });
       global.io.emit("post_liked", {
         postId: id,
         userId,
@@ -143,7 +147,6 @@ exports.likePost = async (req, res, next) => {
       });
     } else {
       console.warn("⚠️ global.io not available for post_liked");
-    }
     }
 
     return res.status(200).json({ message: "Post liked" });
@@ -189,7 +192,11 @@ exports.unlikePost = async (req, res, next) => {
       select: { likesCount: true },
     });
     if (global.io) {
-      console.log("📡 Broadcasting post_unliked event:", { postId: id, userId, likesCount: updatedPost?.likesCount || 0 });
+      console.log("📡 Broadcasting post_unliked event:", {
+        postId: id,
+        userId,
+        likesCount: updatedPost?.likesCount || 0,
+      });
       global.io.emit("post_unliked", {
         postId: id,
         userId,

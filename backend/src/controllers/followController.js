@@ -69,7 +69,10 @@ exports.followUser = async (req, res) => {
 
     // Emit real-time update via Socket.io
     if (global.io) {
-      console.log("📡 Broadcasting user_followed event:", { followerId, followingId });
+      console.log("📡 Broadcasting user_followed event:", {
+        followerId,
+        followingId,
+      });
       global.io.emit("user_followed", { followerId, followingId });
     } else {
       console.warn("⚠️ global.io not available for user_followed");
@@ -120,7 +123,10 @@ exports.unfollowUser = async (req, res) => {
 
     // Emit real-time update via Socket.io
     if (global.io) {
-      console.log("📡 Broadcasting user_unfollowed event:", { followerId, followingId });
+      console.log("📡 Broadcasting user_unfollowed event:", {
+        followerId,
+        followingId,
+      });
       global.io.emit("user_unfollowed", { followerId, followingId });
     } else {
       console.warn("⚠️ global.io not available for user_unfollowed");
