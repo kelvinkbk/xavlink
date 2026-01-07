@@ -1136,8 +1136,8 @@ export default function ChatPage() {
             <button
               type="button"
               onClick={() => navigate(`/profile/${message.sender.id}`)}
-              className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0 hover:shadow-lg hover:scale-110 transition-transform cursor-pointer"
-              title={`View ${message.sender.name}'s profile`}
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 hover:shadow-xl hover:scale-125 active:scale-95 transition-all duration-200 cursor-pointer ring-2 ring-offset-2 ring-blue-300 dark:ring-offset-gray-900"
+              title={`Click to view ${message.sender.name}'s profile`}
             >
               {message.sender.name.charAt(0).toUpperCase()}
             </button>
@@ -1154,7 +1154,8 @@ export default function ChatPage() {
                 <button
                   type="button"
                   onClick={() => navigate(`/profile/${message.sender.id}`)}
-                  className="text-sm font-semibold mb-1 hover:underline text-blue-600 dark:text-blue-400 cursor-pointer"
+                  className="text-sm font-bold mb-1 hover:underline hover:text-blue-700 dark:hover:text-blue-300 text-blue-600 dark:text-blue-400 cursor-pointer transition-colors duration-150 px-1 py-0.5 -mx-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/20"
+                  title={`Click to view ${message.sender.name}'s profile`}
                 >
                   {message.sender.name}
                 </button>
