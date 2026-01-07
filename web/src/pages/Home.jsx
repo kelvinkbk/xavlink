@@ -792,13 +792,13 @@ export default function Home() {
     try {
       if (emoji === null) {
         // Remove reaction
-        const { data } = await postService.removeReaction(postId);
+        const response = await postService.removeReaction(postId);
         setPosts(
           posts.map((p) =>
             p.id === postId
               ? {
                   ...p,
-                  reactionSummary: data.reactionSummary,
+                  reactionSummary: response.reactionSummary,
                   userReaction: null,
                 }
               : p
@@ -807,13 +807,13 @@ export default function Home() {
         showToast("Reaction removed", "success");
       } else {
         // Add reaction
-        const { data } = await postService.addReaction(postId, emoji);
+        const response = await postService.addReaction(postId, emoji);
         setPosts(
           posts.map((p) =>
             p.id === postId
               ? {
                   ...p,
-                  reactionSummary: data.reactionSummary,
+                  reactionSummary: response.reactionSummary,
                   userReaction: emoji,
                 }
               : p
