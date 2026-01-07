@@ -29,70 +29,50 @@ exports.createPost = async (req, res, next) => {
 
 exports.getAllPosts = async (req, res, next) => {
   try {
-    console.log("📌 getAllPosts called with params:", req.query);
-    const currentUserId = req.user?.id;
-    const { page = 1, limit = 10 } = req.query;
+    console.log("📌 getAllPosts called");
+    
+    // Test if Prisma connection works at all
+    const count = await prisma.post.count();
+    console.log("📌 Post count:", count);
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const take = parseInt(limit);
-
-    console.log("📌 Querying posts - skip:", skip, "take:", take);
-
-    const [posts, totalCount] = await prisma.$transaction([
-      prisma.post.findMany({
-        orderBy: { createdAt: "desc" },
-        skip,
-        take,
-        include: {
-          user: {
-            select: { id: true, name: true, profilePic: true, course: true },
-          },
-          _count: {
-            select: { likes: true, comments: true },
-          },
-          likes: currentUserId
-            ? {
-                where: { userId: currentUserId },
-                select: { id: true },
-              }
-            : false,
-          bookmarks: currentUserId
-            ? {
-                where: { userId: currentUserId },
-                select: { id: true },
-              }
-            : false,
+    const posts = await prisma.post.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      include: {
+        user: {
+          select: { id: true, name: true, profilePic: true, course: true },
         },
-      }),
-      prisma.post.count(),
-    ]);
-
-    console.log("📌 Retrieved", posts.length, "posts out of", totalCount);
-
-    // Map posts with status flags
-    const postsWithStatus = posts.map((post) => {
-      const isLiked = currentUserId && post.likes && post.likes.length > 0;
-      const isBookmarked =
-        currentUserId && post.bookmarks && post.bookmarks.length > 0;
-
-      const { likes, bookmarks, _count, ...rest } = post;
-      return {
-        ...rest,
-        tags: [],
-        likesCount: _count.likes,
-        commentsCount: _count.comments,
-        isLiked: isLiked || false,
-        isBookmarked: isBookmarked || false,
-      };
+      },
     });
 
+    console.log("📌 Retrieved", posts.length, "posts");
+
     res.json({
-      posts: postsWithStatus,
+      posts: posts.map((post) => ({
+        id: post.id,
+        userId: post.userId,
+        content: post.content,
+        image: post.image,
+        createdAt: post.createdAt,
+        user: post.user,
+        likesCount: 0,
+        commentsCount: 0,
+        isLiked: false,
+        isBookmarked: false,
+        tags: [],
+      })),
       pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(totalCount / take),
-        totalCount,
-        hasMore: skip + take < totalCount,
+        currentPage: 1,
+        totalPages: 1,
+        totalCount: 0,
+        hasMore: false,
+      },
+    });
+  } catch (err) {
+    console.error("❌ getAllPosts error:", err);
+    res.status(500).json({ message: err.message || "Error fetching posts" });
+  }
+};
       },
     });
   } catch (err) {
