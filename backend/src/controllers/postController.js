@@ -73,46 +73,35 @@ exports.getAllPosts = async (req, res, next) => {
         orderBy = { createdAt: "desc" };
     }
 
-    // Try to include tags, but fallback gracefully if PostTag table doesn't exist yet
-    let includeConfig = {
-      user: {
-        select: { id: true, name: true, profilePic: true, course: true },
-      },
-      _count: {
-        select: { likes: true, comments: true, reactions: true },
-      },
-      likes: currentUserId
-        ? {
-            where: { userId: currentUserId },
-            select: { id: true },
-          }
-        : false,
-      bookmarks: currentUserId
-        ? {
-            where: { userId: currentUserId },
-            select: { id: true },
-          }
-        : false,
-      reactions: {
-        select: { emoji: true, userId: true },
-      },
-    };
-
-    // Add tags include if table exists (handles migration timing)
-    try {
-      await prisma.postTag.findFirst();
-      includeConfig.tags = { select: { id: true, tag: true } };
-    } catch (e) {
-      // PostTag table doesn't exist yet, skip it
-    }
-
     const [posts, totalCount] = await prisma.$transaction([
       prisma.post.findMany({
         where: whereClause,
         orderBy,
         skip,
         take,
-        include: includeConfig,
+        include: {
+          user: {
+            select: { id: true, name: true, profilePic: true, course: true },
+          },
+          _count: {
+            select: { likes: true, comments: true, reactions: true },
+          },
+          likes: currentUserId
+            ? {
+                where: { userId: currentUserId },
+                select: { id: true },
+              }
+            : false,
+          bookmarks: currentUserId
+            ? {
+                where: { userId: currentUserId },
+                select: { id: true },
+              }
+            : false,
+          reactions: {
+            select: { emoji: true, userId: true },
+          },
+        },
       }),
       prisma.post.count({ where: whereClause }),
     ]);
@@ -138,6 +127,7 @@ exports.getAllPosts = async (req, res, next) => {
       const { likes, bookmarks, reactions, _count, ...rest } = post;
       return {
         ...rest,
+        tags: [], // Tags will be added in future migration
         likesCount: _count.likes,
         commentsCount: _count.comments,
         isLiked: isLiked || false,
