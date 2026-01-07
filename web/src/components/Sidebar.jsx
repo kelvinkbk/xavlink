@@ -11,10 +11,9 @@ export default function Sidebar({ isOpen, onToggle }) {
 
   const isActive = (path) => location.pathname === path;
 
-  // Background sync for unread counts; refresh on mount and when socket is disconnected
+  // Real-time unread updates via socket events
   useEffect(() => {
-    let intervalId;
-    const fetchUnread = async () => {
+    const refreshUnread = async () => {
       try {
         const chats = await chatService.getUserChats();
         const total = chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
@@ -23,32 +22,21 @@ export default function Sidebar({ isOpen, onToggle }) {
         // noop
       }
     };
-    fetchUnread();
-    const startPolling = () => {
-      if (!intervalId) {
-        intervalId = setInterval(fetchUnread, 60000);
-      }
-    };
-    const stopPolling = () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    };
-    if (!socket.connected) startPolling();
-    const onConnect = () => {
-      fetchUnread();
-      stopPolling();
-    };
-    const onDisconnect = () => {
-      startPolling();
-    };
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
+
+    // Initial load
+    refreshUnread();
+
+    // Listen for real-time updates: new message, mark as read, etc.
+    socket.on("receive_message", refreshUnread);
+    socket.on("message_read", refreshUnread);
+    socket.on("chat_updated", refreshUnread);
+    socket.on("unread_count_changed", refreshUnread);
+
     return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      stopPolling();
+      socket.off("receive_message", refreshUnread);
+      socket.off("message_read", refreshUnread);
+      socket.off("chat_updated", refreshUnread);
+      socket.off("unread_count_changed", refreshUnread);
     };
   }, []);
 

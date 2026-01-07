@@ -15,6 +15,7 @@ import {
   getCachedMessages,
   cacheMessages,
   initMessageCache,
+  clearChatCache,
 } from "../services/messageCache";
 import {
   sendMessageNotification,
@@ -509,6 +510,7 @@ export default function ChatPage() {
     socket.on("receive_message", handleReceiveMessage);
     socket.on("message_deleted", ({ messageId }) => {
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      clearChatCache(chatId).catch(() => {});
     });
     socket.on("reaction_added", ({ messageId, emoji }) => {
       setMessageReactions((prev) => {
@@ -519,6 +521,7 @@ export default function ChatPage() {
           [messageId]: { ...current, [emoji]: count + 1 },
         };
       });
+      clearChatCache(chatId).catch(() => {});
     });
     socket.on("reaction_removed", ({ messageId, emoji }) => {
       setMessageReactions((prev) => {
@@ -532,11 +535,13 @@ export default function ChatPage() {
         }
         return { ...prev, [messageId]: updated };
       });
+      clearChatCache(chatId).catch(() => {});
     });
     socket.on("message_pinned", ({ messageId, isPinned }) => {
       setMessages((prev) =>
         prev.map((m) => (m.id === messageId ? { ...m, isPinned } : m))
       );
+      clearChatCache(chatId).catch(() => {});
     });
     socket.on("message_read", ({ messageId, userId, readAt }) => {
       console.log(
@@ -566,6 +571,7 @@ export default function ChatPage() {
           return m;
         })
       );
+      clearChatCache(chatId).catch(() => {});
     });
     socket.on("user_typing", ({ userName }) => {
       setTypingUsers((prev) => {
