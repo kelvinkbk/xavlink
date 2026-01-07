@@ -1133,14 +1133,20 @@ export default function ChatPage() {
           }`}
         >
           {!isOwn && (
-            <button
-              type="button"
-              onClick={() => navigate(`/profile/${message.sender.id}`)}
-              className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 hover:shadow-xl hover:scale-125 active:scale-95 transition-all duration-200 cursor-pointer ring-2 ring-offset-2 ring-blue-300 dark:ring-offset-gray-900"
-              title={`Click to view ${message.sender.name}'s profile`}
-            >
-              {message.sender.name.charAt(0).toUpperCase()}
-            </button>
+            <div className="flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  console.log("Navigating to profile:", message.sender.id);
+                  navigate(`/profile/${message.sender.id}`);
+                }}
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-bold hover:from-blue-600 hover:to-blue-800 hover:shadow-lg hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer border-2 border-blue-300 dark:border-blue-400"
+                title={`Click to view ${message.sender.name}'s profile`}
+                style={{ pointerEvents: "auto" }}
+              >
+                {message.sender.name.charAt(0).toUpperCase()}
+              </button>
+            </div>
           )}
           <div className="flex-1">
             <div
@@ -1153,11 +1159,15 @@ export default function ChatPage() {
               {!isOwn && (
                 <button
                   type="button"
-                  onClick={() => navigate(`/profile/${message.sender.id}`)}
-                  className="text-sm font-bold mb-1 hover:underline hover:text-blue-700 dark:hover:text-blue-300 text-blue-600 dark:text-blue-400 cursor-pointer transition-colors duration-150 px-1 py-0.5 -mx-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/20"
+                  onClick={() => {
+                    console.log("Navigating to profile:", message.sender.id);
+                    navigate(`/profile/${message.sender.id}`);
+                  }}
+                  className="text-sm font-bold mb-1 text-blue-600 dark:text-blue-400 cursor-pointer transition-all duration-150 px-2 py-1 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/30 hover:text-blue-800 dark:hover:text-blue-200 hover:underline inline-block"
                   title={`Click to view ${message.sender.name}'s profile`}
+                  style={{ pointerEvents: "auto" }}
                 >
-                  {message.sender.name}
+                  👤 {message.sender.name}
                 </button>
               )}
               {message.isPinned && (
