@@ -359,3 +359,14 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
 }
+
+model BlockedUser {
+  id         String   @id @default(uuid()) @db.Uuid
+  blockerId  String   @db.Uuid
+  blockedId  String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}

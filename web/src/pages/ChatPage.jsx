@@ -99,6 +99,22 @@ export default function ChatPage() {
   const vListRef = useRef(null);
   const sizeMapRef = useRef({});
 
+  // Sync blocked users from backend on mount
+  useEffect(() => {
+    const syncBlockedUsers = async () => {
+      try {
+        const { blockService } = await import("../services/blockService");
+        const data = await blockService.getBlockedUsers();
+        const blockedIds = data.blockedUsers || [];
+        setBlockedUsers(blockedIds.map((id) => String(id)));
+      } catch (error) {
+        console.error("Failed to sync blocked users:", error);
+        // Keep using localStorage data as fallback
+      }
+    };
+    syncBlockedUsers();
+  }, []);
+
   // Persist blocked users locally for quick checks
   useEffect(() => {
     try {
@@ -1011,7 +1027,7 @@ export default function ChatPage() {
     [chatId, showToast]
   );
 
-  const toggleBlockPeer = useCallback(() => {
+  const toggleBlockPeer = useCallback(async () => {
     if (!primaryPeer?.id) return;
     const peerId = String(primaryPeer.id);
     const isCurrentlyBlocked = blockedUsers.includes(peerId);
@@ -1022,20 +1038,70 @@ export default function ChatPage() {
 
     if (!window.confirm(confirmAction)) return;
 
-    setBlockedUsers((prev) => {
-      const next = isCurrentlyBlocked
-        ? prev.filter((id) => id !== peerId)
-        : [...prev, peerId];
-      showToast(
-        isCurrentlyBlocked
-          ? `Unblocked ${primaryPeer.name}`
-          : `Blocked ${primaryPeer.name}`,
-        "warning",
-        2500
-      );
-      return next;
-    });
+    try {
+      // Update backend
+      const { blockService } = await import("../services/blockService");
+      if (isCurrentlyBlocked) {
+        await blockService.unblockUser(peerId);
+      } else {
+        await blockService.blockUser(peerId);
+      }
+
+      // Update local state
+      setBlockedUsers((prev) => {
+        const next = isCurrentlyBlocked
+          ? prev.filter((id) => id !== peerId)
+          : [...prev, peerId];
+        showToast(
+          isCurrentlyBlocked
+            ? `Unblocked ${primaryPeer.name}`
+            : `Blocked ${primaryPeer.name}`,
+          "warning",
+          2500
+        );
+        return next;
+      });
+    } catch (error) {
+      console.error("Failed to block/unblock user:", error);
+      showToast("Failed to update block status", "error", 3000);
+    }
   }, [primaryPeer?.id, primaryPeer?.name, blockedUsers, showToast]);
+
+  const scrollToMessage = useCallback(
+    (messageId) => {
+      const messageIndex = visibleMessages.findIndex((m) => m.id === messageId);
+      if (messageIndex === -1) {
+        showToast("Message not found or hidden", "warning", 2000);
+        return;
+      }
+
+      // Scroll the virtual list to the message index
+      if (vListRef.current) {
+        vListRef.current.scrollToItem(messageIndex, "center");
+
+        // Highlight the message temporarily
+        setTimeout(() => {
+          const messageElement = document.querySelector(
+            `[data-message-id="${messageId}"]`
+          );
+          if (messageElement) {
+            messageElement.classList.add(
+              "bg-yellow-200",
+              "dark:bg-yellow-800",
+              "transition-colors"
+            );
+            setTimeout(() => {
+              messageElement.classList.remove(
+                "bg-yellow-200",
+                "dark:bg-yellow-800"
+              );
+            }, 2000);
+          }
+        }, 100);
+      }
+    },
+    [visibleMessages, showToast]
+  );
 
   const handleTyping = (value) => {
     setNewMessage(value);
@@ -1043,7 +1109,7 @@ export default function ChatPage() {
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit("stop_typing", { chatId, userId: user?.id });
-    }, 1500);
+    }, 5000); // Clear typing indicator after 5 seconds of inactivity
   };
 
   const handleReactToMessage = async (messageId, emoji) => {
@@ -1097,6 +1163,23 @@ export default function ChatPage() {
 
   if (loading) return <LoadingSpinner />;
 
+  const highlightText = (text, query) => {
+    if (!query || !text) return text;
+    const parts = text.split(new RegExp(`(${query})`, "gi"));
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <mark
+          key={i}
+          className="bg-yellow-300 dark:bg-yellow-600 font-semibold"
+        >
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
+
   const renderMessageBubble = (message) => {
     const isOwn = message.sender.id === user.id;
     const isPending = Boolean(message.tempId);
@@ -1105,6 +1188,7 @@ export default function ChatPage() {
 
     return (
       <div
+        data-message-id={message.id}
         className={`flex ${isOwn ? "justify-end" : "justify-start"} gap-2 ${
           message.isPinned
             ? "bg-yellow-50 dark:bg-yellow-900/10 p-2 rounded"
@@ -1174,7 +1258,9 @@ export default function ChatPage() {
                 <div className="text-xs opacity-75 mb-1">📌 Pinned</div>
               )}
               <div className="break-words">
-                {message.text || (message.attachmentUrl ? "(attachment)" : "")}
+                {searchQuery && message.text
+                  ? highlightText(message.text, searchQuery)
+                  : message.text || (message.attachmentUrl ? "(attachment)" : "")}
               </div>
               {message.attachmentUrl && (
                 <div className="mt-2 space-y-2">
@@ -1205,27 +1291,33 @@ export default function ChatPage() {
               >
                 {formatTimestamp(message.timestamp)}
               </span>
-              {isOwn && !isPending && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    message.readReceipts?.length > 0
-                      ? setReadReceiptsModal({
-                          messageId: message.id,
-                          readReceipts: message.readReceipts,
-                        })
-                      : null
-                  }
-                  className={`text-xs cursor-pointer hover:opacity-80 ${
-                    hasReadReceipts ? "text-white" : "text-blue-100"
-                  }`}
+              {isOwn && (
+                <span
+                  className="text-xs text-blue-100"
                   title={
-                    hasReadReceipts
-                      ? `Read by ${message.readReceipts?.length || 0}`
+                    isPending
+                      ? "Sending..."
+                      : hasReadReceipts
+                      ? "Delivered and read"
                       : "Delivered"
                   }
                 >
-                  {hasReadReceipts ? "✓✓" : "✓"}
+                  {isPending ? "⏳" : hasReadReceipts ? "✓✓" : "✓"}
+                </span>
+              )}
+              {isOwn && !isPending && hasReadReceipts && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReadReceiptsModal({
+                      messageId: message.id,
+                      readReceipts: message.readReceipts,
+                    })
+                  }
+                  className="text-xs text-blue-100 cursor-pointer hover:opacity-80 hover:underline"
+                  title={`Read by ${message.readReceipts?.length || 0}`}
+                >
+                  ({message.readReceipts?.length || 0})
                 </button>
               )}
               {isPending && (
@@ -1346,8 +1438,12 @@ export default function ChatPage() {
       ) : (
         <div className="flex flex-col h-[calc(100vh-64px)] max-w-4xl mx-auto bg-white dark:bg-gray-800">
           {!isOnline && (
-            <div className="bg-red-500 text-white px-4 py-2 text-sm font-semibold text-center">
-              ⚠ Offline – Messages will be sent when you reconnect
+            <div className="bg-red-500 text-white px-4 py-2 text-sm font-semibold text-center flex items-center justify-center gap-2">
+              <span className="animate-pulse">⚠</span>
+              <span>Offline – Messages will be sent when you reconnect</span>
+              <span className="text-xs bg-red-600 px-2 py-1 rounded">
+                No Internet
+              </span>
             </div>
           )}
           {toast && (
@@ -1844,15 +1940,28 @@ export default function ChatPage() {
                         </span>
                         <button
                           type="button"
-                          onClick={() => {
-                            setBlockedUsers((prev) =>
-                              prev.filter((id) => id !== userId)
-                            );
-                            showToast(
-                              `Unblocked user ${userId}`,
-                              "warning",
-                              2000
-                            );
+                          onClick={async () => {
+                            try {
+                              const { blockService } = await import(
+                                "../services/blockService"
+                              );
+                              await blockService.unblockUser(userId);
+                              setBlockedUsers((prev) =>
+                                prev.filter((id) => id !== userId)
+                              );
+                              showToast(
+                                `Unblocked user ${userId}`,
+                                "warning",
+                                2000
+                              );
+                            } catch (error) {
+                              console.error("Failed to unblock:", error);
+                              showToast(
+                                "Failed to unblock user",
+                                "error",
+                                3000
+                              );
+                            }
                           }}
                           className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                         >
@@ -2044,7 +2153,7 @@ export default function ChatPage() {
                           type="button"
                           onClick={() => {
                             setShowPinnedMessagesModal(false);
-                            // Scroll to message (would need to implement scroll-to-message)
+                            scrollToMessage(msg.id);
                           }}
                           className="text-xs mt-2 text-yellow-700 dark:text-yellow-400 hover:underline"
                         >

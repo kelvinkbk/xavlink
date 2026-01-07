@@ -19,6 +19,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const modRoutes = require("./routes/modRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const twoFactorRoutes = require("./routes/twoFactorRoutes");
+const blockRoutes = require("./routes/blockRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const {
   checkExpiredSuspensions,
@@ -67,6 +68,7 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", followRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/users/blocked", blockRoutes);
 app.use("/api/skills", skillRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/requests", requestRoutes);
