@@ -360,7 +360,7 @@ export default function ChatPage() {
           try {
             await chatService.markChatAsRead(chatId);
             // Emit event for sidebar to update
-            socket.emit("chat_marked_read", { chatId });
+            socket.emit("chat_read_by_user", { chatId });
           } catch (error) {
             console.error("Failed to mark chat as read:", error);
           }
@@ -421,6 +421,8 @@ export default function ChatPage() {
         try {
           await chatService.markChatAsRead(chatId);
           // Emit event for sidebar to update
+          socket.emit("chat_read_by_user", { chatId });
+          // Also broadcast to update other clients
           socket.emit("chat_marked_read", { chatId });
         } catch (error) {
           console.error("Failed to mark chat as read:", error);

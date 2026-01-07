@@ -25,39 +25,33 @@ export default function Sidebar({ isOpen, onToggle }) {
         unreadByChat.current = byChat;
         const total = Object.values(byChat).reduce((sum, c) => sum + c, 0);
         setUnreadTotal(total);
+        console.log("📊 Initial unread counts loaded:", byChat);
       } catch {
         // noop
       }
     };
     loadInitial();
 
-    // On receive_message: increment unread if not viewing that chat
-    const onReceiveMessage = ({ chatId }) => {
-      const isViewingChat =
-        location.pathname === `/chat/${chatId}` || location.pathname === "/chats";
-      if (!isViewingChat && chatId) {
-        unreadByChat.current[chatId] = (unreadByChat.current[chatId] || 0) + 1;
+    // On receive_message: increment unread for that chat if not viewing it
+    const onReceiveMessage = (message) => {
+      if (!message || !message.chatId) return;
+      const isViewingChat = location.pathname === `/chat/${message.chatId}`;
+      if (!isViewingChat) {
+        unreadByChat.current[message.chatId] =
+          (unreadByChat.current[message.chatId] || 0) + 1;
         const total = Object.values(unreadByChat.current).reduce(
           (sum, c) => sum + c,
           0
         );
         setUnreadTotal(total);
-      }
-    };
-
-    // On message_read: decrement unread for that chat
-    const onMessageRead = ({ chatId }) => {
-      if (chatId && unreadByChat.current[chatId] > 0) {
-        unreadByChat.current[chatId] -= 1;
-        const total = Object.values(unreadByChat.current).reduce(
-          (sum, c) => sum + c,
-          0
+        console.log(
+          `📬 New message in chat ${message.chatId}, unread now:`,
+          unreadByChat.current
         );
-        setUnreadTotal(total);
       }
     };
 
-    // On mark_chat_as_read: clear unread for that chat
+    // On chat_read_by_user: clear unread for that chat
     const onChatRead = ({ chatId }) => {
       if (chatId) {
         unreadByChat.current[chatId] = 0;
@@ -66,17 +60,19 @@ export default function Sidebar({ isOpen, onToggle }) {
           0
         );
         setUnreadTotal(total);
+        console.log(
+          `✓ Chat ${chatId} marked read, unread now:`,
+          unreadByChat.current
+        );
       }
     };
 
     socket.on("receive_message", onReceiveMessage);
-    socket.on("message_read", onMessageRead);
-    socket.on("mark_chat_as_read", onChatRead);
+    socket.on("chat_read_by_user", onChatRead);
 
     return () => {
       socket.off("receive_message", onReceiveMessage);
-      socket.off("message_read", onMessageRead);
-      socket.off("mark_chat_as_read", onChatRead);
+      socket.off("chat_read_by_user", onChatRead);
     };
   }, [location.pathname]);
 
