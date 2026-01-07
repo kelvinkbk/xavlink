@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import PageTransition from "../components/PageTransition";
 import ReportModal from "../components/ReportModal";
 import api from "../services/api";
@@ -14,8 +14,7 @@ import { ReviewSection } from "../components/ReviewSection";
 export default function Profile() {
   const { user: currentUser } = useAuth();
   const { showToast } = useToast();
-  const [searchParams] = useSearchParams();
-  const userId = searchParams.get("id");
+  const { userId } = useParams();
   const isOwnProfile = !userId || userId === currentUser?.id;
 
   const [user, setUser] = useState(null);
