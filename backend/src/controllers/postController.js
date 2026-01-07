@@ -780,3 +780,680 @@ exports.removeReaction = async (req, res, next) => {
     next(err);
   }
 };
+
+// ============= NEW FEATURES (15 features) =============
+
+// 1. Search Posts
+exports.searchPosts = async (req, res, next) => {
+  try {
+    const { q, sort = "recent", page = 1, limit = 10 } = req.query;
+    const userId = req.user?.id;
+
+    if (!q || q.trim().length === 0) {
+      return res.status(400).json({ message: "Search query is required" });
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    const [posts, totalCount] = await prisma.$transaction([
+      prisma.post.findMany({
+        where: {
+          isDraft: false,
+          OR: [{ content: { search: q } }, { richContent: { search: q } }],
+        },
+        orderBy:
+          sort === "trending"
+            ? [{ likesCount: "desc" }, { commentsCount: "desc" }]
+            : sort === "most-liked"
+            ? { likesCount: "desc" }
+            : { createdAt: "desc" },
+        skip,
+        take,
+        include: {
+          user: {
+            select: { id: true, name: true, profilePic: true, course: true },
+          },
+          _count: { select: { likes: true, comments: true } },
+          likes: userId ? { where: { userId }, select: { id: true } } : false,
+          bookmarks: userId
+            ? { where: { userId }, select: { id: true } }
+            : false,
+        },
+      }),
+      prisma.post.count({
+        where: {
+          isDraft: false,
+          OR: [{ content: { search: q } }, { richContent: { search: q } }],
+        },
+      }),
+    ]);
+
+    const postsWithStatus = posts.map((post) => {
+      const { likes, bookmarks, _count, ...rest } = post;
+      return {
+        ...rest,
+        likesCount: _count.likes,
+        commentsCount: _count.comments,
+        isLiked: userId && likes.length > 0,
+        isBookmarked: userId && bookmarks.length > 0,
+      };
+    });
+
+    res.json({
+      posts: postsWithStatus,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalCount / take),
+        totalCount,
+        hasMore: skip + take < totalCount,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 2. Get Trending Topics
+exports.getTrendingTopics = async (req, res, next) => {
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    // Get all tags from last 7 days, group by tag, count occurrences
+    const tags = await prisma.postTag.groupBy({
+      by: ["tag"],
+      where: {
+        post: {
+          createdAt: { gte: sevenDaysAgo },
+          isDraft: false,
+        },
+      },
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+      take: 10,
+    });
+
+    const trendingTopics = tags.map((t) => ({
+      tag: t.tag,
+      count: t._count.id,
+    }));
+
+    res.json({ trendingTopics });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 3. Filter posts by tag
+exports.getPostsByTag = async (req, res, next) => {
+  try {
+    const { tag } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const userId = req.user?.id;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    const [posts, totalCount] = await prisma.$transaction([
+      prisma.post.findMany({
+        where: {
+          isDraft: false,
+          tags: {
+            some: { tag: { mode: "insensitive", equals: tag } },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+        include: {
+          user: {
+            select: { id: true, name: true, profilePic: true, course: true },
+          },
+          _count: { select: { likes: true, comments: true } },
+          likes: userId ? { where: { userId }, select: { id: true } } : false,
+          bookmarks: userId
+            ? { where: { userId }, select: { id: true } }
+            : false,
+          tags: { select: { tag: true } },
+        },
+      }),
+      prisma.post.count({
+        where: {
+          isDraft: false,
+          tags: {
+            some: { tag: { mode: "insensitive", equals: tag } },
+          },
+        },
+      }),
+    ]);
+
+    const postsWithStatus = posts.map((post) => {
+      const { likes, bookmarks, _count, ...rest } = post;
+      return {
+        ...rest,
+        likesCount: _count.likes,
+        commentsCount: _count.comments,
+        isLiked: userId && likes.length > 0,
+        isBookmarked: userId && bookmarks.length > 0,
+      };
+    });
+
+    res.json({
+      posts: postsWithStatus,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalCount / take),
+        totalCount,
+        hasMore: skip + take < totalCount,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 4. Draft management - Create draft
+exports.createDraft = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { content, images, richContent, tags, templateType } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ message: "Content is required" });
+    }
+
+    const draft = await prisma.draftPost.create({
+      data: {
+        userId,
+        content,
+        images: images || [],
+        richContent: richContent || null,
+        tags: tags || [],
+        templateType: templateType || "default",
+      },
+    });
+
+    res.status(201).json(draft);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 5. Get drafts
+exports.getDrafts = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 10 } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    const [drafts, totalCount] = await prisma.$transaction([
+      prisma.draftPost.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+      }),
+      prisma.draftPost.count({ where: { userId } }),
+    ]);
+
+    res.json({
+      drafts,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalCount / take),
+        totalCount,
+        hasMore: skip + take < totalCount,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 6. Update draft
+exports.updateDraft = async (req, res, next) => {
+  try {
+    const { draftId } = req.params;
+    const userId = req.user.id;
+    const { content, images, richContent, tags, templateType } = req.body;
+
+    // Verify ownership
+    const draft = await prisma.draftPost.findUnique({
+      where: { id: draftId },
+    });
+
+    if (!draft) {
+      return res.status(404).json({ message: "Draft not found" });
+    }
+
+    if (draft.userId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this draft" });
+    }
+
+    const updated = await prisma.draftPost.update({
+      where: { id: draftId },
+      data: {
+        ...(content && { content }),
+        ...(images && { images }),
+        ...(richContent !== undefined && { richContent }),
+        ...(tags && { tags }),
+        ...(templateType && { templateType }),
+      },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 7. Publish draft (convert to post)
+exports.publishDraft = async (req, res, next) => {
+  try {
+    const { draftId } = req.params;
+    const userId = req.user.id;
+
+    const draft = await prisma.draftPost.findUnique({
+      where: { id: draftId },
+    });
+
+    if (!draft) {
+      return res.status(404).json({ message: "Draft not found" });
+    }
+
+    if (draft.userId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to publish this draft" });
+    }
+
+    // Create post from draft and delete draft in transaction
+    const post = await prisma.$transaction(async (tx) => {
+      const newPost = await tx.post.create({
+        data: {
+          userId,
+          content: draft.content,
+          images: draft.images,
+          richContent: draft.richContent,
+          templateType: draft.templateType,
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, profilePic: true, course: true },
+          },
+        },
+      });
+
+      // Add tags if any
+      if (draft.tags && draft.tags.length > 0) {
+        await Promise.all(
+          draft.tags.map((tag) =>
+            tx.postTag.create({
+              data: { postId: newPost.id, tag },
+            })
+          )
+        );
+      }
+
+      // Delete draft
+      await tx.draftPost.delete({ where: { id: draftId } });
+
+      return newPost;
+    });
+
+    res.status(201).json(post);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 8. Delete draft
+exports.deleteDraft = async (req, res, next) => {
+  try {
+    const { draftId } = req.params;
+    const userId = req.user.id;
+
+    const draft = await prisma.draftPost.findUnique({
+      where: { id: draftId },
+    });
+
+    if (!draft) {
+      return res.status(404).json({ message: "Draft not found" });
+    }
+
+    if (draft.userId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this draft" });
+    }
+
+    await prisma.draftPost.delete({ where: { id: draftId } });
+
+    res.json({ message: "Draft deleted" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 9. Pin post (admin/owner only)
+exports.pinPost = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const post = await prisma.post.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Only owner or admin can pin
+    if (post.userId !== userId && req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to pin this post" });
+    }
+
+    const pinned = await prisma.post.update({
+      where: { id },
+      data: {
+        isPinned: true,
+        pinnedAt: new Date(),
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, profilePic: true, course: true },
+        },
+      },
+    });
+
+    if (global.io) {
+      global.io.emit("post_pinned", { postId: id });
+    }
+
+    res.json(pinned);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 10. Unpin post
+exports.unpinPost = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const post = await prisma.post.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (post.userId !== userId && req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to unpin this post" });
+    }
+
+    const unpinned = await prisma.post.update({
+      where: { id },
+      data: {
+        isPinned: false,
+        pinnedAt: null,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, profilePic: true, course: true },
+        },
+      },
+    });
+
+    if (global.io) {
+      global.io.emit("post_unpinned", { postId: id });
+    }
+
+    res.json(unpinned);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 11. Track post view
+exports.trackPostView = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Create view record
+    await prisma.postView.create({
+      data: {
+        postId: id,
+        userId: userId || null, // Anonymous users have null userId
+      },
+    });
+
+    // Update viewCount
+    const updatedPost = await prisma.post.update({
+      where: { id },
+      data: { viewCount: { increment: 1 } },
+      select: { viewCount: true },
+    });
+
+    res.json({ viewCount: updatedPost.viewCount });
+  } catch (err) {
+    // Ignore if error (view tracking is not critical)
+    next(err);
+  }
+};
+
+// 12. Get post analytics
+exports.getPostAnalytics = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const post = await prisma.post.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (post.userId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to view this analytics" });
+    }
+
+    // Get or create analytics
+    let analytics = await prisma.postAnalytics.findUnique({
+      where: { postId: id },
+    });
+
+    if (!analytics) {
+      // Calculate analytics from scratch
+      const views = await prisma.postView.count({ where: { postId: id } });
+      const likes = await prisma.like.count({ where: { postId: id } });
+      const comments = await prisma.comment.count({ where: { postId: id } });
+      const shares = await prisma.postShare.count({ where: { postId: id } });
+
+      analytics = await prisma.postAnalytics.create({
+        data: {
+          postId: id,
+          viewsTotal: views,
+          likesTotal: likes,
+          commentsTotal: comments,
+          sharesTotal: shares,
+        },
+      });
+    }
+
+    res.json(analytics);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 13. Share post
+exports.sharePost = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { shareType, sharedWithId } = req.body; // shareType: "link", "message", "public"
+    const userId = req.user.id;
+
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (!["link", "message", "public"].includes(shareType)) {
+      return res.status(400).json({ message: "Invalid share type" });
+    }
+
+    const share = await prisma.postShare.create({
+      data: {
+        postId: id,
+        sharedBy: userId,
+        shareType,
+        sharedWith: shareType === "message" ? sharedWithId : null,
+      },
+    });
+
+    if (global.io) {
+      global.io.emit("post_shared", {
+        postId: id,
+        shareType,
+        sharesCount: await prisma.postShare.count({ where: { postId: id } }),
+      });
+    }
+
+    res.status(201).json(share);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 14. Get suggested users (for follow/collaboration)
+exports.getSuggestedUsers = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { limit = 5 } = req.query;
+
+    // Get users not already followed, with most posts/engagement
+    const suggestedUsers = await prisma.user.findMany({
+      where: {
+        id: { not: userId },
+        followedBy: {
+          none: { followerId: userId },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        profilePic: true,
+        course: true,
+        _count: {
+          select: { posts: true, followers: true },
+        },
+      },
+      orderBy: [
+        { _count: { followers: "desc" } },
+        { _count: { posts: "desc" } },
+      ],
+      take: parseInt(limit),
+    });
+
+    res.json(suggestedUsers);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 15. Keyword mute management
+exports.addKeywordMute = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { keyword } = req.body;
+
+    if (!keyword || keyword.trim().length === 0) {
+      return res.status(400).json({ message: "Keyword is required" });
+    }
+
+    const mute = await prisma.keywordMute.create({
+      data: {
+        userId,
+        keyword: keyword.toLowerCase().trim(),
+      },
+    });
+
+    res.status(201).json(mute);
+  } catch (err) {
+    if (err.code === "P2002") {
+      return res.status(200).json({ message: "Keyword already muted" });
+    }
+    next(err);
+  }
+};
+
+// 16. Remove keyword mute
+exports.removeKeywordMute = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { muteId } = req.params;
+
+    const mute = await prisma.keywordMute.findUnique({
+      where: { id: muteId },
+      select: { userId: true },
+    });
+
+    if (!mute) {
+      return res.status(404).json({ message: "Mute not found" });
+    }
+
+    if (mute.userId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to remove this mute" });
+    }
+
+    await prisma.keywordMute.delete({ where: { id: muteId } });
+
+    res.json({ message: "Keyword mute removed" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 17. Get muted keywords
+exports.getMutedKeywords = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const mutes = await prisma.keywordMute.findMany({
+      where: { userId },
+      select: { id: true, keyword: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(mutes);
+  } catch (err) {
+    next(err);
+  }
+};

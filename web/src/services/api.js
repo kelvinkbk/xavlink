@@ -107,6 +107,7 @@ export const postService = {
     api.patch(`/posts/comments/${commentId}`, data).then((res) => res.data),
   deleteComment: (commentId) =>
     api.delete(`/posts/comments/${commentId}`).then((res) => res.data),
+
   // Bookmark methods
   bookmarkPost: (postId) =>
     api.post(`/posts/${postId}/bookmark`).then((res) => res.data),
@@ -127,11 +128,118 @@ export const postService = {
         })),
       },
     })),
+
   // Reaction methods
   addReaction: (postId, emoji) =>
     api.post(`/posts/${postId}/reaction`, { emoji }).then((res) => res.data),
   removeReaction: (postId) =>
     api.delete(`/posts/${postId}/reaction`).then((res) => res.data),
+
+  // ===== NEW FEATURE METHODS =====
+
+  // 1. Search posts
+  searchPosts: (query, sort = "recent", page = 1, limit = 10) =>
+    api
+      .get(
+        `/posts/search?q=${encodeURIComponent(
+          query
+        )}&sort=${sort}&page=${page}&limit=${limit}`
+      )
+      .then((res) => ({
+        ...res,
+        data: {
+          ...res.data,
+          posts: res.data.posts.map((post) => ({
+            ...post,
+            image: toAbsolute(post.image),
+            user: {
+              ...post.user,
+              profilePic: toAbsolute(post.user?.profilePic),
+            },
+          })),
+        },
+      })),
+
+  // 2. Trending topics
+  getTrendingTopics: () =>
+    api.get(`/posts/trending/topics`).then((res) => res.data),
+
+  // 3. Posts by tag
+  getPostsByTag: (tag, page = 1, limit = 10) =>
+    api
+      .get(`/posts/tags/${encodeURIComponent(tag)}?page=${page}&limit=${limit}`)
+      .then((res) => ({
+        ...res,
+        data: {
+          ...res.data,
+          posts: res.data.posts.map((post) => ({
+            ...post,
+            image: toAbsolute(post.image),
+            user: {
+              ...post.user,
+              profilePic: toAbsolute(post.user?.profilePic),
+            },
+          })),
+        },
+      })),
+
+  // 4. Draft management
+  createDraft: (data) =>
+    api.post("/posts/drafts/create", data).then((res) => res.data),
+
+  getDrafts: (page = 1, limit = 10) =>
+    api
+      .get(`/posts/drafts?page=${page}&limit=${limit}`)
+      .then((res) => res.data),
+
+  updateDraft: (draftId, data) =>
+    api.patch(`/posts/drafts/${draftId}`, data).then((res) => res.data),
+
+  publishDraft: (draftId) =>
+    api.post(`/posts/drafts/${draftId}/publish`).then((res) => res.data),
+
+  deleteDraft: (draftId) =>
+    api.delete(`/posts/drafts/${draftId}`).then((res) => res.data),
+
+  // 5. Pin/Unpin posts
+  pinPost: (postId) => api.post(`/posts/${postId}/pin`).then((res) => res.data),
+
+  unpinPost: (postId) =>
+    api.delete(`/posts/${postId}/pin`).then((res) => res.data),
+
+  // 6. View tracking
+  trackPostView: (postId) =>
+    api.post(`/posts/${postId}/view`).then((res) => res.data),
+
+  // 7. Post analytics
+  getPostAnalytics: (postId) =>
+    api.get(`/posts/${postId}/analytics`).then((res) => res.data),
+
+  // 8. Share posts
+  sharePost: (postId, shareType, sharedWithId = null) =>
+    api
+      .post(`/posts/${postId}/share`, { shareType, sharedWithId })
+      .then((res) => res.data),
+
+  // 9. Suggested users
+  getSuggestedUsers: (limit = 5) =>
+    api.get(`/posts/users/suggested?limit=${limit}`).then((res) => ({
+      ...res,
+      data: res.data.map((user) => ({
+        ...user,
+        profilePic: toAbsolute(user?.profilePic),
+      })),
+    })),
+
+  // 10. Keyword mute
+  addKeywordMute: (keyword) =>
+    api.post("/posts/mute-keywords", { keyword }).then((res) => res.data),
+
+  removeKeywordMute: (muteId) =>
+    api.delete(`/posts/mute-keywords/${muteId}`).then((res) => res.data),
+
+  getMutedKeywords: () =>
+    api.get("/posts/mute-keywords").then((res) => res.data),
 };
 
 const toAbsolute = (url) => {

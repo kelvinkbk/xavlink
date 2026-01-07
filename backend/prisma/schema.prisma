@@ -49,50 +49,52 @@ enum AuditAction {
 }
 
 model User {
-  id                String            @id @default(uuid()) @db.Uuid
-  name              String
-  email             String            @unique
-  password          String
-  role              Role              @default(user)
-  isSuspended       Boolean           @default(false)
-  suspensionEndsAt  DateTime?
-  course            String?
-  year              Int?
-  bio               String?
-  profilePic        String?
-  followersCount    Int               @default(0)
-  followingCount    Int               @default(0)
-  postsCount        Int               @default(0)
-  resetToken        String?
-  resetTokenExpiry  DateTime?
-  emailVerified     Boolean           @default(false)
-  verificationToken String?
+  id                      String            @id @default(uuid()) @db.Uuid
+  name                    String
+  email                   String            @unique
+  password                String
+  role                    Role              @default(user)
+  isSuspended             Boolean           @default(false)
+  suspensionEndsAt        DateTime?
+  course                  String?
+  year                    Int?
+  bio                     String?
+  profilePic              String?
+  followersCount          Int               @default(0)
+  followingCount          Int               @default(0)
+  postsCount              Int               @default(0)
+  resetToken              String?
+  resetTokenExpiry        DateTime?
+  emailVerified           Boolean           @default(false)
+  verificationToken       String?
   verificationTokenExpiry DateTime?
-  twoFactorSecret   String?
-  twoFactorEnabled  Boolean           @default(false)
-  createdAt         DateTime          @default(now())
-  skills            Skill[]
-  posts             Post[]
-  sentRequests      Request[]         @relation("RequestsSent")
-  receivedRequests  Request[]         @relation("RequestsReceived")
-  messages          Message[]         @relation("UserMessages")
-  chatParticipants  ChatParticipant[]
-  notifications     Notification[]
-  settings          UserSettings?
-  followers         Follow[]          @relation("Following")
-  following         Follow[]          @relation("Followers")
-  likes             Like[]
-  comments          Comment[]
-  reviewsGiven      Review[]          @relation("ReviewsGiven")
-  reviewsReceived   Review[]          @relation("ReviewsReceived")
-  postReviewsGiven  PostReview[]      @relation("PostReviewsGiven")
-  bookmarks         Bookmark[]
-  postReactions     PostReaction[]
+  twoFactorSecret         String?
+  twoFactorEnabled        Boolean           @default(false)
+  createdAt               DateTime          @default(now())
+  skills                  Skill[]
+  posts                   Post[]
+  sentRequests            Request[]         @relation("RequestsSent")
+  receivedRequests        Request[]         @relation("RequestsReceived")
+  messages                Message[]         @relation("UserMessages")
+  chatParticipants        ChatParticipant[]
+  notifications           Notification[]
+  settings                UserSettings?
+  followers               Follow[]          @relation("Following")
+  following               Follow[]          @relation("Followers")
+  likes                   Like[]
+  comments                Comment[]
+  reviewsGiven            Review[]          @relation("ReviewsGiven")
+  reviewsReceived         Review[]          @relation("ReviewsReceived")
+  postReviewsGiven        PostReview[]      @relation("PostReviewsGiven")
+  bookmarks               Bookmark[]
+  postReactions           PostReaction[]
+  keywordMutes            KeywordMute[]
+  draftPosts              DraftPost[]
 
-  reportsCreated   Report[]          @relation("ReportsCreated")
-  reportsReceived  Report[]          @relation("ReportsReceived")
-  reportsResolved  Report[]          @relation("ReportsResolved")
-  auditLogs        AuditLog[]        @relation("AuditLogsActor")
+  reportsCreated  Report[]   @relation("ReportsCreated")
+  reportsReceived Report[]   @relation("ReportsReceived")
+  reportsResolved Report[]   @relation("ReportsResolved")
+  auditLogs       AuditLog[] @relation("AuditLogsActor")
 }
 
 model Skill {
@@ -112,19 +114,37 @@ model Skill {
 }
 
 model Post {
-  id           String    @id @default(uuid()) @db.Uuid
-  userId       String    @db.Uuid
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content      String
-  image        String?
-  likesCount   Int       @default(0)
-  commentsCount Int      @default(0)
-  createdAt    DateTime  @default(now())
-  likes        Like[]
-  comments     Comment[]
-  postReviews  PostReview[] @relation("PostReviews")
-  bookmarks    Bookmark[]
-  reactions    PostReaction[]
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @db.Uuid
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content       String
+  images        String[] // Array of image URLs for multiple images
+  likesCount    Int            @default(0)
+  commentsCount Int            @default(0)
+  viewCount     Int            @default(0)
+  isDraft       Boolean        @default(false)
+  isPinned      Boolean        @default(false)
+  pinnedAt      DateTime?
+  scheduledAt   DateTime? // For scheduled posts
+  templateType  String         @default("default") // default, highlight, minimal, etc
+  richContent   String? // Rich text JSON (for formatting)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  likes         Like[]
+  comments      Comment[]
+  postReviews   PostReview[]   @relation("PostReviews")
+  bookmarks     Bookmark[]
+  views         PostView[]
+  shares        PostShare[]
+  tags          PostTag[]
+  analytics     PostAnalytics?
+  reactions     PostReaction[]
+
+  @@index([userId])
+  @@index([isPinned])
+  @@index([isDraft])
+  @@index([scheduledAt])
+  @@index([createdAt])
 }
 
 model Like {
@@ -154,36 +174,36 @@ model Comment {
 }
 
 model Request {
-  id         String         @id @default(uuid()) @db.Uuid
-  fromUserId String         @db.Uuid
-  toUserId   String         @db.Uuid
-  skillId    String         @db.Uuid
-  status     RequestStatus  @default(pending)
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-  fromUser   User           @relation("RequestsSent", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser     User           @relation("RequestsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
-  skill      Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  id         String        @id @default(uuid()) @db.Uuid
+  fromUserId String        @db.Uuid
+  toUserId   String        @db.Uuid
+  skillId    String        @db.Uuid
+  status     RequestStatus @default(pending)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  fromUser   User          @relation("RequestsSent", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User          @relation("RequestsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  skill      Skill         @relation(fields: [skillId], references: [id], onDelete: Cascade)
 }
 
 model Chat {
-  id            String            @id @default(uuid()) @db.Uuid
-    name          String?
-    isGroupChat   Boolean           @default(false)
-  createdAt     DateTime          @default(now())
-  messages      Message[]
-  participants  ChatParticipant[]
+  id           String            @id @default(uuid()) @db.Uuid
+  name         String?
+  isGroupChat  Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  messages     Message[]
+  participants ChatParticipant[]
 }
 
 model ChatParticipant {
-  id           String   @id @default(uuid()) @db.Uuid
-  chatId       String   @db.Uuid
-  userId       String   @db.Uuid
-  chat         Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  joinedAt     DateTime @default(now())
-  lastReadAt   DateTime @default(now())
-  unreadCount  Int      @default(0)
+  id          String   @id @default(uuid()) @db.Uuid
+  chatId      String   @db.Uuid
+  userId      String   @db.Uuid
+  chat        Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt    DateTime @default(now())
+  lastReadAt  DateTime @default(now())
+  unreadCount Int      @default(0)
 
   @@unique([chatId, userId])
 }
@@ -237,7 +257,7 @@ model Notification {
   type      NotificationType
   title     String
   message   String
-  relatedId String?           // ID of related resource (request, user, etc)
+  relatedId String? // ID of related resource (request, user, etc)
   read      Boolean          @default(false)
   createdAt DateTime         @default(now())
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -248,30 +268,30 @@ model Notification {
 }
 
 model UserSettings {
-  id                     String   @id @default(uuid()) @db.Uuid
-  userId                 String   @unique @db.Uuid
-  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Privacy Settings
-  isPrivateProfile       Boolean  @default(false)
-  allowMessages          String   @default("everyone") // everyone, followers, none
-  allowRequestsFromAll   Boolean  @default(true)
-  
+  isPrivateProfile     Boolean @default(false)
+  allowMessages        String  @default("everyone") // everyone, followers, none
+  allowRequestsFromAll Boolean @default(true)
+
   // Notification Settings
-  emailNotifications     Boolean  @default(true)
-  pushNotifications      Boolean  @default(true)
-  requestNotifications   Boolean  @default(true)
-  messageNotifications   Boolean  @default(true)
-  activityNotifications  Boolean  @default(true)
-  
+  emailNotifications    Boolean @default(true)
+  pushNotifications     Boolean @default(true)
+  requestNotifications  Boolean @default(true)
+  messageNotifications  Boolean @default(true)
+  activityNotifications Boolean @default(true)
+
   // Appearance Settings
-  theme                  String   @default("light") // light, dark, auto
-  language               String   @default("en")
-  
+  theme    String @default("light") // light, dark, auto
+  language String @default("en")
+
   // Security Settings
-  twoFactorEnabled       Boolean  @default(false)
-  lastLoginAt            DateTime?
-  updatedAt              DateTime @updatedAt
+  twoFactorEnabled Boolean   @default(false)
+  lastLoginAt      DateTime?
+  updatedAt        DateTime  @updatedAt
 }
 
 model Follow {
@@ -292,7 +312,7 @@ model Review {
   id        String   @id @default(uuid()) @db.Uuid
   authorId  String   @db.Uuid
   userId    String   @db.Uuid
-  rating    Int      // 1-5 stars
+  rating    Int // 1-5 stars
   comment   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -309,13 +329,13 @@ model PostReview {
   id        String   @id @default(uuid()) @db.Uuid
   authorId  String   @db.Uuid
   postId    String   @db.Uuid
-  rating    Int      // 1-5 stars
+  rating    Int // 1-5 stars
   comment   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  author User  @relation("PostReviewsGiven", fields: [authorId], references: [id], onDelete: Cascade)
-  post   Post  @relation("PostReviews", fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation("PostReviewsGiven", fields: [authorId], references: [id], onDelete: Cascade)
+  post   Post @relation("PostReviews", fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([authorId, postId])
   @@index([postId])
@@ -323,21 +343,21 @@ model PostReview {
 }
 
 model Report {
-  id            String        @id @default(uuid()) @db.Uuid
-  reporterId    String        @db.Uuid
-  reason        String
-  description   String
-  reportedUserId String?       @db.Uuid
-  reportedPostId String?       @db.Uuid
-  reportedMessageId String?    @db.Uuid
-  status        ReportStatus  @default(pending)
-  resolvedBy    String?       @db.Uuid
-  resolutionNote String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                String       @id @default(uuid()) @db.Uuid
+  reporterId        String       @db.Uuid
+  reason            String
+  description       String
+  reportedUserId    String?      @db.Uuid
+  reportedPostId    String?      @db.Uuid
+  reportedMessageId String?      @db.Uuid
+  status            ReportStatus @default(pending)
+  resolvedBy        String?      @db.Uuid
+  resolutionNote    String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
-  reporter     User  @relation("ReportsCreated", fields: [reporterId], references: [id], onDelete: Cascade)
-  reportedUser User? @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reporter       User  @relation("ReportsCreated", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser   User? @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
   resolvedByUser User? @relation("ReportsResolved", fields: [resolvedBy], references: [id], onDelete: SetNull)
 
   @@index([reporterId])
@@ -365,10 +385,10 @@ model AuditLog {
 }
 
 model BlockedUser {
-  id         String   @id @default(uuid()) @db.Uuid
-  blockerId  String   @db.Uuid
-  blockedId  String   @db.Uuid
-  createdAt  DateTime @default(now())
+  id        String   @id @default(uuid()) @db.Uuid
+  blockerId String   @db.Uuid
+  blockedId String   @db.Uuid
+  createdAt DateTime @default(now())
 
   @@unique([blockerId, blockedId])
   @@index([blockerId])
@@ -389,11 +409,96 @@ model Bookmark {
   @@index([postId])
 }
 
+model PostTag {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @db.Uuid
+  tag       String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, tag])
+  @@index([postId])
+  @@index([tag])
+}
+
+model PostView {
+  id       String   @id @default(uuid()) @db.Uuid
+  postId   String   @db.Uuid
+  userId   String?  @db.Uuid // null for anonymous views
+  viewedAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model PostShare {
+  id         String   @id @default(uuid()) @db.Uuid
+  postId     String   @db.Uuid
+  sharedBy   String   @db.Uuid
+  sharedWith String?  @db.Uuid // null if shared publicly
+  shareType  String // "link", "message", "public"
+  createdAt  DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([sharedBy])
+}
+
+model PostAnalytics {
+  id            String   @id @default(uuid()) @db.Uuid
+  postId        String   @unique @db.Uuid
+  viewsToday    Int      @default(0)
+  viewsWeek     Int      @default(0)
+  viewsTotal    Int      @default(0)
+  likesTotal    Int      @default(0)
+  commentsTotal Int      @default(0)
+  sharesTotal   Int      @default(0)
+  lastUpdated   DateTime @default(now()) @updatedAt
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+model KeywordMute {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  keyword   String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, keyword])
+  @@index([userId])
+  @@index([keyword])
+}
+
+model DraftPost {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  content      String
+  images       String[]
+  richContent  String?
+  templateType String   @default("default")
+  tags         String[] // Array of tag strings
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
 model PostReaction {
   id        String   @id @default(uuid()) @db.Uuid
   postId    String   @db.Uuid
   userId    String   @db.Uuid
-  emoji     String   // 👍, ❤️, 😂, 😮, 😢, 😡
+  emoji     String // 👍, ❤️, 😂, 😮, 😢, 😡
   createdAt DateTime @default(now())
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
