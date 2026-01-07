@@ -29,11 +29,14 @@ exports.createPost = async (req, res, next) => {
 
 exports.getAllPosts = async (req, res, next) => {
   try {
+    console.log("📌 getAllPosts called with params:", req.query);
     const currentUserId = req.user?.id;
     const { page = 1, limit = 10 } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
+
+    console.log("📌 Querying posts - skip:", skip, "take:", take);
 
     const [posts, totalCount] = await prisma.$transaction([
       prisma.post.findMany({
@@ -63,6 +66,8 @@ exports.getAllPosts = async (req, res, next) => {
       }),
       prisma.post.count(),
     ]);
+
+    console.log("📌 Retrieved", posts.length, "posts out of", totalCount);
 
     // Map posts with status flags
     const postsWithStatus = posts.map((post) => {
