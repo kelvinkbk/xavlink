@@ -75,6 +75,7 @@ export default function ChatPage() {
       return [];
     }
   });
+  const [blockListModalOpen, setBlockListModalOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
@@ -954,15 +955,28 @@ export default function ChatPage() {
 
   const toggleBlockPeer = useCallback(() => {
     if (!primaryPeer?.id) return;
+    const isCurrentlyBlocked = blockedUsers.includes(primaryPeer.id);
+
+    const confirmAction = isCurrentlyBlocked
+      ? `Unblock ${primaryPeer.name}? You'll see their messages again.`
+      : `Block ${primaryPeer.name}? You won't see their messages in this chat.`;
+
+    if (!window.confirm(confirmAction)) return;
+
     setBlockedUsers((prev) => {
-      const isBlocked = prev.includes(primaryPeer.id);
-      const next = isBlocked
+      const next = isCurrentlyBlocked
         ? prev.filter((id) => id !== primaryPeer.id)
         : [...prev, primaryPeer.id];
-      showToast(isBlocked ? "User unblocked" : "User blocked", "warning", 2000);
+      showToast(
+        isCurrentlyBlocked
+          ? `Unblocked ${primaryPeer.name}`
+          : `Blocked ${primaryPeer.name}`,
+        "warning",
+        2500
+      );
       return next;
     });
-  }, [primaryPeer?.id, showToast]);
+  }, [primaryPeer?.id, primaryPeer?.name, blockedUsers, showToast]);
 
   const handleTyping = (value) => {
     setNewMessage(value);
@@ -1261,14 +1275,29 @@ export default function ChatPage() {
               Chat
             </h2>
             {primaryPeer && (
-              <button
-                type="button"
-                onClick={toggleBlockPeer}
-                className="ml-2 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                {blockedUsers.includes(primaryPeer.id) ? "Unblock" : "Block"}{" "}
-                {primaryPeer.name}
-              </button>
+              <div className="flex items-center gap-2 ml-2">
+                <button
+                  type="button"
+                  onClick={toggleBlockPeer}
+                  className={`px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    blockedUsers.includes(primaryPeer.id)
+                      ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
+                      : "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                  }`}
+                  title={`${
+                    blockedUsers.includes(primaryPeer.id) ? "Unblock" : "Block"
+                  } ${primaryPeer.name}`}
+                >
+                  <span className="text-base">
+                    {blockedUsers.includes(primaryPeer.id) ? "🔓" : "🚫"}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {blockedUsers.includes(primaryPeer.id)
+                      ? "Unblock"
+                      : "Block"}
+                  </span>
+                </button>
+              </div>
             )}
             {notificationsSupported() && notifPermission !== "granted" && (
               <div className="ml-auto flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-2 py-1 rounded">
@@ -1402,6 +1431,27 @@ export default function ChatPage() {
                           </>
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {primaryPeer && blockedUsers.includes(primaryPeer.id) && (
+                    <div className="px-4 py-3 mb-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded flex items-start gap-2">
+                      <span className="text-lg flex-shrink-0 mt-0.5">🚫</span>
+                      <div>
+                        <div className="text-sm font-semibold text-red-700 dark:text-red-400">
+                          You have blocked {primaryPeer.name}
+                        </div>
+                        <div className="text-xs text-red-600 dark:text-red-300 mt-0.5">
+                          You won't receive messages from them
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={toggleBlockPeer}
+                        className="ml-auto text-sm underline text-red-700 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 whitespace-nowrap"
+                      >
+                        Unblock
+                      </button>
                     </div>
                   )}
 
