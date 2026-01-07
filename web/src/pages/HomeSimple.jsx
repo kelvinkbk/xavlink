@@ -5,12 +5,27 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+// Format relative time (e.g., "2 hours ago")
+const formatRelativeTime = (date) => {
+  const now = new Date();
+  const postDate = new Date(date);
+  const diff = Math.floor((now - postDate) / 1000); // seconds
+
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+  return postDate.toLocaleDateString();
+};
+
 function HomeSimple() {
   const { showToast } = useToast();
   const [posts, setPosts] = useState([]);
+  const [allPosts, setAllPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchPosts();
@@ -27,18 +42,34 @@ function HomeSimple() {
         params: { page: 1, limit: 20 },
       });
 
+      setAllPosts(response.data.posts || []);
       setPosts(response.data.posts || []);
     } catch (err) {
       console.error("Error fetching posts:", err);
       setError("Unable to load posts. The server might be updating.");
       setPosts([]);
+      setAllPosts([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.trim() === "") {
+      setPosts(allPosts);
+    } else {
+      const filtered = allPosts.filter((post) =>
+        post.content.toLowerCase().includes(query.toLowerCase()) ||
+        post.user?.name.toLowerCase().includes(query.toLowerCase())
+      );
+      setPosts(filtered);
+    }
+  };
+
   const handlePostCreated = (newPost) => {
     setPosts([newPost, ...posts]);
+    setAllPosts([newPost, ...allPosts]);
     setShowCreateModal(false);
     showToast("Post created successfully!", "success");
   };
@@ -96,6 +127,22 @@ function HomeSimple() {
           <p className="text-gray-400">Connect with your campus community</p>
         </div>
 
+        {/* Search Bar */}
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="🔍 Search posts or users..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none transition"
+          />
+          {searchQuery && (
+            <p className="text-gray-400 text-sm mt-2">
+              Found {posts.length} result{posts.length !== 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
+
         {/* Create Post Button */}
         <button
           onClick={() => setShowCreateModal(true)}
@@ -143,7 +190,7 @@ function HomeSimple() {
                     </p>
                     <p className="text-sm text-gray-400">
                       {post.user?.course || "Student"} •{" "}
-                      {new Date(post.createdAt).toLocaleDateString()}
+                      {formatRelativeTime(post.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -194,6 +241,30 @@ function HomeSimple() {
                       />
                     </svg>
                     <span>{post.commentsCount || 0}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/posts/${post.id}`;
+                      navigator.clipboard.writeText(url);
+                      showToast("Link copied to clipboard!", "success");
+                    }}
+                    className="flex items-center gap-2 hover:text-purple-400 transition"
+                    title="Share post"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8.684 13.342C9.278 10.902 11.487 9 14 9c2.761 0 5 2.239 5 5 0 2.513-1.902 4.722-4.342 5.316m0 0a9.005 9.005 0 01-8.464-4.95m8.464 4.95L3.102 19.894m0 0a9.005 9.005 0 010-13.788m13.788 0L19.75 7.111"
+                      />
+                    </svg>
                   </button>
                 </div>
               </div>
