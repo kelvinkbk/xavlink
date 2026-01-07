@@ -1313,14 +1313,14 @@ export default function ChatPage() {
                   }}
                   className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
                 >
-                  \u2713 All Mine
+                  ✓ All Mine
                 </button>
                 {selectedMessages.size > 0 && (
                   <button
                     onClick={handleBulkDelete}
                     className="px-3 py-1 bg-red-600 text-white rounded text-sm font-semibold hover:bg-red-700"
                   >
-                    \ud83d\uddd1\ufe0f Delete ({selectedMessages.size})
+                    🗑️ Delete ({selectedMessages.size})
                   </button>
                 )}
                 <button
