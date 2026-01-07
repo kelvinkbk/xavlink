@@ -67,18 +67,23 @@ export const skillService = {
 
 export const postService = {
   createPost: (data) => api.post("/posts/create", data),
-  getAllPosts: (filter = "all") =>
-    api.get(`/posts/all?filter=${filter}`).then((res) => ({
-      ...res,
-      data: res.data.map((post) => ({
-        ...post,
-        image: toAbsolute(post.image),
-        user: {
-          ...post.user,
-          profilePic: toAbsolute(post.user?.profilePic),
+  getAllPosts: (filter = "all", sort = "recent", page = 1, limit = 10) =>
+    api
+      .get(`/posts/all?filter=${filter}&sort=${sort}&page=${page}&limit=${limit}`)
+      .then((res) => ({
+        ...res,
+        data: {
+          ...res.data,
+          posts: res.data.posts.map((post) => ({
+            ...post,
+            image: toAbsolute(post.image),
+            user: {
+              ...post.user,
+              profilePic: toAbsolute(post.user?.profilePic),
+            },
+          })),
         },
       })),
-    })),
   likePost: (postId) => api.post(`/posts/${postId}/like`),
   unlikePost: (postId) => api.delete(`/posts/${postId}/like`),
   addComment: (postId, text) => api.post(`/posts/${postId}/comments`, { text }),
@@ -100,6 +105,31 @@ export const postService = {
     api.patch(`/posts/comments/${commentId}`, data).then((res) => res.data),
   deleteComment: (commentId) =>
     api.delete(`/posts/comments/${commentId}`).then((res) => res.data),
+  // Bookmark methods
+  bookmarkPost: (postId) =>
+    api.post(`/posts/${postId}/bookmark`).then((res) => res.data),
+  unbookmarkPost: (postId) =>
+    api.delete(`/posts/${postId}/bookmark`).then((res) => res.data),
+  getBookmarkedPosts: (page = 1, limit = 10) =>
+    api.get(`/posts/bookmarks?page=${page}&limit=${limit}`).then((res) => ({
+      ...res,
+      data: {
+        ...res.data,
+        posts: res.data.posts.map((post) => ({
+          ...post,
+          image: toAbsolute(post.image),
+          user: {
+            ...post.user,
+            profilePic: toAbsolute(post.user?.profilePic),
+          },
+        })),
+      },
+    })),
+  // Reaction methods
+  addReaction: (postId, emoji) =>
+    api.post(`/posts/${postId}/reaction`, { emoji }).then((res) => res.data),
+  removeReaction: (postId) =>
+    api.delete(`/posts/${postId}/reaction`).then((res) => res.data),
 };
 
 const toAbsolute = (url) => {

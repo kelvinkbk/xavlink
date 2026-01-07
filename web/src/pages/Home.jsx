@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import PageTransition from "../components/PageTransition";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SkeletonLoader from "../components/SkeletonLoader";
@@ -10,7 +10,7 @@ import socket from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
-function PostCard({ post, onLike, onComment, onReport, onDelete, onEdit }) {
+function PostCard({ post, onLike, onComment, onReport, onDelete, onEdit, onBookmark, onReaction }) {
   const { isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
   const [showComments, setShowComments] = useState(false);
@@ -22,6 +22,9 @@ function PostCard({ post, onLike, onComment, onReport, onDelete, onEdit }) {
   const [editPostContent, setEditPostContent] = useState(post.content);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentText, setEditCommentText] = useState("");
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+
+  const reactionEmojis = ["👍", "❤️", "😂", "😮", "😢", "😡"];
 
   const defaultAvatar =
     "https://ui-avatars.com/api/?name=" +
@@ -201,6 +204,89 @@ function PostCard({ post, onLike, onComment, onReport, onDelete, onEdit }) {
           <span className="text-xl">💬</span>
           <span className="font-semibold">{post.commentsCount || 0}</span>
         </button>
+
+        {/* Reaction Picker */}
+        <div className="relative">
+          <button
+            onClick={() => setShowReactionPicker(!showReactionPicker)}
+            disabled={!isAuthenticated}
+            className={`flex items-center gap-2 text-gray-600 hover:text-yellow-500 transition ${
+              !isAuthenticated ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            title="React to post"
+          >
+            <span className="text-xl">
+              {post.userReaction || "😊"}
+            </span>
+            {post.reactionSummary &&
+              Object.keys(post.reactionSummary).length > 0 && (
+                <span className="text-sm font-semibold">
+                  {Object.values(post.reactionSummary).reduce(
+                    (sum, r) => sum + r.count,
+                    0
+                  )}
+                </span>
+              )}
+          </button>
+
+          {showReactionPicker && isAuthenticated && (
+            <div className="absolute bottom-full mb-2 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex gap-2 z-10">
+              {reactionEmojis.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => {
+                    onReaction(post.id, emoji);
+                    setShowReactionPicker(false);
+                  }}
+                  className={`text-2xl hover:scale-125 transition ${
+                    post.userReaction === emoji ? "scale-125" : ""
+                  }`}
+                  title={`React with ${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+              {post.userReaction && (
+                <button
+                  onClick={() => {
+                    onReaction(post.id, null);
+                    setShowReactionPicker(false);
+                  }}
+                  className="text-sm text-gray-500 hover:text-red-500 px-2"
+                  title="Remove reaction"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Reaction Summary Tooltip */}
+          {post.reactionSummary &&
+            Object.keys(post.reactionSummary).length > 0 && (
+              <div className="hidden group-hover:block absolute bottom-full mb-1 left-0 bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                {Object.entries(post.reactionSummary).map(([emoji, data]) => (
+                  <div key={emoji}>
+                    {emoji} {data.count}
+                  </div>
+                ))}
+              </div>
+            )}
+        </div>
+
+        {/* Bookmark Button */}
+        <button
+          onClick={() => onBookmark(post.id)}
+          disabled={!isAuthenticated}
+          className={`flex items-center gap-2 ml-auto ${
+            post.isBookmarked ? "text-yellow-500" : "text-gray-600"
+          } hover:text-yellow-500 transition ${
+            !isAuthenticated ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          title={post.isBookmarked ? "Remove bookmark" : "Bookmark post"}
+        >
+          <span className="text-xl">{post.isBookmarked ? "🔖" : "📑"}</span>
+        </button>
       </div>
 
       {showComments && (
@@ -379,8 +465,13 @@ export default function Home() {
   const [error, setError] = useState("");
   const [newPost, setNewPost] = useState({ content: "", image: "" });
   const [posting, setPosting] = useState(false);
-  const [likingPosts, setLikingPosts] = useState(new Set()); // Track which posts are being liked
+  const [likingPosts, setLikingPosts] = useState(new Set());
   const [feedFilter, setFeedFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("recent");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [showBookmarks, setShowBookmarks] = useState(false);
   const { showToast } = useToast();
   const [reportModal, setReportModal] = useState({
     isOpen: false,
@@ -389,64 +480,133 @@ export default function Home() {
     targetType: "Post",
   });
 
+  const observerRef = useRef();
+  const lastPostRef = useCallback(
+    (node) => {
+      if (loadingMore) return;
+      if (observerRef.current) observerRef.current.disconnect();
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore && !showBookmarks) {
+          setCurrentPage((prev) => prev + 1);
+        }
+      });
+      if (node) observerRef.current.observe(node);
+    },
+    [loadingMore, hasMore, showBookmarks]
+  );
+
+  // Fetch posts with pagination
   useEffect(() => {
     const fetchPosts = async () => {
-      setLoading(true);
+      if (currentPage === 1) setLoading(true);
+      else setLoadingMore(true);
+
       try {
-        const { data } = await postService.getAllPosts(feedFilter);
-        setPosts(data);
+        const { data } = await postService.getAllPosts(
+          feedFilter,
+          sortBy,
+          currentPage,
+          10
+        );
+        if (currentPage === 1) {
+          setPosts(data.posts);
+        } else {
+          setPosts((prev) => [...prev, ...data.posts]);
+        }
+        setHasMore(data.pagination.hasMore);
       } catch (e) {
         console.error("Error fetching posts:", e);
         setError("Failed to load posts");
         showToast("Failed to load posts", "error");
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     };
 
     fetchPosts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feedFilter]);
+  }, [feedFilter, sortBy, currentPage]);
 
-  // Listen for real-time like/unlike events
+  // Fetch bookmarked posts
   useEffect(() => {
-    // Ensure socket is connected
+    if (!showBookmarks) return;
+
+    const fetchBookmarks = async () => {
+      setLoading(true);
+      try {
+        const { data } = await postService.getBookmarkedPosts(1, 50);
+        setPosts(data.posts);
+        setHasMore(false);
+      } catch (e) {
+        console.error("Error fetching bookmarks:", e);
+        showToast("Failed to load bookmarks", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookmarks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showBookmarks]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    if (currentPage !== 1) setCurrentPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feedFilter, sortBy]);
+
+  // Listen for real-time events
+  useEffect(() => {
     if (!socket.connected) {
       console.log("🔌 Connecting socket for real-time updates");
       socket.connect();
-    } else {
-      console.log("✅ Socket already connected");
     }
 
     const handlePostLiked = ({ postId, likesCount }) => {
-      console.log("❤️ Post liked real-time:", { postId, likesCount });
       setPosts((prevPosts) =>
         prevPosts.map((p) => (p.id === postId ? { ...p, likesCount } : p))
       );
     };
 
     const handlePostUnliked = ({ postId, likesCount }) => {
-      console.log("🤍 Post unliked real-time:", { postId, likesCount });
       setPosts((prevPosts) =>
         prevPosts.map((p) => (p.id === postId ? { ...p, likesCount } : p))
       );
     };
 
     const handlePostDeleted = ({ postId }) => {
-      console.log("🗑️ Post deleted real-time:", { postId });
       setPosts((prevPosts) => prevPosts.filter((p) => p.id !== postId));
+    };
+
+    const handleReactionAdded = ({ postId, reactionSummary }) => {
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId ? { ...p, reactionSummary } : p
+        )
+      );
+    };
+
+    const handleReactionRemoved = ({ postId, reactionSummary }) => {
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId ? { ...p, reactionSummary } : p
+        )
+      );
     };
 
     socket.on("post_liked", handlePostLiked);
     socket.on("post_unliked", handlePostUnliked);
     socket.on("post_deleted", handlePostDeleted);
-
-    console.log("📡 Real-time listeners registered");
+    socket.on("post_reaction_added", handleReactionAdded);
+    socket.on("post_reaction_removed", handleReactionRemoved);
 
     return () => {
       socket.off("post_liked", handlePostLiked);
       socket.off("post_unliked", handlePostUnliked);
       socket.off("post_deleted", handlePostDeleted);
+      socket.off("post_reaction_added", handleReactionAdded);
+      socket.off("post_reaction_removed", handleReactionRemoved);
     };
   }, []);
 
@@ -592,6 +752,78 @@ export default function Home() {
     );
   };
 
+  const handleBookmark = async (postId) => {
+    const post = posts.find((p) => p.id === postId);
+    if (!post) return;
+
+    const wasBookmarked = post.isBookmarked;
+
+    // Optimistic update
+    setPosts(
+      posts.map((p) =>
+        p.id === postId ? { ...p, isBookmarked: !wasBookmarked } : p
+      )
+    );
+
+    try {
+      if (wasBookmarked) {
+        await postService.unbookmarkPost(postId);
+        showToast("Bookmark removed", "success");
+      } else {
+        await postService.bookmarkPost(postId);
+        showToast("Post bookmarked", "success");
+      }
+    } catch (e) {
+      console.error("Error toggling bookmark:", e);
+      showToast("Failed to update bookmark", "error");
+      // Revert on error
+      setPosts(
+        posts.map((p) =>
+          p.id === postId ? { ...p, isBookmarked: wasBookmarked } : p
+        )
+      );
+    }
+  };
+
+  const handleReaction = async (postId, emoji) => {
+    try {
+      if (emoji === null) {
+        // Remove reaction
+        const { data } = await postService.removeReaction(postId);
+        setPosts(
+          posts.map((p) =>
+            p.id === postId
+              ? {
+                  ...p,
+                  reactionSummary: data.reactionSummary,
+                  userReaction: null,
+                }
+              : p
+          )
+        );
+        showToast("Reaction removed", "success");
+      } else {
+        // Add reaction
+        const { data } = await postService.addReaction(postId, emoji);
+        setPosts(
+          posts.map((p) =>
+            p.id === postId
+              ? {
+                  ...p,
+                  reactionSummary: data.reactionSummary,
+                  userReaction: emoji,
+                }
+              : p
+          )
+        );
+        showToast(`Reacted with ${emoji}`, "success");
+      }
+    } catch (e) {
+      console.error("Error toggling reaction:", e);
+      showToast("Failed to update reaction", "error");
+    }
+  };
+
   if (loading)
     return (
       <PageTransition>
@@ -608,33 +840,68 @@ export default function Home() {
   return (
     <PageTransition>
       <div className="max-w-2xl mx-auto py-8 px-4">
-        {/* Toasts are handled globally via ToastProvider/useToast */}
         <h1 className="text-3xl font-bold text-secondary mb-6">Campus Feed</h1>
 
-        {/* Feed Filter Toggle */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
+        {/* Feed Filter & Sort Controls */}
+        <div className="bg-white rounded-lg shadow p-4 mb-6 space-y-4">
+          {/* Filter Tabs */}
           <div className="flex gap-2">
             <button
-              onClick={() => setFeedFilter("all")}
+              onClick={() => {
+                setShowBookmarks(false);
+                setFeedFilter("all");
+              }}
               className={`flex-1 px-4 py-2 rounded-lg font-medium transition ${
-                feedFilter === "all"
+                !showBookmarks && feedFilter === "all"
                   ? "bg-primary text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              All Posts
+              🌍 All Posts
             </button>
             <button
-              onClick={() => setFeedFilter("following")}
+              onClick={() => {
+                setShowBookmarks(false);
+                setFeedFilter("following");
+              }}
               className={`flex-1 px-4 py-2 rounded-lg font-medium transition ${
-                feedFilter === "following"
+                !showBookmarks && feedFilter === "following"
                   ? "bg-primary text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Following
+              👥 Following
+            </button>
+            <button
+              onClick={() => setShowBookmarks(true)}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition ${
+                showBookmarks
+                  ? "bg-yellow-500 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              🔖 Bookmarks
             </button>
           </div>
+
+          {/* Sort Options (hidden when showing bookmarks) */}
+          {!showBookmarks && (
+            <div className="flex gap-2 items-center">
+              <span className="text-sm text-gray-600 font-medium">
+                Sort by:
+              </span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+              >
+                <option value="recent">📅 Most Recent</option>
+                <option value="trending">🔥 Trending (7 days)</option>
+                <option value="most-liked">❤️ Most Liked</option>
+                <option value="most-commented">💬 Most Commented</option>
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Create Post Form */}
@@ -706,34 +973,19 @@ export default function Home() {
         )}
 
         {posts.length === 0 ? (
-          <div
-            className="bg-white p-8 rounded-lg shadow text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
+          <div className="bg-white p-8 rounded-lg shadow text-center">
             <p className="text-gray-500">
-              No posts yet. Be the first to share!
+              {showBookmarks
+                ? "No bookmarked posts yet"
+                : "No posts yet. Be the first to share!"}
             </p>
           </div>
         ) : (
-          <div
-            initial="hidden"
-            animate="visible"
-            variants={{
-              visible: {
-                transition: {
-                  staggerChildren: 0.1,
-                },
-              },
-            }}
-          >
-            {posts.map((post) => (
+          <div>
+            {posts.map((post, index) => (
               <div
                 key={post.id}
-                variants={{
-                  hidden: { opacity: 0, y: 20 },
-                  visible: { opacity: 1, y: 0 },
-                }}
+                ref={index === posts.length - 1 ? lastPostRef : null}
               >
                 <PostCard
                   post={post}
@@ -741,6 +993,8 @@ export default function Home() {
                   onComment={handleCommentAdded}
                   onDelete={handleDeletePost}
                   onEdit={handleEditPost}
+                  onBookmark={handleBookmark}
+                  onReaction={handleReaction}
                   onReport={(postId, postName, type = "Post") =>
                     setReportModal({
                       isOpen: true,
@@ -752,6 +1006,21 @@ export default function Home() {
                 />
               </div>
             ))}
+
+            {/* Loading More Indicator */}
+            {loadingMore && (
+              <div className="flex justify-center py-6">
+                <LoadingSpinner />
+                <span className="ml-2 text-gray-500">Loading more posts...</span>
+              </div>
+            )}
+
+            {/* End of Feed */}
+            {!hasMore && !showBookmarks && posts.length > 0 && (
+              <div className="text-center py-6 text-gray-500">
+                <p>🎉 You've reached the end!</p>
+              </div>
+            )}
           </div>
         )}
 

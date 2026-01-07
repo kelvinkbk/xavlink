@@ -86,6 +86,8 @@ model User {
   reviewsGiven      Review[]          @relation("ReviewsGiven")
   reviewsReceived   Review[]          @relation("ReviewsReceived")
   postReviewsGiven  PostReview[]      @relation("PostReviewsGiven")
+  bookmarks         Bookmark[]
+  postReactions     PostReaction[]
 
   reportsCreated   Report[]          @relation("ReportsCreated")
   reportsReceived  Report[]          @relation("ReportsReceived")
@@ -121,6 +123,8 @@ model Post {
   likes        Like[]
   comments     Comment[]
   postReviews  PostReview[] @relation("PostReviews")
+  bookmarks    Bookmark[]
+  reactions    PostReaction[]
 }
 
 model Like {
@@ -369,4 +373,33 @@ model BlockedUser {
   @@unique([blockerId, blockedId])
   @@index([blockerId])
   @@index([blockedId])
+}
+
+model Bookmark {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  postId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
+
+model PostReaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @db.Uuid
+  userId    String   @db.Uuid
+  emoji     String   // 👍, ❤️, 😂, 😮, 😢, 😡
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId, emoji])
+  @@index([postId])
+  @@index([userId])
 }
