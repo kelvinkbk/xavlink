@@ -77,7 +77,6 @@ export default function ChatPage() {
       return [];
     }
   });
-  const [blockListModalOpen, setBlockListModalOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
@@ -115,15 +114,14 @@ export default function ChatPage() {
   const visibleMessages = useMemo(() => {
     if (!blockedUsers.length) return messages;
     return messages.filter(
-      (m) => m.sender.id === user?.id || !blockedUsers.includes(String(m.sender.id))
+      (m) =>
+        m.sender.id === user?.id || !blockedUsers.includes(String(m.sender.id))
     );
   }, [messages, blockedUsers, user?.id]);
 
   const primaryPeer = useMemo(() => {
-    return (
-      visibleMessages.find((m) => m.sender.id !== user?.id)?.sender || null
-    );
-  }, [visibleMessages, user?.id]);
+    return messages.find((m) => m.sender.id !== user?.id)?.sender || null;
+  }, [messages, user?.id]);
 
   // Load pending messages from localStorage on mount or chatId change
   useEffect(() => {
@@ -1288,17 +1286,25 @@ export default function ChatPage() {
                       : "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
                   }`}
                   title={`${
-                    blockedUsers.includes(String(primaryPeer.id)) ? "Unblock" : "Block"
+                    blockedUsers.includes(String(primaryPeer.id))
+                      ? "Unblock"
+                      : "Block"
                   } ${primaryPeer.name}`}
                   aria-label={`${
-                    blockedUsers.includes(String(primaryPeer.id)) ? "Unblock" : "Block"
+                    blockedUsers.includes(String(primaryPeer.id))
+                      ? "Unblock"
+                      : "Block"
                   } ${primaryPeer.name}`}
                 >
                   <span className="text-base">
-                    {blockedUsers.includes(String(primaryPeer.id)) ? "🔓" : "🚫"}
+                    {blockedUsers.includes(String(primaryPeer.id))
+                      ? "🔓"
+                      : "🚫"}
                   </span>
                   <span>
-                    {blockedUsers.includes(String(primaryPeer.id)) ? "Unblock" : "Block"}
+                    {blockedUsers.includes(String(primaryPeer.id))
+                      ? "Unblock"
+                      : "Block"}
                   </span>
                 </button>
               </div>
@@ -1438,26 +1444,27 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  {primaryPeer && blockedUsers.includes(String(primaryPeer.id)) && (
-                    <div className="px-4 py-3 mb-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded flex items-start gap-2">
-                      <span className="text-lg flex-shrink-0 mt-0.5">🚫</span>
-                      <div>
-                        <div className="text-sm font-semibold text-red-700 dark:text-red-400">
-                          You have blocked {primaryPeer.name}
+                  {primaryPeer &&
+                    blockedUsers.includes(String(primaryPeer.id)) && (
+                      <div className="px-4 py-3 mb-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded flex items-start gap-2">
+                        <span className="text-lg flex-shrink-0 mt-0.5">🚫</span>
+                        <div>
+                          <div className="text-sm font-semibold text-red-700 dark:text-red-400">
+                            You have blocked {primaryPeer.name}
+                          </div>
+                          <div className="text-xs text-red-600 dark:text-red-300 mt-0.5">
+                            You won't receive messages from them
+                          </div>
                         </div>
-                        <div className="text-xs text-red-600 dark:text-red-300 mt-0.5">
-                          You won't receive messages from them
-                        </div>
+                        <button
+                          type="button"
+                          onClick={toggleBlockPeer}
+                          className="ml-auto text-sm underline text-red-700 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 whitespace-nowrap"
+                        >
+                          Unblock
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={toggleBlockPeer}
-                        className="ml-auto text-sm underline text-red-700 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 whitespace-nowrap"
-                      >
-                        Unblock
-                      </button>
-                    </div>
-                  )}
+                    )}
 
                   {isSearching &&
                     !searchLoading &&
