@@ -1069,15 +1069,39 @@ export default function ChatPage() {
 
   const scrollToMessage = useCallback(
     (messageId) => {
-      const messageIndex = visibleMessages.findIndex((m) => m.id === messageId);
-      if (messageIndex === -1) {
-        showToast("Message not found or hidden", "warning", 2000);
+      // Find message in full messages array
+      const message = messages.find((m) => m.id === messageId);
+      if (!message) {
+        showToast("Message not found", "warning", 2000);
         return;
       }
 
+      // Check if message is blocked
+      if (
+        blockedUsers.length > 0 &&
+        message.sender.id !== user?.id &&
+        blockedUsers.includes(String(message.sender.id))
+      ) {
+        showToast("Cannot jump to blocked user message", "warning", 2000);
+        return;
+      }
+
+      // Get the display list to find the correct index
+      const displayMessages = [...visibleMessages, ...pendingMessages];
+      const displayIndex = displayMessages.findIndex((m) => m.id === messageId);
+
+      if (displayIndex === -1) {
+        showToast("Message not visible in current view", "warning", 2000);
+        return;
+      }
+
+      console.log(
+        `Scrolling to message ${messageId} at display index ${displayIndex}`
+      );
+
       // Scroll the virtual list to the message index
       if (vListRef.current) {
-        vListRef.current.scrollToItem(messageIndex, "center");
+        vListRef.current.scrollToItem(displayIndex, "center");
 
         // Highlight the message temporarily
         setTimeout(() => {
@@ -1100,7 +1124,14 @@ export default function ChatPage() {
         }, 100);
       }
     },
-    [visibleMessages, showToast]
+    [
+      messages,
+      visibleMessages,
+      pendingMessages,
+      blockedUsers,
+      user?.id,
+      showToast,
+    ]
   );
 
   const handleTyping = (value) => {
@@ -1260,7 +1291,8 @@ export default function ChatPage() {
               <div className="break-words">
                 {searchQuery && message.text
                   ? highlightText(message.text, searchQuery)
-                  : message.text || (message.attachmentUrl ? "(attachment)" : "")}
+                  : message.text ||
+                    (message.attachmentUrl ? "(attachment)" : "")}
               </div>
               {message.attachmentUrl && (
                 <div className="mt-2 space-y-2">
