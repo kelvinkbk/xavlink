@@ -98,6 +98,9 @@ exports.getAllPosts = async (req, res, next) => {
                 select: { id: true },
               }
             : false,
+          tags: {
+            select: { id: true, tag: true },
+          },
           reactions: {
             select: { emoji: true, userId: true },
           },
@@ -1373,10 +1376,11 @@ exports.getSuggestedUsers = async (req, res, next) => {
           select: { posts: true, followers: true },
         },
       },
-      orderBy: [
-        { _count: { followers: "desc" } },
-        { _count: { posts: "desc" } },
-      ],
+      orderBy: {
+        followers: {
+          _count: "desc",
+        },
+      },
       take: parseInt(limit),
     });
 
