@@ -359,6 +359,8 @@ export default function ChatPage() {
         markChatReadTimeoutRef.current = setTimeout(async () => {
           try {
             await chatService.markChatAsRead(chatId);
+            // Emit event for sidebar to update
+            socket.emit("chat_marked_read", { chatId });
           } catch (error) {
             console.error("Failed to mark chat as read:", error);
           }
@@ -418,6 +420,8 @@ export default function ChatPage() {
       markChatReadTimeoutRef.current = setTimeout(async () => {
         try {
           await chatService.markChatAsRead(chatId);
+          // Emit event for sidebar to update
+          socket.emit("chat_marked_read", { chatId });
         } catch (error) {
           console.error("Failed to mark chat as read:", error);
         }

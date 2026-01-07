@@ -1,6 +1,6 @@
 import { useAuth } from "../context/AuthContext";
 import { Link, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { chatService } from "../services/chatService";
 import { socket } from "../services/socket";
 
@@ -8,37 +8,77 @@ export default function Sidebar({ isOpen, onToggle }) {
   const { isAuthenticated, logout, user } = useAuth();
   const location = useLocation();
   const [unreadTotal, setUnreadTotal] = useState(0);
+  const unreadByChat = useRef({}); // { chatId: count }
 
   const isActive = (path) => location.pathname === path;
 
-  // Real-time unread updates via socket events
+  // Real-time unread updates: track locally on message events
   useEffect(() => {
-    const refreshUnread = async () => {
+    // Initial load of unread counts
+    const loadInitial = async () => {
       try {
         const chats = await chatService.getUserChats();
-        const total = chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+        const byChat = {};
+        chats.forEach((c) => {
+          byChat[c.id] = c.unreadCount || 0;
+        });
+        unreadByChat.current = byChat;
+        const total = Object.values(byChat).reduce((sum, c) => sum + c, 0);
         setUnreadTotal(total);
       } catch {
         // noop
       }
     };
+    loadInitial();
 
-    // Initial load
-    refreshUnread();
+    // On receive_message: increment unread if not viewing that chat
+    const onReceiveMessage = ({ chatId }) => {
+      const isViewingChat =
+        location.pathname === `/chat/${chatId}` || location.pathname === "/chats";
+      if (!isViewingChat && chatId) {
+        unreadByChat.current[chatId] = (unreadByChat.current[chatId] || 0) + 1;
+        const total = Object.values(unreadByChat.current).reduce(
+          (sum, c) => sum + c,
+          0
+        );
+        setUnreadTotal(total);
+      }
+    };
 
-    // Listen for real-time updates: new message, mark as read, etc.
-    socket.on("receive_message", refreshUnread);
-    socket.on("message_read", refreshUnread);
-    socket.on("chat_updated", refreshUnread);
-    socket.on("unread_count_changed", refreshUnread);
+    // On message_read: decrement unread for that chat
+    const onMessageRead = ({ chatId }) => {
+      if (chatId && unreadByChat.current[chatId] > 0) {
+        unreadByChat.current[chatId] -= 1;
+        const total = Object.values(unreadByChat.current).reduce(
+          (sum, c) => sum + c,
+          0
+        );
+        setUnreadTotal(total);
+      }
+    };
+
+    // On mark_chat_as_read: clear unread for that chat
+    const onChatRead = ({ chatId }) => {
+      if (chatId) {
+        unreadByChat.current[chatId] = 0;
+        const total = Object.values(unreadByChat.current).reduce(
+          (sum, c) => sum + c,
+          0
+        );
+        setUnreadTotal(total);
+      }
+    };
+
+    socket.on("receive_message", onReceiveMessage);
+    socket.on("message_read", onMessageRead);
+    socket.on("mark_chat_as_read", onChatRead);
 
     return () => {
-      socket.off("receive_message", refreshUnread);
-      socket.off("message_read", refreshUnread);
-      socket.off("chat_updated", refreshUnread);
-      socket.off("unread_count_changed", refreshUnread);
+      socket.off("receive_message", onReceiveMessage);
+      socket.off("message_read", onMessageRead);
+      socket.off("mark_chat_as_read", onChatRead);
     };
-  }, []);
+  }, [location.pathname]);
 
   if (!isAuthenticated) {
     return null;
