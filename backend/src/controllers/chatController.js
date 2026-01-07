@@ -417,6 +417,61 @@ exports.deleteMessage = async (req, res, next) => {
 };
 
 /**
+ * Edit a message
+ */
+exports.editMessage = async (req, res, next) => {
+  try {
+    const { chatId, messageId } = req.params;
+    const { text } = req.body;
+    const userId = req.user.id;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: "Message text is required" });
+    }
+
+    // Verify message exists and belongs to requester
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      select: { id: true, chatId: true, senderId: true },
+    });
+
+    if (!message || message.chatId !== chatId) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    if (message.senderId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Only message sender can edit" });
+    }
+
+    const updatedMessage = await prisma.message.update({
+      where: { id: messageId },
+      data: {
+        text: text.trim(),
+        edited: true,
+      },
+      include: {
+        sender: {
+          select: { id: true, name: true, profilePic: true },
+        },
+        readReceipts: true,
+        reactionCounts: true,
+      },
+    });
+
+    // Broadcast edit to room
+    if (global.io) {
+      global.io.to(chatId).emit("message_edited", { message: updatedMessage, chatId });
+    }
+
+    res.json(updatedMessage);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Add reaction to a message
  */
 exports.addReaction = async (req, res, next) => {

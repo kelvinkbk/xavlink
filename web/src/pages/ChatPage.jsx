@@ -79,6 +79,10 @@ export default function ChatPage() {
     }
   });
   const [showBlockedUsersModal, setShowBlockedUsersModal] = useState(false);
+  const [readReceiptsModal, setReadReceiptsModal] = useState(null); // { messageId, readReceipts }
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [showPinnedMessagesModal, setShowPinnedMessagesModal] = useState(false);
+  const [editingMessage, setEditingMessage] = useState(null); // { id, text }
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
@@ -120,6 +124,10 @@ export default function ChatPage() {
         m.sender.id === user?.id || !blockedUsers.includes(String(m.sender.id))
     );
   }, [messages, blockedUsers, user?.id]);
+
+  const pinnedMessages = useMemo(() => {
+    return messages.filter((m) => m.isPinned);
+  }, [messages]);
 
   const primaryPeer = useMemo(() => {
     // First try to get from chat participants (works even with no messages)
@@ -959,14 +967,46 @@ export default function ChatPage() {
     }
   };
 
+  const handleEditMessage = async (messageId, newText) => {
+    if (!newText.trim()) {
+      showToast("Message cannot be empty", "warning", 2000);
+      return;
+    }
+    try {
+      await chatService.editMessage(chatId, messageId, newText);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId ? { ...m, text: newText, edited: true } : m
+        )
+      );
+      setEditingMessage(null);
+      showToast("Message edited", "success", 2000);
+    } catch (error) {
+      console.error("Failed to edit message:", error);
+      showToast("Failed to edit message", "error", 2500);
+    }
+  };
+
   const handleReportMessage = (message) => {
     setMessageToReport(message);
     setReportModalOpen(true);
   };
 
-  const handleUnsendStub = useCallback(() => {
-    showToast("Unsend will be available soon", "warning", 2500);
-  }, [showToast]);
+  const handleUnsendStub = useCallback(
+    async (messageId) => {
+      if (!window.confirm("Unsend this message? It will be deleted for everyone.")) return;
+      
+      try {
+        await chatService.deleteMessage(chatId, messageId);
+        // Socket will broadcast deletion, UI updates automatically
+        showToast("Message deleted", "warning", 2000);
+      } catch (error) {
+        console.error("Failed to delete message:", error);
+        showToast("Failed to delete message", "error", 2500);
+      }
+    },
+    [chatId, showToast]
+  );
 
   const toggleBlockPeer = useCallback(() => {
     if (!primaryPeer?.id) return;
@@ -1090,9 +1130,14 @@ export default function ChatPage() {
           }`}
         >
           {!isOwn && (
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => navigate(`/profile/${message.sender.id}`)}
+              className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0 hover:shadow-lg hover:scale-110 transition-transform cursor-pointer"
+              title={`View ${message.sender.name}'s profile`}
+            >
               {message.sender.name.charAt(0).toUpperCase()}
-            </div>
+            </button>
           )}
           <div className="flex-1">
             <div
@@ -1103,9 +1148,13 @@ export default function ChatPage() {
               }`}
             >
               {!isOwn && (
-                <div className="text-sm font-semibold mb-1">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/profile/${message.sender.id}`)}
+                  className="text-sm font-semibold mb-1 hover:underline text-blue-600 dark:text-blue-400 cursor-pointer"
+                >
                   {message.sender.name}
-                </div>
+                </button>
               )}
               {message.isPinned && (
                 <div className="text-xs opacity-75 mb-1">📌 Pinned</div>
@@ -1143,14 +1192,27 @@ export default function ChatPage() {
                 {formatTimestamp(message.timestamp)}
               </span>
               {isOwn && !isPending && (
-                <span
-                  className={`text-xs ${
+                <button
+                  type="button"
+                  onClick={() =>
+                    message.readReceipts?.length > 0
+                      ? setReadReceiptsModal({
+                          messageId: message.id,
+                          readReceipts: message.readReceipts,
+                        })
+                      : null
+                  }
+                  className={`text-xs cursor-pointer hover:opacity-80 ${
                     hasReadReceipts ? "text-white" : "text-blue-100"
                   }`}
-                  title={hasReadReceipts ? "Read" : "Delivered"}
+                  title={
+                    hasReadReceipts
+                      ? `Read by ${message.readReceipts?.length || 0}`
+                      : "Delivered"
+                  }
                 >
                   {hasReadReceipts ? "✓✓" : "✓"}
-                </span>
+                </button>
               )}
               {isPending && (
                 <span className="text-xs text-gray-300 flex items-center gap-2">
@@ -1208,7 +1270,17 @@ export default function ChatPage() {
             <button
               type="button"
               className="text-gray-400 hover:text-gray-600 text-xs"
-              onClick={handleUnsendStub}
+              onClick={() => setEditingMessage({ id: message.id, text: message.text })}
+              title="Edit message"
+            >
+              ✏️ Edit
+            </button>
+          )}
+          {isOwn && (
+            <button
+              type="button"
+              className="text-gray-400 hover:text-gray-600 text-xs"
+              onClick={() => handleUnsendStub(message.id)}
             >
               Unsend
             </button>
@@ -1290,6 +1362,16 @@ export default function ChatPage() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Chat
             </h2>
+            {chat?.participants && chat.participants.length > 2 && (
+              <button
+                type="button"
+                onClick={() => setShowMembersModal(true)}
+                className="ml-2 px-3 py-1 rounded text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
+                title="View group members"
+              >
+                👥 Members ({chat.participants.length})
+              </button>
+            )}
             {primaryPeer && (
               <div className="flex items-center gap-2 ml-2">
                 <button
@@ -1332,6 +1414,16 @@ export default function ChatPage() {
                 title="View blocked users"
               >
                 🚫 Blocked ({blockedUsers.length})
+              </button>
+            )}
+            {pinnedMessages.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowPinnedMessagesModal(true)}
+                className="ml-2 px-3 py-1 rounded text-sm font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50 transition-colors"
+                title="View pinned messages"
+              >
+                📌 Pinned ({pinnedMessages.length})
               </button>
             )}
             {notificationsSupported() && notifPermission !== "granted" && (
@@ -1681,9 +1773,16 @@ export default function ChatPage() {
               </button>
             </div>
             {typingUsers.size > 0 && (
-              <p className="text-xs text-gray-500 mt-2">
-                {Array.from(typingUsers).join(", ")} typing...
-              </p>
+              <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 mt-2">
+                <span>
+                  {Array.from(typingUsers).join(", ")} {typingUsers.size === 1 ? "is" : "are"} typing
+                </span>
+                <span className="flex gap-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                </span>
+              </div>
             )}
           </form>
 
@@ -1723,7 +1822,11 @@ export default function ChatPage() {
                             setBlockedUsers((prev) =>
                               prev.filter((id) => id !== userId)
                             );
-                            showToast(`Unblocked user ${userId}`, "warning", 2000);
+                            showToast(
+                              `Unblocked user ${userId}`,
+                              "warning",
+                              2000
+                            );
                           }}
                           className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                         >
@@ -1741,6 +1844,229 @@ export default function ChatPage() {
                 >
                   Close
                 </button>
+              </div>
+            </div>
+          )}
+
+          {readReceiptsModal && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl max-w-md w-full">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Read by ({readReceiptsModal.readReceipts?.length || 0})
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setReadReceiptsModal(null)}
+                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xl"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {readReceiptsModal.readReceipts?.length === 0 ? (
+                  <p className="text-gray-600 dark:text-gray-400 text-sm text-center py-4">
+                    No one has read this yet
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {readReceiptsModal.readReceipts?.map((receipt) => (
+                      <div
+                        key={receipt.userId}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded"
+                      >
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          User {receipt.userId}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(receipt.readAt).toLocaleTimeString(
+                            "en-US",
+                            {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            }
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setReadReceiptsModal(null)}
+                  className="w-full mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showMembersModal && chat?.participants && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl max-w-md w-full">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Group Members ({chat.participants.length})
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowMembersModal(false)}
+                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xl"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {chat.participants.map((participant) => (
+                    <div
+                      key={participant.user.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded"
+                    >
+                      <div className="flex items-center gap-3">
+                        {participant.user.profilePic && (
+                          <img
+                            src={participant.user.profilePic}
+                            alt={participant.user.name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        )}
+                        <div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {participant.user.name}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {participant.user.id === user?.id && "(You)"}
+                          </div>
+                        </div>
+                      </div>
+                      {participant.user.id !== user?.id && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/profile/${participant.user.id}`)}
+                          className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        >
+                          View
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowMembersModal(false)}
+                  className="w-full mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showPinnedMessagesModal && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl max-w-md w-full max-h-96 overflow-y-auto">
+                <div className="flex items-center justify-between mb-4 sticky top-0 bg-white dark:bg-gray-800 pb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Pinned Messages ({pinnedMessages.length})
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowPinnedMessagesModal(false)}
+                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xl"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {pinnedMessages.length === 0 ? (
+                  <p className="text-gray-600 dark:text-gray-400 text-sm text-center py-4">
+                    No pinned messages
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {pinnedMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="font-semibold text-sm text-gray-900 dark:text-white">
+                            {msg.sender.name}
+                          </div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(msg.timestamp).toLocaleTimeString("en-US", {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
+                          {msg.text || "(attachment)"}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowPinnedMessagesModal(false);
+                            // Scroll to message (would need to implement scroll-to-message)
+                          }}
+                          className="text-xs mt-2 text-yellow-700 dark:text-yellow-400 hover:underline"
+                        >
+                          Jump to message
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowPinnedMessagesModal(false)}
+                  className="w-full mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+
+          {editingMessage && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl max-w-md w-full">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Edit Message
+                </h3>
+                <textarea
+                  value={editingMessage.text}
+                  onChange={(e) =>
+                    setEditingMessage({ ...editingMessage, text: e.target.value })
+                  }
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                />
+                <div className="flex gap-2 mt-4">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleEditMessage(editingMessage.id, editingMessage.text)
+                    }
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingMessage(null)}
+                    className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           )}

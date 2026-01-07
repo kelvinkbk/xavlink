@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const EMOJI_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥", "👏"];
+const EMOJI_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥", "👏", "🎉", "🚀", "💯", "✨", "🙏", "💪", "😍", "🤔", "👌"];
 
 export default function MessageReactions({
   messageId,
@@ -39,7 +39,7 @@ export default function MessageReactions({
         </button>
 
         {showPicker && (
-          <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-3 grid grid-cols-4 gap-2 z-50 min-w-[140px]">
+          <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-3 grid grid-cols-5 gap-2 z-50 min-w-[180px]">
             {EMOJI_REACTIONS.map((emoji) => (
               <button
                 key={emoji}

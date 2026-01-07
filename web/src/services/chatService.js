@@ -57,6 +57,15 @@ export const chatService = {
     return response.data;
   },
 
+  // Edit message
+  async editMessage(chatId, messageId, text) {
+    const response = await api.patch(
+      `/chats/${chatId}/messages/${messageId}`,
+      { text }
+    );
+    return response.data;
+  },
+
   // Add/remove reaction to message
   async toggleReaction(chatId, messageId, emoji) {
     const response = await api.post(

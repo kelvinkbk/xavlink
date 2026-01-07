@@ -12,6 +12,7 @@ router.get("/:chatId", chatController.getChatDetails);
 router.get("/:chatId/messages", chatController.getChatMessages);
 router.post("/:chatId/messages", chatController.sendMessage);
 router.delete("/:chatId/messages/:messageId", chatController.deleteMessage);
+router.patch("/:chatId/messages/:messageId", chatController.editMessage);
 router.post("/:chatId/messages/:messageId/react", chatController.addReaction);
 router.get(
   "/:chatId/messages/:messageId/reactions",
