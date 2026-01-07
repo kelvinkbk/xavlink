@@ -22,7 +22,7 @@ function HomeSimple() {
       setError(null);
 
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_URL}/api/posts/all`, {
+      const response = await axios.get(`${API_URL}/posts/all`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         params: { page: 1, limit: 20 },
       });
@@ -47,7 +47,7 @@ function HomeSimple() {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        `${API_URL}/api/posts/${postId}/like`,
+        `${API_URL}/posts/${postId}/like`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -67,7 +67,7 @@ function HomeSimple() {
   const handleUnlike = async (postId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`${API_URL}/api/posts/${postId}/unlike`, {
+      await axios.delete(`${API_URL}/posts/${postId}/unlike`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
