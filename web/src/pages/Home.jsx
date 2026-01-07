@@ -10,7 +10,16 @@ import socket from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
-function PostCard({ post, onLike, onComment, onReport, onDelete, onEdit, onBookmark, onReaction }) {
+function PostCard({
+  post,
+  onLike,
+  onComment,
+  onReport,
+  onDelete,
+  onEdit,
+  onBookmark,
+  onReaction,
+}) {
   const { isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
   const [showComments, setShowComments] = useState(false);
@@ -215,9 +224,7 @@ function PostCard({ post, onLike, onComment, onReport, onDelete, onEdit, onBookm
             }`}
             title="React to post"
           >
-            <span className="text-xl">
-              {post.userReaction || "😊"}
-            </span>
+            <span className="text-xl">{post.userReaction || "😊"}</span>
             {post.reactionSummary &&
               Object.keys(post.reactionSummary).length > 0 && (
                 <span className="text-sm font-semibold">
@@ -581,17 +588,13 @@ export default function Home() {
 
     const handleReactionAdded = ({ postId, reactionSummary }) => {
       setPosts((prevPosts) =>
-        prevPosts.map((p) =>
-          p.id === postId ? { ...p, reactionSummary } : p
-        )
+        prevPosts.map((p) => (p.id === postId ? { ...p, reactionSummary } : p))
       );
     };
 
     const handleReactionRemoved = ({ postId, reactionSummary }) => {
       setPosts((prevPosts) =>
-        prevPosts.map((p) =>
-          p.id === postId ? { ...p, reactionSummary } : p
-        )
+        prevPosts.map((p) => (p.id === postId ? { ...p, reactionSummary } : p))
       );
     };
 
@@ -1011,7 +1014,9 @@ export default function Home() {
             {loadingMore && (
               <div className="flex justify-center py-6">
                 <LoadingSpinner />
-                <span className="ml-2 text-gray-500">Loading more posts...</span>
+                <span className="ml-2 text-gray-500">
+                  Loading more posts...
+                </span>
               </div>
             )}
 

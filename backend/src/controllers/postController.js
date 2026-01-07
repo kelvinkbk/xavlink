@@ -659,8 +659,9 @@ exports.getBookmarkedPosts = async (req, res, next) => {
         return acc;
       }, {});
 
-      const userReaction = post.reactions.find((r) => r.userId === userId)
-        ?.emoji;
+      const userReaction = post.reactions.find(
+        (r) => r.userId === userId
+      )?.emoji;
 
       const { likes, reactions, _count, ...rest } = post;
       return {

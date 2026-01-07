@@ -69,7 +69,9 @@ export const postService = {
   createPost: (data) => api.post("/posts/create", data),
   getAllPosts: (filter = "all", sort = "recent", page = 1, limit = 10) =>
     api
-      .get(`/posts/all?filter=${filter}&sort=${sort}&page=${page}&limit=${limit}`)
+      .get(
+        `/posts/all?filter=${filter}&sort=${sort}&page=${page}&limit=${limit}`
+      )
       .then((res) => ({
         ...res,
         data: {
