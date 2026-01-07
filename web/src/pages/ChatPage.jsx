@@ -70,7 +70,9 @@ export default function ChatPage() {
   const [zoomImageUrl, setZoomImageUrl] = useState(null);
   const [blockedUsers, setBlockedUsers] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("blocked_users") || "[]");
+      const raw = JSON.parse(localStorage.getItem("blocked_users") || "[]");
+      // Normalize to strings to avoid number/string mismatches
+      return Array.isArray(raw) ? raw.map((id) => String(id)) : [];
     } catch {
       return [];
     }
@@ -113,7 +115,7 @@ export default function ChatPage() {
   const visibleMessages = useMemo(() => {
     if (!blockedUsers.length) return messages;
     return messages.filter(
-      (m) => m.sender.id === user?.id || !blockedUsers.includes(m.sender.id)
+      (m) => m.sender.id === user?.id || !blockedUsers.includes(String(m.sender.id))
     );
   }, [messages, blockedUsers, user?.id]);
 
@@ -351,7 +353,7 @@ export default function ChatPage() {
     (message) => {
       if (!user?.id || !chatId) return;
       if (
-        blockedUsers.includes(message.sender?.id) &&
+        blockedUsers.includes(String(message.sender?.id)) &&
         message.sender?.id !== user.id
       ) {
         return; // Drop messages from blocked senders
@@ -955,7 +957,8 @@ export default function ChatPage() {
 
   const toggleBlockPeer = useCallback(() => {
     if (!primaryPeer?.id) return;
-    const isCurrentlyBlocked = blockedUsers.includes(primaryPeer.id);
+    const peerId = String(primaryPeer.id);
+    const isCurrentlyBlocked = blockedUsers.includes(peerId);
 
     const confirmAction = isCurrentlyBlocked
       ? `Unblock ${primaryPeer.name}? You'll see their messages again.`
@@ -965,8 +968,8 @@ export default function ChatPage() {
 
     setBlockedUsers((prev) => {
       const next = isCurrentlyBlocked
-        ? prev.filter((id) => id !== primaryPeer.id)
-        : [...prev, primaryPeer.id];
+        ? prev.filter((id) => id !== peerId)
+        : [...prev, peerId];
       showToast(
         isCurrentlyBlocked
           ? `Unblocked ${primaryPeer.name}`
@@ -1280,21 +1283,22 @@ export default function ChatPage() {
                   type="button"
                   onClick={toggleBlockPeer}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                    blockedUsers.includes(primaryPeer.id)
+                    blockedUsers.includes(String(primaryPeer.id))
                       ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
                       : "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
                   }`}
                   title={`${
-                    blockedUsers.includes(primaryPeer.id) ? "Unblock" : "Block"
+                    blockedUsers.includes(String(primaryPeer.id)) ? "Unblock" : "Block"
+                  } ${primaryPeer.name}`}
+                  aria-label={`${
+                    blockedUsers.includes(String(primaryPeer.id)) ? "Unblock" : "Block"
                   } ${primaryPeer.name}`}
                 >
                   <span className="text-base">
-                    {blockedUsers.includes(primaryPeer.id) ? "🔓" : "🚫"}
+                    {blockedUsers.includes(String(primaryPeer.id)) ? "🔓" : "🚫"}
                   </span>
-                  <span className="hidden sm:inline">
-                    {blockedUsers.includes(primaryPeer.id)
-                      ? "Unblock"
-                      : "Block"}
+                  <span>
+                    {blockedUsers.includes(String(primaryPeer.id)) ? "Unblock" : "Block"}
                   </span>
                 </button>
               </div>
@@ -1434,7 +1438,7 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  {primaryPeer && blockedUsers.includes(primaryPeer.id) && (
+                  {primaryPeer && blockedUsers.includes(String(primaryPeer.id)) && (
                     <div className="px-4 py-3 mb-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded flex items-start gap-2">
                       <span className="text-lg flex-shrink-0 mt-0.5">🚫</span>
                       <div>
