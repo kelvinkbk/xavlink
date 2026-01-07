@@ -34,35 +34,64 @@ exports.createPost = async (req, res, next) => {
 exports.getAllPosts = async (req, res, next) => {
   try {
     console.log("📌 getAllPosts called");
-
-    // Check actual database schema
-    const postColumns = await prisma.$queryRaw`
-      SELECT column_name, data_type 
-      FROM information_schema.columns 
-      WHERE table_name = 'Post'
-      ORDER BY ordinal_position;
+    
+    // Use raw SQL to avoid Prisma schema issues
+    const posts = await prisma.$queryRaw`
+      SELECT 
+        "id", 
+        "userId", 
+        "content", 
+        "createdAt"
+      FROM "Post" 
+      ORDER BY "createdAt" DESC 
+      LIMIT 20
     `;
-    console.log(
-      "📌 Actual Post table columns:",
-      JSON.stringify(postColumns, null, 2)
+    
+    console.log("✅ Retrieved", posts?.length, "posts from raw SQL");
+
+    // Get user info for each post
+    const postsWithUsers = await Promise.all(
+      (posts || []).map(async (post) => {
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: post.userId },
+            select: { id: true, name: true, profilePic: true, course: true },
+          });
+          return {
+            ...post,
+            user,
+            likesCount: 0,
+            commentsCount: 0,
+            isLiked: false,
+            isBookmarked: false,
+          };
+        } catch (err) {
+          console.error("Error getting user:", err.message);
+          return {
+            ...post,
+            user: null,
+            likesCount: 0,
+            commentsCount: 0,
+            isLiked: false,
+            isBookmarked: false,
+          };
+        }
+      })
     );
 
-    // Try raw query
-    const posts = await prisma.$queryRaw`SELECT * FROM "Post" LIMIT 5`;
-    console.log("📌 Raw posts:", JSON.stringify(posts, null, 2));
-
     res.json({
-      posts: [],
+      posts: postsWithUsers,
       pagination: {
         currentPage: 1,
         totalPages: 1,
-        totalCount: 0,
+        totalCount: posts?.length || 0,
         hasMore: false,
       },
     });
   } catch (err) {
     console.error("❌ getAllPosts error:", err.message);
-    res.status(500).json({ message: err.message });
+    console.error("❌ Stack:", err.stack);
+    res.status(500).json({ message: "Failed to load posts: " + err.message });
   }
 };
 
