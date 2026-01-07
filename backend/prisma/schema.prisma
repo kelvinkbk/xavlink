@@ -85,11 +85,7 @@ model User {
   comments                Comment[]
   reviewsGiven            Review[]          @relation("ReviewsGiven")
   reviewsReceived         Review[]          @relation("ReviewsReceived")
-  postReviewsGiven        PostReview[]      @relation("PostReviewsGiven")
   bookmarks               Bookmark[]
-  postReactions           PostReaction[]
-  keywordMutes            KeywordMute[]
-  draftPosts              DraftPost[]
 
   reportsCreated  Report[]   @relation("ReportsCreated")
   reportsReceived Report[]   @relation("ReportsReceived")
@@ -114,37 +110,17 @@ model Skill {
 }
 
 model Post {
-  id            String         @id @default(uuid()) @db.Uuid
-  userId        String         @db.Uuid
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String       @id @default(uuid()) @db.Uuid
+  userId        String       @db.Uuid
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   content       String
-  images        String[] // Array of image URLs for multiple images
-  likesCount    Int            @default(0)
-  commentsCount Int            @default(0)
-  viewCount     Int            @default(0)
-  isDraft       Boolean        @default(false)
-  isPinned      Boolean        @default(false)
-  pinnedAt      DateTime?
-  scheduledAt   DateTime? // For scheduled posts
-  templateType  String         @default("default") // default, highlight, minimal, etc
-  richContent   String? // Rich text JSON (for formatting)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  image         String?
+  createdAt     DateTime     @default(now())
   likes         Like[]
   comments      Comment[]
-  postReviews   PostReview[]   @relation("PostReviews")
   bookmarks     Bookmark[]
-  views         PostView[]
-  shares        PostShare[]
-  tags          PostTag[]
-  analytics     PostAnalytics?
-  reactions     PostReaction[]
 
   @@index([userId])
-  @@index([isPinned])
-  @@index([isDraft])
-  @@index([scheduledAt])
-  @@index([createdAt])
 }
 
 model Like {
@@ -325,23 +301,6 @@ model Review {
   @@index([authorId])
 }
 
-model PostReview {
-  id        String   @id @default(uuid()) @db.Uuid
-  authorId  String   @db.Uuid
-  postId    String   @db.Uuid
-  rating    Int // 1-5 stars
-  comment   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  author User @relation("PostReviewsGiven", fields: [authorId], references: [id], onDelete: Cascade)
-  post   Post @relation("PostReviews", fields: [postId], references: [id], onDelete: Cascade)
-
-  @@unique([authorId, postId])
-  @@index([postId])
-  @@index([authorId])
-}
-
 model Report {
   id                String       @id @default(uuid()) @db.Uuid
   reporterId        String       @db.Uuid
@@ -407,104 +366,4 @@ model Bookmark {
   @@unique([userId, postId])
   @@index([userId])
   @@index([postId])
-}
-
-model PostTag {
-  id        String   @id @default(uuid()) @db.Uuid
-  postId    String   @db.Uuid
-  tag       String
-  createdAt DateTime @default(now())
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@unique([postId, tag])
-  @@index([postId])
-  @@index([tag])
-}
-
-model PostView {
-  id       String   @id @default(uuid()) @db.Uuid
-  postId   String   @db.Uuid
-  userId   String?  @db.Uuid // null for anonymous views
-  viewedAt DateTime @default(now())
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@index([postId])
-  @@index([userId])
-}
-
-model PostShare {
-  id         String   @id @default(uuid()) @db.Uuid
-  postId     String   @db.Uuid
-  sharedBy   String   @db.Uuid
-  sharedWith String?  @db.Uuid // null if shared publicly
-  shareType  String // "link", "message", "public"
-  createdAt  DateTime @default(now())
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@index([postId])
-  @@index([sharedBy])
-}
-
-model PostAnalytics {
-  id            String   @id @default(uuid()) @db.Uuid
-  postId        String   @unique @db.Uuid
-  viewsToday    Int      @default(0)
-  viewsWeek     Int      @default(0)
-  viewsTotal    Int      @default(0)
-  likesTotal    Int      @default(0)
-  commentsTotal Int      @default(0)
-  sharesTotal   Int      @default(0)
-  lastUpdated   DateTime @default(now()) @updatedAt
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@index([postId])
-}
-
-model KeywordMute {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  keyword   String
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, keyword])
-  @@index([userId])
-  @@index([keyword])
-}
-
-model DraftPost {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid
-  content      String
-  images       String[]
-  richContent  String?
-  templateType String   @default("default")
-  tags         String[] // Array of tag strings
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([createdAt])
-}
-
-model PostReaction {
-  id        String   @id @default(uuid()) @db.Uuid
-  postId    String   @db.Uuid
-  userId    String   @db.Uuid
-  emoji     String // 👍, ❤️, 😂, 😮, 😢, 😡
-  createdAt DateTime @default(now())
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([postId, userId, emoji])
-  @@index([postId])
-  @@index([userId])
 }
