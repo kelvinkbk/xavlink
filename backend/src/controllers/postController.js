@@ -35,26 +35,21 @@ exports.getAllPosts = async (req, res, next) => {
     const count = await prisma.post.count();
     console.log("📌 Post count:", count);
 
+    // Query without the image field
     const posts = await prisma.post.findMany({
       orderBy: { createdAt: "desc" },
       take: 10,
-      include: {
-        user: {
-          select: { id: true, name: true, profilePic: true, course: true },
-        },
-      },
     });
 
     console.log("📌 Retrieved", posts.length, "posts");
+    console.log("📌 First post structure:", JSON.stringify(posts[0], null, 2));
 
     res.json({
       posts: posts.map((post) => ({
         id: post.id,
         userId: post.userId,
         content: post.content,
-        image: post.image,
         createdAt: post.createdAt,
-        user: post.user,
         likesCount: 0,
         commentsCount: 0,
         isLiked: false,
@@ -64,12 +59,13 @@ exports.getAllPosts = async (req, res, next) => {
       pagination: {
         currentPage: 1,
         totalPages: 1,
-        totalCount: 0,
+        totalCount: count,
         hasMore: false,
       },
     });
   } catch (err) {
-    console.error("❌ getAllPosts error:", err);
+    console.error("❌ getAllPosts error:", err.message);
+    console.error("❌ Full error:", err);
     res.status(500).json({ message: err.message || "Error fetching posts" });
   }
 };
