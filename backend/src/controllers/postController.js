@@ -31,42 +31,26 @@ exports.getAllPosts = async (req, res, next) => {
   try {
     console.log("📌 getAllPosts called");
     
-    // Test if Prisma connection works at all
-    const count = await prisma.post.count();
-    console.log("📌 Post count:", count);
+    // Check actual database schema
+    const postColumns = await prisma.$queryRaw`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'Post'
+      ORDER BY ordinal_position;
+    `;
+    console.log("📌 Actual Post table columns:", JSON.stringify(postColumns, null, 2));
 
-    // Query without the image field
-    const posts = await prisma.post.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    });
-
-    console.log("📌 Retrieved", posts.length, "posts");
-    console.log("📌 First post structure:", JSON.stringify(posts[0], null, 2));
+    // Try raw query
+    const posts = await prisma.$queryRaw`SELECT * FROM "Post" LIMIT 5`;
+    console.log("📌 Raw posts:", JSON.stringify(posts, null, 2));
 
     res.json({
-      posts: posts.map((post) => ({
-        id: post.id,
-        userId: post.userId,
-        content: post.content,
-        createdAt: post.createdAt,
-        likesCount: 0,
-        commentsCount: 0,
-        isLiked: false,
-        isBookmarked: false,
-        tags: [],
-      })),
-      pagination: {
-        currentPage: 1,
-        totalPages: 1,
-        totalCount: count,
-        hasMore: false,
-      },
+      posts: [],
+      pagination: { currentPage: 1, totalPages: 1, totalCount: 0, hasMore: false },
     });
   } catch (err) {
     console.error("❌ getAllPosts error:", err.message);
-    console.error("❌ Full error:", err);
-    res.status(500).json({ message: err.message || "Error fetching posts" });
+    res.status(500).json({ message: err.message });
   }
 };
 
