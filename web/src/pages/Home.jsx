@@ -18,7 +18,6 @@ function PostCard({
   onDelete,
   onEdit,
   onBookmark,
-  onReaction,
 }) {
   const { isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
@@ -31,9 +30,6 @@ function PostCard({
   const [editPostContent, setEditPostContent] = useState(post.content);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentText, setEditCommentText] = useState("");
-  const [showReactionPicker, setShowReactionPicker] = useState(false);
-
-  const reactionEmojis = ["👍", "❤️", "😂", "😮", "😢", "😡"];
 
   const defaultAvatar =
     "https://ui-avatars.com/api/?name=" +
@@ -213,73 +209,6 @@ function PostCard({
           <span className="text-xl">💬</span>
           <span className="font-semibold">{post.commentsCount || 0}</span>
         </button>
-
-        {/* Reaction Picker */}
-        <div className="relative">
-          <button
-            onClick={() => setShowReactionPicker(!showReactionPicker)}
-            disabled={!isAuthenticated}
-            className={`flex items-center gap-2 text-gray-600 hover:text-yellow-500 transition ${
-              !isAuthenticated ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            title="React to post"
-          >
-            <span className="text-xl">{post.userReaction || "😊"}</span>
-            {post.reactionSummary &&
-              Object.keys(post.reactionSummary).length > 0 && (
-                <span className="text-sm font-semibold">
-                  {Object.values(post.reactionSummary).reduce(
-                    (sum, r) => sum + r.count,
-                    0
-                  )}
-                </span>
-              )}
-          </button>
-
-          {showReactionPicker && isAuthenticated && (
-            <div className="absolute bottom-full mb-2 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex gap-2 z-10">
-              {reactionEmojis.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => {
-                    onReaction(post.id, emoji);
-                    setShowReactionPicker(false);
-                  }}
-                  className={`text-2xl hover:scale-125 transition ${
-                    post.userReaction === emoji ? "scale-125" : ""
-                  }`}
-                  title={`React with ${emoji}`}
-                >
-                  {emoji}
-                </button>
-              ))}
-              {post.userReaction && (
-                <button
-                  onClick={() => {
-                    onReaction(post.id, null);
-                    setShowReactionPicker(false);
-                  }}
-                  className="text-sm text-gray-500 hover:text-red-500 px-2"
-                  title="Remove reaction"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Reaction Summary Tooltip */}
-          {post.reactionSummary &&
-            Object.keys(post.reactionSummary).length > 0 && (
-              <div className="hidden group-hover:block absolute bottom-full mb-1 left-0 bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                {Object.entries(post.reactionSummary).map(([emoji, data]) => (
-                  <div key={emoji}>
-                    {emoji} {data.count}
-                  </div>
-                ))}
-              </div>
-            )}
-        </div>
 
         {/* Bookmark Button */}
         <button
@@ -586,30 +515,14 @@ export default function Home() {
       setPosts((prevPosts) => prevPosts.filter((p) => p.id !== postId));
     };
 
-    const handleReactionAdded = ({ postId, reactionSummary }) => {
-      setPosts((prevPosts) =>
-        prevPosts.map((p) => (p.id === postId ? { ...p, reactionSummary } : p))
-      );
-    };
-
-    const handleReactionRemoved = ({ postId, reactionSummary }) => {
-      setPosts((prevPosts) =>
-        prevPosts.map((p) => (p.id === postId ? { ...p, reactionSummary } : p))
-      );
-    };
-
     socket.on("post_liked", handlePostLiked);
     socket.on("post_unliked", handlePostUnliked);
     socket.on("post_deleted", handlePostDeleted);
-    socket.on("post_reaction_added", handleReactionAdded);
-    socket.on("post_reaction_removed", handleReactionRemoved);
 
     return () => {
       socket.off("post_liked", handlePostLiked);
       socket.off("post_unliked", handlePostUnliked);
       socket.off("post_deleted", handlePostDeleted);
-      socket.off("post_reaction_added", handleReactionAdded);
-      socket.off("post_reaction_removed", handleReactionRemoved);
     };
   }, []);
 
@@ -788,45 +701,6 @@ export default function Home() {
     }
   };
 
-  const handleReaction = async (postId, emoji) => {
-    try {
-      if (emoji === null) {
-        // Remove reaction
-        const response = await postService.removeReaction(postId);
-        setPosts(
-          posts.map((p) =>
-            p.id === postId
-              ? {
-                  ...p,
-                  reactionSummary: response.reactionSummary,
-                  userReaction: null,
-                }
-              : p
-          )
-        );
-        showToast("Reaction removed", "success");
-      } else {
-        // Add reaction
-        const response = await postService.addReaction(postId, emoji);
-        setPosts(
-          posts.map((p) =>
-            p.id === postId
-              ? {
-                  ...p,
-                  reactionSummary: response.reactionSummary,
-                  userReaction: emoji,
-                }
-              : p
-          )
-        );
-        showToast(`Reacted with ${emoji}`, "success");
-      }
-    } catch (e) {
-      console.error("Error toggling reaction:", e);
-      showToast("Failed to update reaction", "error");
-    }
-  };
-
   if (loading)
     return (
       <PageTransition>
@@ -997,7 +871,6 @@ export default function Home() {
                   onDelete={handleDeletePost}
                   onEdit={handleEditPost}
                   onBookmark={handleBookmark}
-                  onReaction={handleReaction}
                   onReport={(postId, postName, type = "Post") =>
                     setReportModal({
                       isOpen: true,
