@@ -78,6 +78,7 @@ export default function ChatPage() {
       return [];
     }
   });
+  const [showBlockedUsersModal, setShowBlockedUsersModal] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
@@ -449,11 +450,11 @@ export default function ChatPage() {
   const loadMessages = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Load chat details for participants (needed for block button even with no messages)
       const chatDetails = await chatService.getChatDetails(chatId);
       setChat(chatDetails);
-      
+
       // Load the latest 50 messages
       const data = await chatService.getChatMessages(chatId, 50, null);
       console.log(
@@ -1323,6 +1324,16 @@ export default function ChatPage() {
                 </button>
               </div>
             )}
+            {blockedUsers.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowBlockedUsersModal(true)}
+                className="ml-2 px-3 py-1 rounded text-sm font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 transition-colors"
+                title="View blocked users"
+              >
+                🚫 Blocked ({blockedUsers.length})
+              </button>
+            )}
             {notificationsSupported() && notifPermission !== "granted" && (
               <div className="ml-auto flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-2 py-1 rounded">
                 <span className="text-xs text-blue-800 dark:text-blue-300">
@@ -1675,6 +1686,64 @@ export default function ChatPage() {
               </p>
             )}
           </form>
+
+          {showBlockedUsersModal && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl max-w-md w-full">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Blocked Users ({blockedUsers.length})
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowBlockedUsersModal(false)}
+                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xl"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {blockedUsers.length === 0 ? (
+                  <p className="text-gray-600 dark:text-gray-400 text-sm text-center py-4">
+                    You haven't blocked anyone
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {blockedUsers.map((userId) => (
+                      <div
+                        key={userId}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded"
+                      >
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          User ID: {userId}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBlockedUsers((prev) =>
+                              prev.filter((id) => id !== userId)
+                            );
+                            showToast(`Unblocked user ${userId}`, "warning", 2000);
+                          }}
+                          className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                        >
+                          Unblock
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowBlockedUsersModal(false)}
+                  className="w-full mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
 
           {zoomImageUrl && (
             <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
