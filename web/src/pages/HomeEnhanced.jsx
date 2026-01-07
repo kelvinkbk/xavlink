@@ -5,7 +5,6 @@ import SkeletonLoader from "../components/SkeletonLoader";
 import ReportModal from "../components/ReportModal";
 import { postService } from "../services/api";
 import api from "../services/api";
-import socket from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
@@ -259,7 +258,6 @@ function PostCard({
   onPin,
 }) {
   const { isAuthenticated, user } = useAuth();
-  const { showToast } = useToast();
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
@@ -267,8 +265,6 @@ function PostCard({
   const [showMenu, setShowMenu] = useState(false);
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [editPostContent, setEditPostContent] = useState(post.content);
-  const [editingCommentId, setEditingCommentId] = useState(null);
-  const [editCommentText, setEditCommentText] = useState("");
   const [showShare, setShowShare] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [analytics, setAnalytics] = useState(null);
@@ -579,7 +575,6 @@ function PostCard({
 export default function HomeEnhanced() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [newPost, setNewPost] = useState({
     content: "",
     images: [],
@@ -664,9 +659,8 @@ export default function HomeEnhanced() {
           setPosts((prev) => [...prev, ...filteredPosts]);
         }
         setHasMore(data.pagination.hasMore);
-      } catch (e) {
-        console.error("Error fetching posts:", e);
-        setError("Failed to load posts");
+      } catch (_e) {
+        console.error("Error fetching posts:", _e);
         showToast("Failed to load posts", "error");
       } finally {
         setLoading(false);
@@ -684,29 +678,28 @@ export default function HomeEnhanced() {
       try {
         const trending = await postService.getTrendingTopics();
         setTrendingTopics(trending.trendingTopics || []);
-      } catch (e) {
-        console.error("Error loading trending topics:", e);
+      } catch (_e) {
+        console.error("Error loading trending topics:", _e);
       }
 
       if (user) {
         try {
           const suggested = await postService.getSuggestedUsers(5);
           setSuggestedUsers(suggested);
-        } catch (e) {
-          console.error("Error loading suggested users:", e);
+        } catch (_e) {
+          console.error("Error loading suggested users:", _e);
         }
 
         try {
           const mutes = await postService.getMutedKeywords();
           setMutedKeywords(mutes);
-        } catch (e) {
-          console.error("Error loading muted keywords:", e);
+        } catch (_e) {
+          console.error("Error loading muted keywords:", _e);
         }
       }
     };
 
     loadExtras();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Search
@@ -719,8 +712,8 @@ export default function HomeEnhanced() {
       const { data } = await postService.searchPosts(searchQuery);
       setSearchResults(data.posts);
       setShowSearch(true);
-    } catch (e) {
-      console.error("Error searching posts:", e);
+    } catch (_e) {
+      console.error("Error searching posts:", _e);
       showToast("Search failed", "error");
     } finally {
       setLoading(false);
@@ -734,8 +727,8 @@ export default function HomeEnhanced() {
       const { data } = await postService.getDrafts(1, 50);
       setDrafts(data.drafts);
       setShowDrafts(true);
-    } catch (e) {
-      console.error("Error loading drafts:", e);
+    } catch (_e) {
+      console.error("Error loading drafts:", _e);
       showToast("Failed to load drafts", "error");
     } finally {
       setLoading(false);
@@ -762,8 +755,8 @@ export default function HomeEnhanced() {
         for (const tag of newPost.tags) {
           try {
             await api.post("/posts/tags", { postId: data.id, tag });
-          } catch (e) {
-            console.error("Error adding tag:", e);
+          } catch (_e) {
+            console.error("Error adding tag:", _e);
           }
         }
       }
@@ -784,11 +777,9 @@ export default function HomeEnhanced() {
         tags: [],
         templateType: "default",
       });
-      setError("");
       showToast("Post created", "success");
     } catch (e) {
       console.error("Error creating post:", e);
-      setError("Failed to create post");
       showToast("Failed to create post", "error");
     } finally {
       setPosting(false);
@@ -929,8 +920,8 @@ export default function HomeEnhanced() {
         );
         showToast("Post pinned", "success");
       }
-    } catch (e) {
-      console.error("Error pinning post:", e);
+    } catch (_e) {
+      console.error("Error pinning post:", _e);
       showToast("Failed to pin post", "error");
     }
   };
@@ -944,8 +935,8 @@ export default function HomeEnhanced() {
       setMutedKeywords([...mutedKeywords, { keyword: newMuteKeyword }]);
       setNewMuteKeyword("");
       showToast("Keyword muted", "success");
-    } catch (e) {
-      console.error("Error muting keyword:", e);
+    } catch (_e) {
+      console.error("Error muting keyword:", _e);
       showToast("Failed to mute keyword", "error");
     }
   };
@@ -1170,7 +1161,7 @@ export default function HomeEnhanced() {
                                   drafts.filter((d) => d.id !== draft.id)
                                 );
                                 showToast("Draft published", "success");
-                              } catch (e) {
+                              } catch {
                                 showToast("Failed to publish draft", "error");
                               }
                             }}
@@ -1186,7 +1177,7 @@ export default function HomeEnhanced() {
                                   drafts.filter((d) => d.id !== draft.id)
                                 );
                                 showToast("Draft deleted", "success");
-                              } catch (e) {
+                              } catch {
                                 showToast("Failed to delete draft", "error");
                               }
                             }}
@@ -1341,7 +1332,7 @@ export default function HomeEnhanced() {
                               mutedKeywords.filter((kw) => kw.id !== m.id)
                             );
                             showToast("Keyword unmuted", "success");
-                          } catch (e) {
+                          } catch {
                             showToast("Failed to unmute keyword", "error");
                           }
                         }}
