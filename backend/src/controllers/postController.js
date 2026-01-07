@@ -3,7 +3,7 @@ const { createNotification } = require("./notificationController");
 
 exports.createPost = async (req, res, next) => {
   try {
-    const { content, image } = req.body;
+    const { content } = req.body;
     if (!content) {
       return res.status(400).json({ message: "content is required" });
     }
@@ -11,7 +11,6 @@ exports.createPost = async (req, res, next) => {
     const post = await prisma.post.create({
       data: {
         content,
-        image,
         userId: req.user.id,
       },
       include: {
@@ -30,7 +29,7 @@ exports.createPost = async (req, res, next) => {
 exports.getAllPosts = async (req, res, next) => {
   try {
     console.log("📌 getAllPosts called");
-    
+
     // Check actual database schema
     const postColumns = await prisma.$queryRaw`
       SELECT column_name, data_type 
@@ -38,7 +37,10 @@ exports.getAllPosts = async (req, res, next) => {
       WHERE table_name = 'Post'
       ORDER BY ordinal_position;
     `;
-    console.log("📌 Actual Post table columns:", JSON.stringify(postColumns, null, 2));
+    console.log(
+      "📌 Actual Post table columns:",
+      JSON.stringify(postColumns, null, 2)
+    );
 
     // Try raw query
     const posts = await prisma.$queryRaw`SELECT * FROM "Post" LIMIT 5`;
@@ -46,7 +48,12 @@ exports.getAllPosts = async (req, res, next) => {
 
     res.json({
       posts: [],
-      pagination: { currentPage: 1, totalPages: 1, totalCount: 0, hasMore: false },
+      pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalCount: 0,
+        hasMore: false,
+      },
     });
   } catch (err) {
     console.error("❌ getAllPosts error:", err.message);
