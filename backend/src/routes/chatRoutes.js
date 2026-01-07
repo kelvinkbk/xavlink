@@ -8,6 +8,7 @@ router.use(authMiddleware);
 router.post("/direct", chatController.getOrCreateDirectChat);
 router.post("/group", chatController.createGroupChat);
 router.get("/", chatController.getUserChats);
+router.get("/:chatId", chatController.getChatDetails);
 router.get("/:chatId/messages", chatController.getChatMessages);
 router.post("/:chatId/messages", chatController.sendMessage);
 router.delete("/:chatId/messages/:messageId", chatController.deleteMessage);

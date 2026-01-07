@@ -164,6 +164,42 @@ exports.getUserChats = async (req, res, next) => {
 };
 
 /**
+ * Get chat details (participants, metadata)
+ */
+exports.getChatDetails = async (req, res, next) => {
+  try {
+    const { chatId } = req.params;
+    const userId = req.user.id;
+
+    const chat = await prisma.chat.findFirst({
+      where: {
+        id: chatId,
+        participants: {
+          some: { userId },
+        },
+      },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: { id: true, name: true, profilePic: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    res.json(chat);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get messages for a specific chat
  */
 exports.getChatMessages = async (req, res, next) => {

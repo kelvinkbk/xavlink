@@ -37,6 +37,7 @@ export default function ChatPage() {
   const { chatId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [chat, setChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -120,8 +121,16 @@ export default function ChatPage() {
   }, [messages, blockedUsers, user?.id]);
 
   const primaryPeer = useMemo(() => {
+    // First try to get from chat participants (works even with no messages)
+    if (chat?.participants) {
+      const otherParticipant = chat.participants.find(
+        (p) => p.user?.id !== user?.id
+      );
+      if (otherParticipant?.user) return otherParticipant.user;
+    }
+    // Fallback to messages if chat not loaded yet
     return messages.find((m) => m.sender.id !== user?.id)?.sender || null;
-  }, [messages, user?.id]);
+  }, [chat?.participants, messages, user?.id]);
 
   // Load pending messages from localStorage on mount or chatId change
   useEffect(() => {
@@ -440,6 +449,11 @@ export default function ChatPage() {
   const loadMessages = useCallback(async () => {
     try {
       setLoading(true);
+      
+      // Load chat details for participants (needed for block button even with no messages)
+      const chatDetails = await chatService.getChatDetails(chatId);
+      setChat(chatDetails);
+      
       // Load the latest 50 messages
       const data = await chatService.getChatMessages(chatId, 50, null);
       console.log(

@@ -19,6 +19,12 @@ export const chatService = {
     return response.data;
   },
 
+  // Get chat details (participants, metadata)
+  async getChatDetails(chatId) {
+    const response = await api.get(`/chats/${chatId}`);
+    return response.data;
+  },
+
   // Get messages for a chat
   async getChatMessages(chatId, limit = 50, before = null) {
     const params = { limit };
