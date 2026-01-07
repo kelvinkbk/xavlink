@@ -34,7 +34,7 @@ exports.createPost = async (req, res, next) => {
 exports.getAllPosts = async (req, res, next) => {
   try {
     console.log("📌 getAllPosts called");
-    
+
     // Use raw SQL to avoid Prisma schema issues
     const posts = await prisma.$queryRaw`
       SELECT 
@@ -46,7 +46,7 @@ exports.getAllPosts = async (req, res, next) => {
       ORDER BY "createdAt" DESC 
       LIMIT 20
     `;
-    
+
     console.log("✅ Retrieved", posts?.length, "posts from raw SQL");
 
     // Get user info for each post

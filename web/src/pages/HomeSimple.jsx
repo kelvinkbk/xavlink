@@ -7,7 +7,7 @@ import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function HomeSimple() {
-  const { user } = useAuth();
+  const { } = useAuth();
   const { showToast } = useToast();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +61,7 @@ function HomeSimple() {
             : post
         )
       );
-    } catch (err) {
+    } catch (_err) {
       showToast("Failed to like post", "error");
     }
   };
@@ -84,7 +84,7 @@ function HomeSimple() {
             : post
         )
       );
-    } catch (err) {
+    } catch (_err) {
       showToast("Failed to unlike post", "error");
     }
   };
