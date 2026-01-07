@@ -15,7 +15,7 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
-import Home from "./pages/Home";
+import HomeSimple from "./pages/HomeSimple";
 import Discover from "./pages/Discover";
 import Profile from "./pages/Profile";
 import Skills from "./pages/Skills";
@@ -53,7 +53,7 @@ function AppContent() {
           path="/home"
           element={
             <ProtectedRoute>
-              <Home />
+              <HomeSimple />
             </ProtectedRoute>
           }
         />
