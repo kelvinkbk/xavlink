@@ -24,6 +24,10 @@ export default function ChatListPage() {
             ? {
                 ...chat,
                 messages: [message],
+                unreadCount:
+                  message.sender?.id !== user?.id
+                    ? (chat.unreadCount || 0) + 1
+                    : chat.unreadCount,
               }
             : chat
         )
@@ -52,12 +56,28 @@ export default function ChatListPage() {
       }
     });
 
+    socket.on("chat_read_by_user", ({ chatId }) => {
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
+        )
+      );
+    });
+
     return () => {
       socket.off("receive_message");
       socket.off("unread_count_update");
       socket.off("chat_read");
+      socket.off("chat_read_by_user");
     };
   }, [user?.id]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadChats();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const loadChats = async () => {
     try {

@@ -76,6 +76,24 @@ export default function Sidebar({ isOpen, onToggle }) {
     };
   }, [location.pathname]);
 
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const chats = await chatService.getUserChats();
+        const byChat = {};
+        chats.forEach((c) => {
+          byChat[c.id] = c.unreadCount || 0;
+        });
+        unreadByChat.current = byChat;
+        const total = Object.values(byChat).reduce((sum, c) => sum + c, 0);
+        setUnreadTotal(total);
+      } catch {
+        // ignore background refresh failures
+      }
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   if (!isAuthenticated) {
     return null;
   }

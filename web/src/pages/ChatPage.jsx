@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { chatService } from "../services/chatService";
 import {
@@ -60,8 +67,15 @@ export default function ChatPage() {
   const [notifPermission, setNotifPermission] = useState(() =>
     notificationsSupported() ? getNotificationPermission() : "denied"
   );
+  const [zoomImageUrl, setZoomImageUrl] = useState(null);
+  const [blockedUsers, setBlockedUsers] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("blocked_users") || "[]");
+    } catch {
+      return [];
+    }
+  });
   const messagesEndRef = useRef(null);
-  const messagesStartRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -73,13 +87,40 @@ export default function ChatPage() {
   const toastTimerRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const cacheWriteTimeoutRef = useRef(null);
+  const listInnerRef = useRef(null);
+  const vListRef = useRef(null);
+  const sizeMapRef = useRef({});
+
+  // Persist blocked users locally for quick checks
+  useEffect(() => {
+    try {
+      localStorage.setItem("blocked_users", JSON.stringify(blockedUsers));
+    } catch {
+      // ignore
+    }
+  }, [blockedUsers]);
 
   // Toast helper (define early so callbacks can reference it)
   const showToast = useCallback((message, type = "info", duration = 3000) => {
+    const allowToast = type === "error" || type === "warning";
+    if (!allowToast) return;
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ message, type });
     toastTimerRef.current = setTimeout(() => setToast(null), duration);
   }, []);
+
+  const visibleMessages = useMemo(() => {
+    if (!blockedUsers.length) return messages;
+    return messages.filter(
+      (m) => m.sender.id === user?.id || !blockedUsers.includes(m.sender.id)
+    );
+  }, [messages, blockedUsers, user?.id]);
+
+  const primaryPeer = useMemo(() => {
+    return (
+      visibleMessages.find((m) => m.sender.id !== user?.id)?.sender || null
+    );
+  }, [visibleMessages, user?.id]);
 
   // Load pending messages from localStorage on mount or chatId change
   useEffect(() => {
@@ -195,8 +236,10 @@ export default function ChatPage() {
       return;
     }
 
-    // Get all messages that don't belong to current user
-    const otherUsersMessages = messages.filter((m) => m.sender.id !== user.id);
+    // Get all visible messages that don't belong to current user
+    const otherUsersMessages = visibleMessages.filter(
+      (m) => m.sender.id !== user.id
+    );
 
     if (otherUsersMessages.length === 0) {
       console.log("📖 No other users' messages to mark as read");
@@ -230,8 +273,7 @@ export default function ChatPage() {
         }
       }
     }, 500); // Wait 500ms before marking to reduce API calls
-  }, [messages, user?.id, chatId]);
-
+  }, [visibleMessages, user?.id, chatId]);
   const upsertMessage = useCallback((message) => {
     setMessages((prev) => {
       if (prev.some((m) => m.id === message.id)) return prev;
@@ -307,6 +349,12 @@ export default function ChatPage() {
   const handleReceiveMessage = useCallback(
     (message) => {
       if (!user?.id || !chatId) return;
+      if (
+        blockedUsers.includes(message.sender?.id) &&
+        message.sender?.id !== user.id
+      ) {
+        return; // Drop messages from blocked senders
+      }
       if (message.chatId === chatId) {
         upsertMessage(message);
 
@@ -367,7 +415,14 @@ export default function ChatPage() {
         }, 150);
       }
     },
-    [chatId, upsertMessage, user?.id, navigate, playNotificationSound]
+    [
+      chatId,
+      upsertMessage,
+      user?.id,
+      navigate,
+      playNotificationSound,
+      blockedUsers,
+    ]
   );
 
   const handleRetryPending = useCallback(
@@ -662,23 +717,6 @@ export default function ChatPage() {
     };
   }, []);
 
-  // Intersection Observer to load older messages when scrolling to top
-  useEffect(() => {
-    if (!messagesStartRef.current || !chatId) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMoreMessages && !loadingOlder) {
-          loadOlderMessages();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(messagesStartRef.current);
-    return () => observer.disconnect();
-  }, [loadOlderMessages, hasMoreMessages, loadingOlder, chatId]);
-
   // Flush queued/failed messages when coming online
   useEffect(() => {
     const handleOnline = () => {
@@ -712,20 +750,28 @@ export default function ChatPage() {
     };
   }, [sendPendingMessage, showToast]);
 
+  const scrollToBottom = useCallback(() => {
+    if (vListRef.current && visibleMessages.length > 0) {
+      vListRef.current.scrollToItem(visibleMessages.length - 1, "end");
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [visibleMessages.length]);
+
   useEffect(() => {
     scrollToBottom();
     markVisibleMessagesAsRead();
-  }, [messages, markVisibleMessagesAsRead]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, [visibleMessages, markVisibleMessagesAsRead, scrollToBottom]);
 
   const getFileType = (mimeType) => {
     if (mimeType?.startsWith("image/")) return "Image";
     if (mimeType?.startsWith("video/")) return "Video";
     if (mimeType === "application/pdf") return "PDF";
     return null;
+  };
+
+  const isImageUrl = (url = "") => {
+    return /(\.png|\.jpe?g|\.gif|\.webp|\.bmp)$/i.test(url.split("?")[0]);
   };
 
   const getFileTypeColor = (type) => {
@@ -902,6 +948,22 @@ export default function ChatPage() {
     setReportModalOpen(true);
   };
 
+  const handleUnsendStub = useCallback(() => {
+    showToast("Unsend will be available soon", "warning", 2500);
+  }, [showToast]);
+
+  const toggleBlockPeer = useCallback(() => {
+    if (!primaryPeer?.id) return;
+    setBlockedUsers((prev) => {
+      const isBlocked = prev.includes(primaryPeer.id);
+      const next = isBlocked
+        ? prev.filter((id) => id !== primaryPeer.id)
+        : [...prev, primaryPeer.id];
+      showToast(isBlocked ? "User unblocked" : "User blocked", "warning", 2000);
+      return next;
+    });
+  }, [primaryPeer?.id, showToast]);
+
   const handleTyping = (value) => {
     setNewMessage(value);
     socket.emit("typing", { chatId, userId: user?.id, userName: user?.name });
@@ -939,14 +1001,37 @@ export default function ChatPage() {
     });
   };
 
+  // All hooks must be unconditional
+  const handleItemsRendered = useCallback(
+    ({ visibleStartIndex }) => {
+      if (
+        visibleStartIndex === 0 &&
+        hasMoreMessages &&
+        !loadingOlder &&
+        !searchQuery
+      ) {
+        loadOlderMessages();
+      }
+    },
+    [hasMoreMessages, loadingOlder, loadOlderMessages, searchQuery]
+  );
+
+  useLayoutEffect(() => {
+    if (vListRef.current) {
+      vListRef.current.resetAfterIndex(0, true);
+    }
+  }, [visibleMessages.length, listHeight]);
+
   if (loading) return <LoadingSpinner />;
 
-  const renderMessage = (message) => {
+  const renderMessageBubble = (message) => {
     const isOwn = message.sender.id === user.id;
     const isPending = Boolean(message.tempId);
+    const hasReadReceipts =
+      message.readReceipts && message.readReceipts.length > 0;
+
     return (
       <div
-        key={message.id}
         className={`flex ${isOwn ? "justify-end" : "justify-start"} gap-2 ${
           message.isPinned
             ? "bg-yellow-50 dark:bg-yellow-900/10 p-2 rounded"
@@ -999,14 +1084,24 @@ export default function ChatPage() {
                 {message.text || (message.attachmentUrl ? "(attachment)" : "")}
               </div>
               {message.attachmentUrl && (
-                <a
-                  href={message.attachmentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-block text-sm underline"
-                >
-                  📎 View Attachment
-                </a>
+                <div className="mt-2 space-y-2">
+                  {isImageUrl(message.attachmentUrl) ? (
+                    <img
+                      src={message.attachmentUrl}
+                      alt="Attachment"
+                      className="max-h-64 rounded-lg cursor-zoom-in"
+                      onClick={() => setZoomImageUrl(message.attachmentUrl)}
+                    />
+                  ) : null}
+                  <a
+                    href={message.attachmentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-sm underline"
+                  >
+                    📎 View Attachment
+                  </a>
+                </div>
               )}
             </div>
             <div className="flex items-center gap-2 px-2 mt-1">
@@ -1018,18 +1113,13 @@ export default function ChatPage() {
                 {formatTimestamp(message.timestamp)}
               </span>
               {isOwn && !isPending && (
-                <span className="text-blue-100 text-xs">
-                  {(() => {
-                    const hasReadReceipts =
-                      message.readReceipts && message.readReceipts.length > 0;
-                    console.log(
-                      `📧 Message ${message.id} check status: ${
-                        hasReadReceipts ? "✓✓" : "✓"
-                      } (readReceipts: ${message.readReceipts?.length || 0})`
-                    );
-                    return hasReadReceipts ? `✓✓` : `✓`;
-                  })()}{" "}
-                  {/* Single check for sent */}
+                <span
+                  className={`text-xs ${
+                    hasReadReceipts ? "text-white" : "text-blue-100"
+                  }`}
+                  title={hasReadReceipts ? "Read" : "Delivered"}
+                >
+                  {hasReadReceipts ? "✓✓" : "✓"}
                 </span>
               )}
               {isPending && (
@@ -1084,10 +1174,52 @@ export default function ChatPage() {
           >
             ⋮
           </button>
+          {isOwn && (
+            <button
+              type="button"
+              className="text-gray-400 hover:text-gray-600 text-xs"
+              onClick={handleUnsendStub}
+            >
+              Unsend
+            </button>
+          )}
         </div>
       </div>
     );
   };
+
+  const VirtualRow = ({ index, style, data }) => {
+    const message = data.items[index];
+    const rowRef = useRef(null);
+
+    useLayoutEffect(() => {
+      if (!rowRef.current || !message) return;
+      const measure = () => {
+        const height = rowRef.current.getBoundingClientRect().height;
+        if (height && sizeMapRef.current[message.id] !== height) {
+          sizeMapRef.current[message.id] = height;
+          vListRef.current?.resetAfterIndex(index);
+        }
+      };
+
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(rowRef.current);
+      return () => observer.disconnect();
+    }, [index, message]);
+
+    if (!message) return null;
+
+    return (
+      <div style={style} className="px-1">
+        <div ref={rowRef} className="pb-4">
+          {renderMessageBubble(message)}
+        </div>
+      </div>
+    );
+  };
+
+  const _renderMessage = renderMessageBubble; // Alias for consistency, renderMessageBubble is the primary renderer
 
   return (
     <>
@@ -1128,6 +1260,16 @@ export default function ChatPage() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Chat
             </h2>
+            {primaryPeer && (
+              <button
+                type="button"
+                onClick={toggleBlockPeer}
+                className="ml-2 text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                {blockedUsers.includes(primaryPeer.id) ? "Unblock" : "Block"}{" "}
+                {primaryPeer.name}
+              </button>
+            )}
             {notificationsSupported() && notifPermission !== "granted" && (
               <div className="ml-auto flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-2 py-1 rounded">
                 <span className="text-xs text-blue-800 dark:text-blue-300">
@@ -1195,60 +1337,60 @@ export default function ChatPage() {
           </div>
 
           {/* Messages */}
-          <div
-            ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto p-4 space-y-4"
-          >
-            {loadingOlder && (
-              <div className="text-center py-4">
-                <div className="inline-block">
-                  <svg
-                    className="w-6 h-6 animate-spin text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                </div>
-              </div>
-            )}
-            <div ref={messagesStartRef} className="h-1" />
+          <div ref={messagesContainerRef} className="flex-1 overflow-hidden">
             {(() => {
-              // Use search results if search is active
               const isSearching = searchQuery.trim().length > 0;
               const displayMessages = isSearching
                 ? searchResults
-                : [...messages, ...pendingMessages];
+                : [...visibleMessages, ...pendingMessages];
 
-              const filteredMessages = isSearching
-                ? displayMessages // Already filtered by backend
-                : displayMessages.filter(
-                    (msg) =>
-                      !searchQuery ||
-                      msg.text
-                        ?.toLowerCase()
-                        .includes(searchQuery.toLowerCase()) ||
-                      msg.sender?.name
-                        ?.toLowerCase()
-                        .includes(searchQuery.toLowerCase())
-                  );
+              const filteredMessages = displayMessages.filter((msg) => {
+                if (!searchQuery) return true;
+                return (
+                  msg.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  msg.sender?.name
+                    ?.toLowerCase()
+                    .includes(searchQuery.toLowerCase())
+                );
+              });
 
-              const pinnedMessages = filteredMessages.filter((m) => m.isPinned);
-              const unpinnedMessages = filteredMessages.filter(
-                (m) => !m.isPinned
-              );
+              const pinnedMessages = isSearching
+                ? []
+                : filteredMessages.filter((m) => m.isPinned);
+              const unpinnedMessages = isSearching
+                ? filteredMessages
+                : filteredMessages.filter((m) => !m.isPinned);
+              const listItems = isSearching
+                ? filteredMessages
+                : [...pinnedMessages, ...unpinnedMessages];
+
+              const shouldVirtualize =
+                !isSearching && listItems.length > 40 && listHeight > 0;
 
               return (
-                <>
-                  {/* Search Results Header */}
+                <div className="h-full flex flex-col overflow-hidden">
+                  {loadingOlder && (
+                    <div className="text-center py-2">
+                      <div className="inline-block">
+                        <svg
+                          className="w-6 h-6 animate-spin text-gray-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+
                   {isSearching && (
-                    <div className="text-center py-2 mb-4 border-b border-gray-300 dark:border-gray-600">
+                    <div className="text-center py-2 mb-2 border-b border-gray-300 dark:border-gray-600">
                       <div className="text-xs font-semibold text-gray-600 dark:text-gray-400">
                         {searchLoading ? (
                           "Searching..."
@@ -1263,7 +1405,6 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  {/* No Results */}
                   {isSearching &&
                     !searchLoading &&
                     filteredMessages.length === 0 && (
@@ -1272,49 +1413,38 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                  {/* Pinned Messages Section */}
-                  {!isSearching && pinnedMessages.length > 0 && (
-                    <div className="pb-4 border-b-2 border-yellow-200 dark:border-yellow-800">
-                      <div className="text-xs text-yellow-700 dark:text-yellow-400 font-semibold mb-2 flex items-center gap-1">
-                        📌 PINNED MESSAGES
+                  <div className="flex-1 overflow-hidden">
+                    {shouldVirtualize ? (
+                      <VList
+                        height={listHeight || 400}
+                        width="100%"
+                        itemCount={listItems.length}
+                        itemSize={(index) =>
+                          sizeMapRef.current[listItems[index]?.id] || 140
+                        }
+                        estimatedItemSize={140}
+                        itemKey={(index, data) => data.items[index]?.id}
+                        onItemsRendered={handleItemsRendered}
+                        ref={vListRef}
+                        innerRef={listInnerRef}
+                        itemData={{ items: listItems }}
+                      >
+                        {VirtualRow}
+                      </VList>
+                    ) : (
+                      <div className="p-4 space-y-4 overflow-y-auto h-full">
+                        {listItems.map((message) => (
+                          <div key={message.id}>
+                            {renderMessageBubble(message)}
+                          </div>
+                        ))}
+                        <div ref={messagesEndRef} />
                       </div>
-                      {pinnedMessages.map((message) => renderMessage(message))}
-                    </div>
-                  )}
-
-                  {/* Regular Messages */}
-                  {(() => {
-                    const shouldVirtualize =
-                      !isSearching &&
-                      unpinnedMessages.length > 200 &&
-                      listHeight > 0;
-                    if (shouldVirtualize) {
-                      const Row = ({ index, style }) => (
-                        <div style={style}>
-                          {renderMessage(unpinnedMessages[index])}
-                        </div>
-                      );
-                      return (
-                        <div className="w-full" style={{ height: listHeight }}>
-                          <List
-                            height={listHeight}
-                            itemCount={unpinnedMessages.length}
-                            itemSize={96}
-                            width={"100%"}
-                          >
-                            {Row}
-                          </List>
-                        </div>
-                      );
-                    }
-                    return unpinnedMessages.map((message) =>
-                      renderMessage(message)
-                    );
-                  })()}
-                </>
+                    )}
+                  </div>
+                </div>
               );
             })()}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
@@ -1470,6 +1600,25 @@ export default function ChatPage() {
               </p>
             )}
           </form>
+
+          {zoomImageUrl && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+              <div className="relative bg-white dark:bg-gray-800 p-4 rounded shadow-2xl max-w-4xl w-full">
+                <button
+                  type="button"
+                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
+                  onClick={() => setZoomImageUrl(null)}
+                >
+                  ✕
+                </button>
+                <img
+                  src={zoomImageUrl}
+                  alt="Zoomed attachment"
+                  className="max-h-[70vh] w-full object-contain rounded"
+                />
+              </div>
+            </div>
+          )}
 
           <ReportModal
             isOpen={reportModalOpen}
