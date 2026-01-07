@@ -26,6 +26,11 @@ function HomeSimple() {
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
+  const [commentsLoading, setCommentsLoading] = useState(false);
 
   useEffect(() => {
     fetchPosts();
@@ -59,9 +64,10 @@ function HomeSimple() {
     if (query.trim() === "") {
       setPosts(allPosts);
     } else {
-      const filtered = allPosts.filter((post) =>
-        post.content.toLowerCase().includes(query.toLowerCase()) ||
-        post.user?.name.toLowerCase().includes(query.toLowerCase())
+      const filtered = allPosts.filter(
+        (post) =>
+          post.content.toLowerCase().includes(query.toLowerCase()) ||
+          post.user?.name.toLowerCase().includes(query.toLowerCase())
       );
       setPosts(filtered);
     }
@@ -98,7 +104,7 @@ function HomeSimple() {
   const handleUnlike = async (postId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`${API_URL}/posts/${postId}/unlike`, {
+      await axios.delete(`${API_URL}/posts/${postId}/like`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -113,8 +119,83 @@ function HomeSimple() {
             : post
         )
       );
+      setAllPosts(
+        allPosts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                isLiked: false,
+                likesCount: Math.max(0, (post.likesCount || 0) - 1),
+              }
+            : post
+        )
+      );
     } catch {
       showToast("Failed to unlike post", "error");
+    }
+  };
+
+  const openCommentModal = async (post) => {
+    setSelectedPost(post);
+    setShowCommentModal(true);
+    setComments([]);
+    setNewComment("");
+    await fetchComments(post.id);
+  };
+
+  const fetchComments = async (postId) => {
+    try {
+      setCommentsLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_URL}/posts/${postId}/comments`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setComments(response.data.comments || []);
+    } catch (err) {
+      console.error("Error fetching comments:", err);
+      setComments([]);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) {
+      showToast("Comment cannot be empty", "error");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${API_URL}/posts/${selectedPost.id}/comments`,
+        { text: newComment },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setComments([...comments, response.data]);
+      setNewComment("");
+      
+      // Update post comment count
+      setPosts(
+        posts.map((post) =>
+          post.id === selectedPost.id
+            ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
+            : post
+        )
+      );
+      setAllPosts(
+        allPosts.map((post) =>
+          post.id === selectedPost.id
+            ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
+            : post
+        )
+      );
+
+      showToast("Comment added successfully!", "success");
+    } catch (err) {
+      console.error("Error adding comment:", err);
+      showToast("Failed to add comment", "error");
     }
   };
 
@@ -226,7 +307,9 @@ function HomeSimple() {
                     <span>{post.likesCount || 0}</span>
                   </button>
 
-                  <button className="flex items-center gap-2 hover:text-green-400 transition">
+                  <button 
+                    onClick={() => openCommentModal(post)}
+                    className="flex items-center gap-2 hover:text-green-400 transition">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -279,6 +362,86 @@ function HomeSimple() {
           onClose={() => setShowCreateModal(false)}
           onPostCreated={handlePostCreated}
         />
+      )}
+
+      {/* Comment Modal */}
+      {showCommentModal && selectedPost && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-6 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Comments</h2>
+              <button
+                onClick={() => setShowCommentModal(false)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Original Post */}
+            <div className="p-6 border-b border-gray-700 bg-gray-750">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mr-3">
+                  {selectedPost.user?.name?.[0] || "U"}
+                </div>
+                <div>
+                  <p className="font-semibold">{selectedPost.user?.name || "Unknown User"}</p>
+                  <p className="text-sm text-gray-400">{formatRelativeTime(selectedPost.createdAt)}</p>
+                </div>
+              </div>
+              <p className="text-gray-200 whitespace-pre-wrap">{selectedPost.content}</p>
+            </div>
+
+            {/* Comments Section */}
+            <div className="p-6">
+              {commentsLoading ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                </div>
+              ) : comments.length === 0 ? (
+                <p className="text-gray-400 text-center py-4">No comments yet. Be the first to comment!</p>
+              ) : (
+                <div className="space-y-4 mb-6">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="bg-gray-750 rounded p-4">
+                      <div className="flex items-center mb-2">
+                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold mr-2">
+                          {comment.user?.name?.[0] || "U"}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm">{comment.user?.name || "Unknown"}</p>
+                          <p className="text-xs text-gray-400">{formatRelativeTime(comment.createdAt)}</p>
+                        </div>
+                      </div>
+                      <p className="text-gray-200 text-sm">{comment.text || comment.content}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add Comment Form */}
+              <div className="border-t border-gray-700 pt-4">
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    placeholder="Write a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
+                    className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={handleAddComment}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold"
+                  >
+                    Post
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
