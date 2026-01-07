@@ -30,53 +30,14 @@ exports.createPost = async (req, res, next) => {
 exports.getAllPosts = async (req, res, next) => {
   try {
     const currentUserId = req.user?.id;
-    const { filter, sort = "recent", page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10 } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
 
-    let whereClause = {};
-
-    // Filter by following
-    if (filter === "following" && currentUserId) {
-      const following = await prisma.follow.findMany({
-        where: { followerId: currentUserId },
-        select: { followingId: true },
-      });
-      const followingIds = following.map((f) => f.followingId);
-      whereClause = {
-        userId: { in: [...followingIds, currentUserId] },
-      };
-    }
-
-    // Determine order by based on sort parameter
-    let orderBy;
-    switch (sort) {
-      case "trending":
-        // Trending: most likes + comments in last 7 days
-        orderBy = [
-          { likesCount: "desc" },
-          { commentsCount: "desc" },
-          { createdAt: "desc" },
-        ];
-        whereClause.createdAt = {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        };
-        break;
-      case "most-liked":
-        orderBy = [{ likesCount: "desc" }, { createdAt: "desc" }];
-        break;
-      case "most-commented":
-        orderBy = [{ commentsCount: "desc" }, { createdAt: "desc" }];
-        break;
-      default: // "recent"
-        orderBy = { createdAt: "desc" };
-    }
-
     const [posts, totalCount] = await prisma.$transaction([
       prisma.post.findMany({
-        where: whereClause,
-        orderBy,
+        orderBy: { createdAt: "desc" },
         skip,
         take,
         include: {
@@ -84,7 +45,7 @@ exports.getAllPosts = async (req, res, next) => {
             select: { id: true, name: true, profilePic: true, course: true },
           },
           _count: {
-            select: { likes: true, comments: true, reactions: true },
+            select: { likes: true, comments: true },
           },
           likes: currentUserId
             ? {
@@ -98,12 +59,9 @@ exports.getAllPosts = async (req, res, next) => {
                 select: { id: true },
               }
             : false,
-          reactions: {
-            select: { emoji: true, userId: true },
-          },
         },
       }),
-      prisma.post.count({ where: whereClause }),
+      prisma.post.count(),
     ]);
 
     // Map posts with status flags
@@ -112,28 +70,14 @@ exports.getAllPosts = async (req, res, next) => {
       const isBookmarked =
         currentUserId && post.bookmarks && post.bookmarks.length > 0;
 
-      // Group reactions by emoji with counts
-      const reactionSummary = post.reactions.reduce((acc, r) => {
-        if (!acc[r.emoji]) acc[r.emoji] = { count: 0, users: [] };
-        acc[r.emoji].count++;
-        acc[r.emoji].users.push(r.userId);
-        return acc;
-      }, {});
-
-      const userReaction = post.reactions.find(
-        (r) => r.userId === currentUserId
-      )?.emoji;
-
-      const { likes, bookmarks, reactions, _count, ...rest } = post;
+      const { likes, bookmarks, _count, ...rest } = post;
       return {
         ...rest,
-        tags: [], // Tags will be added in future migration
+        tags: [],
         likesCount: _count.likes,
         commentsCount: _count.comments,
         isLiked: isLiked || false,
         isBookmarked: isBookmarked || false,
-        reactionSummary,
-        userReaction: userReaction || null,
       };
     });
 
@@ -1357,13 +1301,10 @@ exports.getSuggestedUsers = async (req, res, next) => {
     const userId = req.user.id;
     const { limit = 5 } = req.query;
 
-    // Get users not already followed, with most posts/engagement
+    // Get users not already followed
     const suggestedUsers = await prisma.user.findMany({
       where: {
         id: { not: userId },
-        followedBy: {
-          none: { followerId: userId },
-        },
       },
       select: {
         id: true,
@@ -1372,11 +1313,6 @@ exports.getSuggestedUsers = async (req, res, next) => {
         course: true,
         _count: {
           select: { posts: true, followers: true },
-        },
-      },
-      orderBy: {
-        followers: {
-          _count: "desc",
         },
       },
       take: parseInt(limit),
