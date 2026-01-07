@@ -440,9 +440,7 @@ exports.editMessage = async (req, res, next) => {
     }
 
     if (message.senderId !== userId) {
-      return res
-        .status(403)
-        .json({ message: "Only message sender can edit" });
+      return res.status(403).json({ message: "Only message sender can edit" });
     }
 
     const updatedMessage = await prisma.message.update({
@@ -455,17 +453,41 @@ exports.editMessage = async (req, res, next) => {
         sender: {
           select: { id: true, name: true, profilePic: true },
         },
-        readReceipts: true,
-        reactionCounts: true,
+        reactions: {
+          select: {
+            emoji: true,
+            userId: true,
+          },
+        },
+        readReceipts: {
+          select: {
+            userId: true,
+            readAt: true,
+          },
+        },
       },
     });
 
+    // Format reactions as { "👍": 5, "❤️": 3 }
+    const reactionCounts = {};
+    updatedMessage.reactions.forEach((r) => {
+      reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
+    });
+
+    const formattedMessage = {
+      ...updatedMessage,
+      reactionCounts,
+      reactions: updatedMessage.reactions,
+    };
+
     // Broadcast edit to room
     if (global.io) {
-      global.io.to(chatId).emit("message_edited", { message: updatedMessage, chatId });
+      global.io
+        .to(chatId)
+        .emit("message_edited", { message: formattedMessage, chatId });
     }
 
-    res.json(updatedMessage);
+    res.json(formattedMessage);
   } catch (error) {
     next(error);
   }

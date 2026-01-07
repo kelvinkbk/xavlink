@@ -994,8 +994,11 @@ export default function ChatPage() {
 
   const handleUnsendStub = useCallback(
     async (messageId) => {
-      if (!window.confirm("Unsend this message? It will be deleted for everyone.")) return;
-      
+      if (
+        !window.confirm("Unsend this message? It will be deleted for everyone.")
+      )
+        return;
+
       try {
         await chatService.deleteMessage(chatId, messageId);
         // Socket will broadcast deletion, UI updates automatically
@@ -1270,7 +1273,9 @@ export default function ChatPage() {
             <button
               type="button"
               className="text-gray-400 hover:text-gray-600 text-xs"
-              onClick={() => setEditingMessage({ id: message.id, text: message.text })}
+              onClick={() =>
+                setEditingMessage({ id: message.id, text: message.text })
+              }
               title="Edit message"
             >
               ✏️ Edit
@@ -1775,12 +1780,22 @@ export default function ChatPage() {
             {typingUsers.size > 0 && (
               <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 mt-2">
                 <span>
-                  {Array.from(typingUsers).join(", ")} {typingUsers.size === 1 ? "is" : "are"} typing
+                  {Array.from(typingUsers).join(", ")}{" "}
+                  {typingUsers.size === 1 ? "is" : "are"} typing
                 </span>
                 <span className="flex gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </span>
               </div>
             )}
@@ -1946,7 +1961,9 @@ export default function ChatPage() {
                       {participant.user.id !== user?.id && (
                         <button
                           type="button"
-                          onClick={() => navigate(`/profile/${participant.user.id}`)}
+                          onClick={() =>
+                            navigate(`/profile/${participant.user.id}`)
+                          }
                           className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                         >
                           View
@@ -1999,11 +2016,14 @@ export default function ChatPage() {
                             {msg.sender.name}
                           </div>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(msg.timestamp).toLocaleTimeString("en-US", {
-                              hour: "numeric",
-                              minute: "2-digit",
-                              hour12: true,
-                            })}
+                            {new Date(msg.timestamp).toLocaleTimeString(
+                              "en-US",
+                              {
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
+                              }
+                            )}
                           </span>
                         </div>
                         <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
@@ -2044,7 +2064,10 @@ export default function ChatPage() {
                 <textarea
                   value={editingMessage.text}
                   onChange={(e) =>
-                    setEditingMessage({ ...editingMessage, text: e.target.value })
+                    setEditingMessage({
+                      ...editingMessage,
+                      text: e.target.value,
+                    })
                   }
                   className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={4}

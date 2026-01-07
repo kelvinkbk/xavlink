@@ -59,10 +59,9 @@ export const chatService = {
 
   // Edit message
   async editMessage(chatId, messageId, text) {
-    const response = await api.patch(
-      `/chats/${chatId}/messages/${messageId}`,
-      { text }
-    );
+    const response = await api.patch(`/chats/${chatId}/messages/${messageId}`, {
+      text,
+    });
     return response.data;
   },
 
