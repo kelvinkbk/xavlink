@@ -1,11 +1,56 @@
 import { useAuth } from "../context/AuthContext";
 import { Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { chatService } from "../services/chatService";
+import { socket } from "../services/socket";
 
 export default function Sidebar({ isOpen, onToggle }) {
   const { isAuthenticated, logout, user } = useAuth();
   const location = useLocation();
+  const [unreadTotal, setUnreadTotal] = useState(0);
 
   const isActive = (path) => location.pathname === path;
+
+  // Background sync for unread counts; refresh on mount and when socket is disconnected
+  useEffect(() => {
+    let intervalId;
+    const fetchUnread = async () => {
+      try {
+        const chats = await chatService.getUserChats();
+        const total = chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+        setUnreadTotal(total);
+      } catch {
+        // noop
+      }
+    };
+    fetchUnread();
+    const startPolling = () => {
+      if (!intervalId) {
+        intervalId = setInterval(fetchUnread, 60000);
+      }
+    };
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+    if (!socket.connected) startPolling();
+    const onConnect = () => {
+      fetchUnread();
+      stopPolling();
+    };
+    const onDisconnect = () => {
+      startPolling();
+    };
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      stopPolling();
+    };
+  }, []);
 
   if (!isAuthenticated) {
     return null;
@@ -113,13 +158,18 @@ export default function Sidebar({ isOpen, onToggle }) {
           </Link>
           <Link
             to="/chats"
-            className={`block px-4 py-2 rounded transition ${
+            className={`flex items-center justify-between px-4 py-2 rounded transition ${
               isActive("/chats") || location.pathname.startsWith("/chat")
                 ? "bg-primary text-white"
                 : "hover:bg-gray-700"
             }`}
           >
-            💬 Messages
+            <span>💬 Messages</span>
+            {unreadTotal > 0 && (
+              <span className="ml-2 text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">
+                {unreadTotal}
+              </span>
+            )}
           </Link>
           <Link
             to="/notifications"

@@ -25,7 +25,7 @@ import {
 import * as ReactWindow from "react-window";
 
 export default function ChatPage() {
-  const { FixedSizeList: List } = ReactWindow;
+  const { VariableSizeList: VList } = ReactWindow;
   const { chatId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -119,41 +119,44 @@ export default function ChatPage() {
   }, [pendingMessages, chatId]);
 
   // Handle search with debounce
-    useEffect(() => {
-      const updateHeight = () => {
-        const h = messagesContainerRef.current?.clientHeight || 0;
-        setListHeight(h);
-      };
-      updateHeight();
-      window.addEventListener("resize", updateHeight);
-      return () => window.removeEventListener("resize", updateHeight);
-    }, []);
+  useEffect(() => {
+    const updateHeight = () => {
+      const h = messagesContainerRef.current?.clientHeight || 0;
+      setListHeight(h);
+    };
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
+  }, []);
 
-    // Lightweight beep honoring notification sound toggle
-    const playNotificationSound = useCallback(() => {
-      try {
-        const enabled = JSON.parse(
-          (typeof window !== "undefined" &&
-            localStorage.getItem("notification_sound_enabled")) || "true"
-        );
-        if (!enabled) return;
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        gain.gain.setValueAtTime(0.001, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.16);
-      } catch (e) {
-        console.log("Notification sound failed:", e);
-      }
-    }, []);
+  // Lightweight beep honoring notification sound toggle
+  const playNotificationSound = useCallback(() => {
+    try {
+      const enabled = JSON.parse(
+        (typeof window !== "undefined" &&
+          localStorage.getItem("notification_sound_enabled")) ||
+          "true"
+      );
+      if (!enabled) return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.16);
+    } catch (e) {
+      console.log("Notification sound failed:", e);
+    }
+  }, []);
+
+  // (Removed) dynamic height estimator pending VariableSizeList integration
   const handleSearch = useCallback(
     (query) => {
       setSearchQuery(query);
@@ -589,9 +592,10 @@ export default function ChatPage() {
           );
           const combined = [...prev, ...newMessages];
           // Cache reconciled set
-          cacheMessages(chatId, combined.filter((m) => !m.tempId)).catch(
-            () => {}
-          );
+          cacheMessages(
+            chatId,
+            combined.filter((m) => !m.tempId)
+          ).catch(() => {});
           return combined;
         });
         showToast(
@@ -1269,10 +1273,14 @@ export default function ChatPage() {
                   {/* Regular Messages */}
                   {(() => {
                     const shouldVirtualize =
-                      !isSearching && unpinnedMessages.length > 200 && listHeight > 0;
+                      !isSearching &&
+                      unpinnedMessages.length > 200 &&
+                      listHeight > 0;
                     if (shouldVirtualize) {
                       const Row = ({ index, style }) => (
-                        <div style={style}>{renderMessage(unpinnedMessages[index])}</div>
+                        <div style={style}>
+                          {renderMessage(unpinnedMessages[index])}
+                        </div>
                       );
                       return (
                         <div className="w-full" style={{ height: listHeight }}>
@@ -1287,7 +1295,9 @@ export default function ChatPage() {
                         </div>
                       );
                     }
-                    return unpinnedMessages.map((message) => renderMessage(message));
+                    return unpinnedMessages.map((message) =>
+                      renderMessage(message)
+                    );
                   })()}
                 </>
               );
