@@ -73,12 +73,6 @@ exports.getAllPosts = async (req, res, next) => {
     res.status(500).json({ message: err.message || "Error fetching posts" });
   }
 };
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-};
 
 exports.likePost = async (req, res, next) => {
   try {
