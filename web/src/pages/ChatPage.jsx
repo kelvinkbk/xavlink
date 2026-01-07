@@ -16,9 +16,16 @@ import {
   cacheMessages,
   initMessageCache,
 } from "../services/messageCache";
-import { sendMessageNotification } from "../services/notificationService";
+import {
+  sendMessageNotification,
+  requestNotificationPermission,
+  getNotificationPermission,
+  notificationsSupported,
+} from "../services/notificationService";
+import * as ReactWindow from "react-window";
 
 export default function ChatPage() {
+  const { FixedSizeList: List } = ReactWindow;
   const { chatId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -48,6 +55,10 @@ export default function ChatPage() {
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState(new Set());
+  const [listHeight, setListHeight] = useState(0);
+  const [notifPermission, setNotifPermission] = useState(() =>
+    notificationsSupported() ? getNotificationPermission() : "denied"
+  );
   const messagesEndRef = useRef(null);
   const messagesStartRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -60,6 +71,7 @@ export default function ChatPage() {
   const pendingTimersRef = useRef({});
   const toastTimerRef = useRef(null);
   const searchTimeoutRef = useRef(null);
+  const cacheWriteTimeoutRef = useRef(null);
 
   // Toast helper (define early so callbacks can reference it)
   const showToast = useCallback((message, type = "info", duration = 3000) => {
@@ -107,6 +119,41 @@ export default function ChatPage() {
   }, [pendingMessages, chatId]);
 
   // Handle search with debounce
+    useEffect(() => {
+      const updateHeight = () => {
+        const h = messagesContainerRef.current?.clientHeight || 0;
+        setListHeight(h);
+      };
+      updateHeight();
+      window.addEventListener("resize", updateHeight);
+      return () => window.removeEventListener("resize", updateHeight);
+    }, []);
+
+    // Lightweight beep honoring notification sound toggle
+    const playNotificationSound = useCallback(() => {
+      try {
+        const enabled = JSON.parse(
+          (typeof window !== "undefined" &&
+            localStorage.getItem("notification_sound_enabled")) || "true"
+        );
+        if (!enabled) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.16);
+      } catch (e) {
+        console.log("Notification sound failed:", e);
+      }
+    }, []);
   const handleSearch = useCallback(
     (query) => {
       setSearchQuery(query);
@@ -271,6 +318,7 @@ export default function ChatPage() {
               chatId,
               navigate
             );
+            playNotificationSound();
           } catch (err) {
             console.error("Failed to send notification:", err);
           }
@@ -313,7 +361,7 @@ export default function ChatPage() {
         }, 150);
       }
     },
-    [chatId, upsertMessage, user?.id, navigate]
+    [chatId, upsertMessage, user?.id, navigate, playNotificationSound]
   );
 
   const handleRetryPending = useCallback(
@@ -423,6 +471,7 @@ export default function ChatPage() {
       socket.connect();
     }
 
+    // Hydrate from local cache first for faster initial render
     // Hydrate from local cache first for faster initial render
     (async () => {
       try {
@@ -538,7 +587,12 @@ export default function ChatPage() {
           const newMessages = missedMessages.filter(
             (m) => !existingIds.has(m.id)
           );
-          return [...prev, ...newMessages];
+          const combined = [...prev, ...newMessages];
+          // Cache reconciled set
+          cacheMessages(chatId, combined.filter((m) => !m.tempId)).catch(
+            () => {}
+          );
+          return combined;
         });
         showToast(
           `📬 Caught up ${missedMessages.length} message(s)`,
@@ -562,12 +616,23 @@ export default function ChatPage() {
   }, [chatId, handleReceiveMessage, loadMessages, showToast]);
 
   // Keep cache in sync with real messages (exclude optimistic pending)
+  // Keep cache in sync with real messages, throttled (exclude optimistic pending)
   useEffect(() => {
     if (!chatId) return;
     const realMessages = messages.filter((m) => !m.tempId);
-    if (realMessages.length > 0) {
-      cacheMessages(chatId, realMessages).catch(() => {});
+    if (cacheWriteTimeoutRef.current) {
+      clearTimeout(cacheWriteTimeoutRef.current);
     }
+    if (realMessages.length > 0) {
+      cacheWriteTimeoutRef.current = setTimeout(() => {
+        cacheMessages(chatId, realMessages).catch(() => {});
+      }, 500);
+    }
+    return () => {
+      if (cacheWriteTimeoutRef.current) {
+        clearTimeout(cacheWriteTimeoutRef.current);
+      }
+    };
   }, [messages, chatId]);
 
   // Cleanup pending timers on unmount
@@ -1047,6 +1112,23 @@ export default function ChatPage() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Chat
             </h2>
+            {notificationsSupported() && notifPermission !== "granted" && (
+              <div className="ml-auto flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-2 py-1 rounded">
+                <span className="text-xs text-blue-800 dark:text-blue-300">
+                  Enable desktop notifications?
+                </span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const granted = await requestNotificationPermission();
+                    setNotifPermission(granted ? "granted" : "denied");
+                  }}
+                  className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                >
+                  Enable
+                </button>
+              </div>
+            )}
             <input
               type="text"
               placeholder="🔍 Search messages..."
@@ -1185,7 +1267,28 @@ export default function ChatPage() {
                   )}
 
                   {/* Regular Messages */}
-                  {unpinnedMessages.map((message) => renderMessage(message))}
+                  {(() => {
+                    const shouldVirtualize =
+                      !isSearching && unpinnedMessages.length > 200 && listHeight > 0;
+                    if (shouldVirtualize) {
+                      const Row = ({ index, style }) => (
+                        <div style={style}>{renderMessage(unpinnedMessages[index])}</div>
+                      );
+                      return (
+                        <div className="w-full" style={{ height: listHeight }}>
+                          <List
+                            height={listHeight}
+                            itemCount={unpinnedMessages.length}
+                            itemSize={96}
+                            width={"100%"}
+                          >
+                            {Row}
+                          </List>
+                        </div>
+                      );
+                    }
+                    return unpinnedMessages.map((message) => renderMessage(message));
+                  })()}
                 </>
               );
             })()}
