@@ -209,7 +209,7 @@ function HomeSimple() {
       socket.off("new_post");
       socket.off("new_notification");
     };
-  }, [selectedPost]);
+  }, [selectedPost, showToast]);
 
   const fetchPosts = async () => {
     try {
@@ -325,11 +325,11 @@ function HomeSimple() {
 
   const sortPosts = (postsToSort, sort) => {
     const sorted = [...postsToSort];
-    
+
     // Separate pinned and unpinned posts
     const pinned = sorted.filter((p) => pinnedPosts.includes(p.id));
     const unpinned = sorted.filter((p) => !pinnedPosts.includes(p.id));
-    
+
     // Sort each group
     const sortFn = (a, b) => {
       switch (sort) {
@@ -346,10 +346,10 @@ function HomeSimple() {
           return new Date(b.createdAt) - new Date(a.createdAt);
       }
     };
-    
+
     pinned.sort(sortFn);
     unpinned.sort(sortFn);
-    
+
     return [...pinned, ...unpinned];
   };
 
@@ -389,9 +389,12 @@ function HomeSimple() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await axios.get(`${API_URL}/notifications/unread-count`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${API_URL}/notifications/unread-count`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       setUnreadNotifications(response.data.unreadCount || 0);
     } catch (err) {
@@ -479,7 +482,7 @@ function HomeSimple() {
         return;
       }
 
-      const response = await axios.post(
+      await axios.post(
         `${API_URL}/pins`,
         { postId },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -491,10 +494,7 @@ function HomeSimple() {
       showToast("Post pinned to top!", "success");
     } catch (err) {
       console.error("Error pinning post:", err);
-      showToast(
-        err.response?.data?.error || "Failed to pin post",
-        "error"
-      );
+      showToast(err.response?.data?.error || "Failed to pin post", "error");
     }
   };
 
@@ -516,10 +516,7 @@ function HomeSimple() {
       showToast("Post unpinned", "success");
     } catch (err) {
       console.error("Error unpinning post:", err);
-      showToast(
-        err.response?.data?.error || "Failed to unpin post",
-        "error"
-      );
+      showToast(err.response?.data?.error || "Failed to unpin post", "error");
     }
   };
 
@@ -681,7 +678,9 @@ function HomeSimple() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold mb-2">Campus Feed</h1>
-              <p className="text-gray-400">Connect with your campus community</p>
+              <p className="text-gray-400">
+                Connect with your campus community
+              </p>
             </div>
             {unreadNotifications > 0 && (
               <div className="bg-red-500 text-white rounded-full px-3 py-1 text-sm font-semibold">
@@ -912,11 +911,19 @@ function HomeSimple() {
                       className={`flex items-center gap-2 hover:text-red-400 transition ${
                         pinnedPosts.includes(post.id) ? "text-red-400" : ""
                       }`}
-                      title={pinnedPosts.includes(post.id) ? "Unpin post" : "Pin to top"}
+                      title={
+                        pinnedPosts.includes(post.id)
+                          ? "Unpin post"
+                          : "Pin to top"
+                      }
                     >
                       <svg
                         className="w-5 h-5"
-                        fill={pinnedPosts.includes(post.id) ? "currentColor" : "none"}
+                        fill={
+                          pinnedPosts.includes(post.id)
+                            ? "currentColor"
+                            : "none"
+                        }
                         stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
