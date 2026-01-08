@@ -59,6 +59,7 @@ function HomeSimple() {
 
   useEffect(() => {
     fetchPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Infinite scroll observer
@@ -84,6 +85,7 @@ function HomeSimple() {
     return () => {
       if (sentinel) observer.unobserve(sentinel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, loadingMore, loading, searchQuery]);
 
   // Listen for real-time comment updates
@@ -349,7 +351,6 @@ function HomeSimple() {
 
   const handleBookmark = async (postId) => {
     try {
-      const token = localStorage.getItem("token");
       if (bookmarkedPosts.includes(postId)) {
         // Remove bookmark
         setBookmarkedPosts((prev) => prev.filter((id) => id !== postId));
