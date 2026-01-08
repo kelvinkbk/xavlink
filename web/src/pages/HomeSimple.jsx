@@ -317,8 +317,18 @@ function HomeSimple() {
         );
       }
 
-      setPosts((prev) => [...prev, ...newPosts]);
-      setAllPosts((prev) => [...prev, ...newPosts]);
+      setPosts((prev) => {
+        const combined = [...prev, ...newPosts];
+        const filtered = showFollowingOnly
+          ? combined.filter((p) => followingUserIds.includes(p.userId))
+          : combined;
+        return sortPosts(filtered, sortBy);
+      });
+      setAllPosts((prev) => {
+        const combined = [...prev, ...newPosts];
+        updateTrendingHashtags(combined);
+        return combined;
+      });
       setCurrentPage(nextPage);
       setHasMore(newPosts.length === postsPerPage);
     } catch (err) {
@@ -446,24 +456,50 @@ function HomeSimple() {
     }
   };
 
-  const handleSearch = (query) => {
+  const handleSearch = async (query) => {
     setSearchQuery(query);
-    if (query.trim() === "") {
+    const q = query.trim();
+    if (q === "") {
       const filtered = showFollowingOnly
         ? allPosts.filter((p) => followingUserIds.includes(p.userId))
         : allPosts;
       setPosts(sortPosts(filtered, sortBy));
     } else {
-      let filtered = allPosts.filter(
-        (post) =>
-          post.content.toLowerCase().includes(query.toLowerCase()) ||
-          post.user?.name.toLowerCase().includes(query.toLowerCase()) ||
-          post.user?.course?.toLowerCase().includes(query.toLowerCase()) ||
-          post.user?.year?.toString().includes(query) ||
+      // Local match: content, name, course, year, hashtags
+      let filtered = allPosts.filter((post) => {
+        const lower = q.toLowerCase();
+        return (
+          post.content.toLowerCase().includes(lower) ||
+          post.user?.name.toLowerCase().includes(lower) ||
+          post.user?.course?.toLowerCase().includes(lower) ||
+          post.user?.year?.toString().includes(q) ||
           extractHashtags(post.content).some((tag) =>
-            tag.includes(query.toLowerCase().replace("#", ""))
+            tag.includes(lower.replace("#", ""))
           )
-      );
+        );
+      });
+
+      // Skill match: fetch users whose skills match the query, then include their posts
+      try {
+        const { data: skills } = await axios.get(`${API_URL}/skills/all`, {
+          params: { search: q },
+        });
+        const skillUserIds = new Set(
+          (skills || []).map((s) => s.user?.id).filter(Boolean)
+        );
+        if (skillUserIds.size > 0) {
+          const bySkill = allPosts.filter((p) => skillUserIds.has(p.userId));
+          const existingIds = new Set(filtered.map((p) => p.id));
+          filtered = [
+            ...filtered,
+            ...bySkill.filter((p) => !existingIds.has(p.id)),
+          ];
+        }
+      } catch (e) {
+        // Non-fatal: log and continue with local results
+        console.warn("Skill search failed:", e?.message || e);
+      }
+
       if (showFollowingOnly) {
         filtered = filtered.filter((p) => followingUserIds.includes(p.userId));
       }
@@ -953,10 +989,15 @@ function HomeSimple() {
                   </button>
 
                   <button
-                    onClick={() => {
-                      const url = `${window.location.origin}/posts/${post.id}`;
-                      navigator.clipboard.writeText(url);
-                      showToast("Link copied to clipboard!", "success");
+                    onClick={async () => {
+                      const url = `${window.location.origin}/home`;
+                      try {
+                        await navigator.clipboard.writeText(url);
+                        showToast("Link copied to clipboard!", "success");
+                      } catch (err) {
+                        console.error("Failed to copy:", err);
+                        showToast("Failed to copy link", "error");
+                      }
                     }}
                     className="flex items-center gap-2 hover:text-purple-400 transition"
                     title="Share post"
