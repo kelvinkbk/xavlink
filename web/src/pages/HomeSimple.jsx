@@ -901,7 +901,7 @@ function HomeSimple() {
                     </svg>
                   </button>
 
-                  {post.userId === localStorage.getItem("userId") && (
+                  {String(post.userId) === String(localStorage.getItem("userId")) && (
                     <button
                       onClick={() =>
                         pinnedPosts.includes(post.id)
