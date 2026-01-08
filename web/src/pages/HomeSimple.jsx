@@ -175,7 +175,7 @@ function HomeSimple() {
 
       setComments([...comments, response.data]);
       setNewComment("");
-      
+
       // Update post comment count
       setPosts(
         posts.map((post) =>
@@ -307,9 +307,10 @@ function HomeSimple() {
                     <span>{post.likesCount || 0}</span>
                   </button>
 
-                  <button 
+                  <button
                     onClick={() => openCommentModal(post)}
-                    className="flex items-center gap-2 hover:text-green-400 transition">
+                    className="flex items-center gap-2 hover:text-green-400 transition"
+                  >
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -386,11 +387,17 @@ function HomeSimple() {
                   {selectedPost.user?.name?.[0] || "U"}
                 </div>
                 <div>
-                  <p className="font-semibold">{selectedPost.user?.name || "Unknown User"}</p>
-                  <p className="text-sm text-gray-400">{formatRelativeTime(selectedPost.createdAt)}</p>
+                  <p className="font-semibold">
+                    {selectedPost.user?.name || "Unknown User"}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    {formatRelativeTime(selectedPost.createdAt)}
+                  </p>
                 </div>
               </div>
-              <p className="text-gray-200 whitespace-pre-wrap">{selectedPost.content}</p>
+              <p className="text-gray-200 whitespace-pre-wrap">
+                {selectedPost.content}
+              </p>
             </div>
 
             {/* Comments Section */}
@@ -400,7 +407,9 @@ function HomeSimple() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
                 </div>
               ) : comments.length === 0 ? (
-                <p className="text-gray-400 text-center py-4">No comments yet. Be the first to comment!</p>
+                <p className="text-gray-400 text-center py-4">
+                  No comments yet. Be the first to comment!
+                </p>
               ) : (
                 <div className="space-y-4 mb-6">
                   {comments.map((comment) => (
@@ -410,11 +419,17 @@ function HomeSimple() {
                           {comment.user?.name?.[0] || "U"}
                         </div>
                         <div>
-                          <p className="font-semibold text-sm">{comment.user?.name || "Unknown"}</p>
-                          <p className="text-xs text-gray-400">{formatRelativeTime(comment.createdAt)}</p>
+                          <p className="font-semibold text-sm">
+                            {comment.user?.name || "Unknown"}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {formatRelativeTime(comment.createdAt)}
+                          </p>
                         </div>
                       </div>
-                      <p className="text-gray-200 text-sm">{comment.text || comment.content}</p>
+                      <p className="text-gray-200 text-sm">
+                        {comment.text || comment.content}
+                      </p>
                     </div>
                   ))}
                 </div>
