@@ -188,8 +188,16 @@ function HomeSimple() {
   };
 
   const handlePostCreated = (newPost) => {
-    setPosts([newPost, ...posts]);
-    setAllPosts([newPost, ...allPosts]);
+    // Ensure the new post has all required fields
+    const postWithDefaults = {
+      ...newPost,
+      likesCount: newPost.likesCount || 0,
+      commentsCount: newPost.commentsCount || 0,
+      isLiked: newPost.isLiked || false,
+      isBookmarked: newPost.isBookmarked || false,
+    };
+    setPosts([postWithDefaults, ...posts]);
+    setAllPosts([postWithDefaults, ...allPosts]);
     setShowCreateModal(false);
     showToast("Post created successfully!", "success");
   };

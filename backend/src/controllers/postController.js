@@ -33,7 +33,12 @@ exports.createPost = async (req, res, next) => {
       });
     } catch (err) {
       // If image column doesn't exist, create without it
-      if (err.code === "P2010" || err.message.includes("image") || err.message.includes("Image") || err.message.includes("does not exist")) {
+      if (
+        err.code === "P2010" ||
+        err.message.includes("image") ||
+        err.message.includes("Image") ||
+        err.message.includes("does not exist")
+      ) {
         console.log("⚠️ Image column not found, creating post without image");
         post = await prisma.post.create({
           data: {
@@ -75,6 +80,7 @@ exports.getAllPosts = async (req, res, next) => {
         "id", 
         "userId", 
         "content", 
+        "image",
         "createdAt"
       FROM "Post" 
       ORDER BY "createdAt" DESC 
