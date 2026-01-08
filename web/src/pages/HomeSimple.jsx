@@ -515,6 +515,51 @@ function HomeSimple() {
     setPosts(sortPosts(filtered, newSort));
   };
 
+  const sharePost = async (post) => {
+    const url = `${window.location.origin}/home`;
+    const preview = (post.content || "").slice(0, 120);
+
+    // Try Web Share API first (best UX on mobile/modern browsers)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "XavLink", text: preview, url });
+        showToast("Share dialog opened", "success");
+        return;
+      } catch (err) {
+        // Ignore user cancel; log other errors
+        if (err?.name !== "AbortError") {
+          console.warn("Web Share failed, falling back:", err);
+        }
+      }
+    }
+
+    // Clipboard API fallback
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("Link copied to clipboard!", "success");
+      return;
+    } catch (err) {
+      console.warn("Clipboard API failed, trying legacy copy:", err);
+    }
+
+    // Legacy execCommand fallback
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "absolute";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      showToast("Link copied to clipboard!", "success");
+    } catch (err) {
+      console.error("Failed to copy share link:", err);
+      showToast("Failed to copy link", "error");
+    }
+  };
+
   const handleBookmark = async (postId) => {
     try {
       const token = localStorage.getItem("token");
@@ -989,16 +1034,7 @@ function HomeSimple() {
                   </button>
 
                   <button
-                    onClick={async () => {
-                      const url = `${window.location.origin}/home`;
-                      try {
-                        await navigator.clipboard.writeText(url);
-                        showToast("Link copied to clipboard!", "success");
-                      } catch (err) {
-                        console.error("Failed to copy:", err);
-                        showToast("Failed to copy link", "error");
-                      }
-                    }}
+                    onClick={() => sharePost(post)}
                     className="flex items-center gap-2 hover:text-purple-400 transition"
                     title="Share post"
                   >
