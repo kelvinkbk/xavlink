@@ -62,25 +62,163 @@ exports.searchUsers = async (req, res, next) => {
 exports.getSuggestedUsers = async (req, res, next) => {
   try {
     const currentUserId = req.user?.id;
-    const { limit = 10 } = req.query;
+    const { limit = 15 } = req.query;
 
-    const users = await prisma.user.findMany({
-      where: currentUserId ? { id: { not: currentUserId } } : {},
-      take: parseInt(limit),
-      orderBy: { followersCount: "desc" },
+    if (!currentUserId) {
+      // Not authenticated, just return popular users
+      const users = await prisma.user.findMany({
+        take: parseInt(limit),
+        orderBy: { followersCount: "desc" },
+        select: {
+          id: true,
+          name: true,
+          profilePic: true,
+          bio: true,
+          course: true,
+          followersCount: true,
+        },
+      });
+      return res.json({
+        suggestions: [
+          {
+            category: "Popular",
+            users: users,
+          },
+        ],
+      });
+    }
+
+    // Get current user's info for similarity matching
+    const currentUser = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { course: true, year: true, id: true },
+    });
+
+    // Get current user's following list
+    const currentUserFollowing = await prisma.follow.findMany({
+      where: { followerId: currentUserId },
+      select: { followingId: true },
+    });
+    const followingIds = new Set(currentUserFollowing.map((f) => f.followingId));
+
+    // Exclude current user and already-followed users
+    const baseWhere = {
+      id: { not: currentUserId },
+    };
+
+    // 1. Because you follow - People followed by people I follow
+    const networkSuggestions = await prisma.follow.findMany({
+      where: {
+        followerId: { in: Array.from(followingIds) },
+        followingId: { not: currentUserId },
+      },
+      select: { followingId: true },
+    });
+
+    const networkUserIds = [];
+    const idFrequency = {};
+    networkSuggestions.forEach((f) => {
+      if (!followingIds.has(f.followingId)) {
+        idFrequency[f.followingId] = (idFrequency[f.followingId] || 0) + 1;
+        if (!networkUserIds.includes(f.followingId)) {
+          networkUserIds.push(f.followingId);
+        }
+      }
+    });
+
+    // Sort by frequency (how many people you follow are following them)
+    networkUserIds.sort((a, b) => idFrequency[b] - idFrequency[a]);
+
+    const becauseYouFollowUsers = await prisma.user.findMany({
+      where: { id: { in: networkUserIds.slice(0, 5) } },
       select: {
         id: true,
         name: true,
-        email: true,
         profilePic: true,
         bio: true,
         course: true,
         followersCount: true,
-        followingCount: true,
       },
     });
 
-    res.json(users);
+    // 2. Similar to you - Same course/year/skills
+    const similarUsers = await prisma.user.findMany({
+      where: {
+        id: { not: currentUserId },
+        AND: [{ course: currentUser?.course }],
+      },
+      take: 5,
+      orderBy: { followersCount: "desc" },
+      select: {
+        id: true,
+        name: true,
+        profilePic: true,
+        bio: true,
+        course: true,
+        year: true,
+        followersCount: true,
+      },
+    });
+
+    // 3. Popular this week - High engagement users
+    const popularUsers = await prisma.user.findMany({
+      where: { id: { not: currentUserId } },
+      take: 5,
+      orderBy: { followersCount: "desc" },
+      select: {
+        id: true,
+        name: true,
+        profilePic: true,
+        bio: true,
+        followersCount: true,
+      },
+    });
+
+    // Build response with categories
+    const suggestions = [];
+
+    if (becauseYouFollowUsers.length > 0) {
+      suggestions.push({
+        category: "Because you follow",
+        users: becauseYouFollowUsers,
+      });
+    }
+
+    if (similarUsers.length > 0) {
+      suggestions.push({
+        category: "Similar to you",
+        users: similarUsers,
+      });
+    }
+
+    if (popularUsers.length > 0) {
+      suggestions.push({
+        category: "Popular",
+        users: popularUsers,
+      });
+    }
+
+    // If no categorized suggestions, just return popular users
+    if (suggestions.length === 0) {
+      const fallback = await prisma.user.findMany({
+        where: { id: { not: currentUserId } },
+        take: parseInt(limit),
+        orderBy: { followersCount: "desc" },
+        select: {
+          id: true,
+          name: true,
+          profilePic: true,
+          bio: true,
+          followersCount: true,
+        },
+      });
+      suggestions.push({
+        category: "Suggested",
+        users: fallback,
+      });
+    }
+
+    res.json({ suggestions });
   } catch (err) {
     next(err);
   }

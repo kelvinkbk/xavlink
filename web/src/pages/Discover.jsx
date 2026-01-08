@@ -12,7 +12,7 @@ export default function Discover() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [suggestedUsers, setSuggestedUsers] = useState([]);
+  const [suggestedCategories, setSuggestedCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [suggestedLoading, setSuggestedLoading] = useState(true);
   const [startingChats, setStartingChats] = useState(new Set());
@@ -21,7 +21,7 @@ export default function Discover() {
     const fetchSuggested = async () => {
       try {
         const { data } = await api.get("/users/suggested?limit=15");
-        setSuggestedUsers(data);
+        setSuggestedCategories(data.suggestions || []);
       } catch (error) {
         console.error("Failed to fetch suggested users:", error);
         showToast("Failed to load suggestions", "error");
@@ -73,6 +73,16 @@ export default function Discover() {
     }
   };
 
+  const getCategoryIcon = (category) => {
+    const icons = {
+      "Because you follow": "👥",
+      "Similar to you": "🎓",
+      Popular: "⭐",
+      Suggested: "✨",
+    };
+    return icons[category] || "👤";
+  };
+
   const UserCard = ({ user }) => (
     <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:border-primary hover:shadow-md transition">
       <Link
@@ -82,11 +92,13 @@ export default function Discover() {
         <img
           src={user.profilePic || "https://placehold.co/64x64?text=User"}
           alt={user.name}
-          className="w-16 h-16 rounded-full"
+          className="w-16 h-16 rounded-full object-cover"
         />
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-secondary truncate">{user.name}</h3>
-          <p className="text-sm text-gray-600 truncate">{user.email}</p>
+          {user.email && (
+            <p className="text-sm text-gray-600 truncate">{user.email}</p>
+          )}
           {user.course && (
             <p className="text-sm text-gray-500">{user.course}</p>
           )}
@@ -136,7 +148,7 @@ export default function Discover() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, email, or course..."
+              placeholder="🔍 Search by name, email, or course..."
               className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             />
             <button
@@ -173,33 +185,54 @@ export default function Discover() {
           </div>
         )}
 
-        {/* Suggested Users */}
+        {/* Suggested Users by Category */}
         <div>
-          <h2 className="text-xl font-semibold text-secondary mb-4">
+          <h2 className="text-xl font-semibold text-secondary mb-6">
             Suggested for You
           </h2>
           {suggestedLoading ? (
-            <div>
-              <SkeletonLoader type="card" />
-              <SkeletonLoader type="card" />
+            <div className="space-y-6">
+              <div>
+                <SkeletonLoader type="card" />
+              </div>
+              <div>
+                <SkeletonLoader type="card" />
+              </div>
             </div>
-          ) : suggestedUsers.length > 0 ? (
-            <div className="space-y-3">
-              {suggestedUsers.map((user) => (
-                <UserCard key={user.id} user={user} />
+          ) : suggestedCategories.length > 0 ? (
+            <div className="space-y-8">
+              {suggestedCategories.map((group) => (
+                <div key={group.category}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-2xl">
+                      {getCategoryIcon(group.category)}
+                    </span>
+                    <h3 className="text-lg font-semibold text-secondary">
+                      {group.category}
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                      ({group.users.length})
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {group.users.map((user) => (
+                      <UserCard key={user.id} user={user} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
             <p className="text-gray-600">No suggestions available</p>
           )}
-          {suggestedUsers.length === 0 && !suggestedLoading && (
+          {suggestedCategories.length === 0 && !suggestedLoading && (
             <div className="mt-4">
               <button
                 onClick={async () => {
                   setSuggestedLoading(true);
                   try {
                     const { data } = await api.get("/users/suggested?limit=15");
-                    setSuggestedUsers(data);
+                    setSuggestedCategories(data.suggestions || []);
                     showToast("Suggestions refreshed", "success");
                   } catch (e) {
                     console.error("Refresh suggestions failed:", e);
