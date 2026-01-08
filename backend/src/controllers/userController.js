@@ -467,6 +467,106 @@ exports.getSkillBasedSuggestions = async (req, res, next) => {
   }
 };
 
+exports.getHashtagBasedSuggestions = async (req, res, next) => {
+  try {
+    const currentUserId = req.user?.id;
+    const { limit = 15 } = req.query;
+
+    if (!currentUserId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Get current user's posts to extract hashtags
+    const currentUserPosts = await prisma.post.findMany({
+      where: { userId: currentUserId },
+      select: { content: true },
+    });
+
+    // Extract hashtags from posts
+    const hashtagRegex = /#\w+/g;
+    const hashtagSet = new Set();
+    currentUserPosts.forEach((post) => {
+      const hashtags = post.content.match(hashtagRegex) || [];
+      hashtags.forEach((tag) => {
+        hashtagSet.add(tag.toLowerCase());
+      });
+    });
+
+    if (hashtagSet.size === 0) {
+      // No hashtags found, return empty
+      return res.json({ hashtagSuggestions: [] });
+    }
+
+    // Get current user's following list
+    const currentUserFollowing = await prisma.follow.findMany({
+      where: { followerId: currentUserId },
+      select: { followingId: true },
+    });
+    const followingIds = new Set(
+      currentUserFollowing.map((f) => f.followingId)
+    );
+
+    // Find users with posts containing matching hashtags
+    const postsWithHashtags = await prisma.post.findMany({
+      where: {
+        userId: { not: currentUserId },
+        content: {
+          search: Array.from(hashtagSet).join(" | "),
+        },
+      },
+      select: {
+        userId: true,
+        content: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profilePic: true,
+            bio: true,
+            course: true,
+            followersCount: true,
+          },
+        },
+      },
+    });
+
+    // Group by user and count hashtag matches
+    const userHashtagCount = {};
+    const userDetails = {};
+
+    postsWithHashtags.forEach((post) => {
+      if (!followingIds.has(post.userId)) {
+        const postHashtags = post.content.match(hashtagRegex) || [];
+        const matchingCount = postHashtags.filter((tag) =>
+          hashtagSet.has(tag.toLowerCase())
+        ).length;
+
+        userHashtagCount[post.userId] =
+          (userHashtagCount[post.userId] || 0) + matchingCount;
+        if (!userDetails[post.userId]) {
+          userDetails[post.userId] = post.user;
+        }
+      }
+    });
+
+    // Sort by hashtag match count
+    const sortedUserIds = Object.keys(userHashtagCount).sort(
+      (a, b) => userHashtagCount[b] - userHashtagCount[a]
+    );
+
+    const suggestedUsers = sortedUserIds
+      .slice(0, parseInt(limit))
+      .map((userId) => ({
+        ...userDetails[userId],
+        matchingHashtagCount: userHashtagCount[userId],
+      }));
+
+    res.json({ hashtagSuggestions: suggestedUsers });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.updateProfile = async (req, res, next) => {
   try {
     const { id } = req.params;

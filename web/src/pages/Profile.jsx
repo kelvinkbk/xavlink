@@ -501,9 +501,7 @@ export default function Profile() {
                       type="text"
                       value={newSkill}
                       onChange={(e) => setNewSkill(e.target.value)}
-                      onKeyPress={(e) =>
-                        e.key === "Enter" && handleAddSkill()
-                      }
+                      onKeyPress={(e) => e.key === "Enter" && handleAddSkill()}
                       placeholder="Add a skill (e.g., React, Python, Design)"
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-gray-900"
                     />

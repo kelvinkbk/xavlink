@@ -497,8 +497,7 @@ export default function Discover() {
               </div>
             )}
 
-          </div>
-        )}
+          </div>\n        )}
         {/* Hashtag-Based Tab */}
         {activeTab === "hashtags" && (
           <div>
@@ -558,6 +557,4 @@ export default function Discover() {
     </PageTransition>
   );
 }
-
-
 
