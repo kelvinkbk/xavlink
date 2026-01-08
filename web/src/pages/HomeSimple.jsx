@@ -56,10 +56,14 @@ function HomeSimple() {
   // Feed filtering state
   const [sortBy, setSortBy] = useState("recent"); // recent, trending, mostLiked
   const [bookmarkedPosts, setBookmarkedPosts] = useState([]);
+  const [pinnedPosts, setPinnedPosts] = useState([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     fetchPosts();
     fetchBookmarkedPostIds();
+    fetchPinnedPostIds();
+    fetchUnreadNotificationCount();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -191,11 +195,19 @@ function HomeSimple() {
       });
     });
 
+    // Listen for real-time notifications
+    socket.on("new_notification", (data) => {
+      console.log("🔔 New notification received:", data);
+      setUnreadNotifications((prev) => prev + 1);
+      showToast(data.title || "You have a new notification", "info");
+    });
+
     return () => {
       socket.off("new_comment");
       socket.off("post_liked");
       socket.off("post_unliked");
       socket.off("new_post");
+      socket.off("new_notification");
     };
   }, [selectedPost]);
 
@@ -313,22 +325,32 @@ function HomeSimple() {
 
   const sortPosts = (postsToSort, sort) => {
     const sorted = [...postsToSort];
-    switch (sort) {
-      case "trending":
-        return sorted.sort(
-          (a, b) =>
+    
+    // Separate pinned and unpinned posts
+    const pinned = sorted.filter((p) => pinnedPosts.includes(p.id));
+    const unpinned = sorted.filter((p) => !pinnedPosts.includes(p.id));
+    
+    // Sort each group
+    const sortFn = (a, b) => {
+      switch (sort) {
+        case "trending":
+          return (
             (b.likesCount || 0) +
             (b.commentsCount || 0) * 2 -
             ((a.likesCount || 0) + (a.commentsCount || 0) * 2)
-        );
-      case "mostLiked":
-        return sorted.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
-      case "recent":
-      default:
-        return sorted.sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
-    }
+          );
+        case "mostLiked":
+          return (b.likesCount || 0) - (a.likesCount || 0);
+        case "recent":
+        default:
+          return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+    };
+    
+    pinned.sort(sortFn);
+    unpinned.sort(sortFn);
+    
+    return [...pinned, ...unpinned];
   };
 
   const fetchBookmarkedPostIds = async () => {
@@ -343,6 +365,37 @@ function HomeSimple() {
       setBookmarkedPosts(response.data.bookmarkIds || []);
     } catch (err) {
       console.error("Error fetching bookmarked posts:", err);
+    }
+  };
+
+  const fetchPinnedPostIds = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await axios.get(`${API_URL}/pins`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const pinnedIds = (response.data.pinnedPosts || []).map((p) => p.id);
+      setPinnedPosts(pinnedIds);
+    } catch (err) {
+      console.error("Error fetching pinned posts:", err);
+    }
+  };
+
+  const fetchUnreadNotificationCount = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await axios.get(`${API_URL}/notifications/unread-count`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setUnreadNotifications(response.data.unreadCount || 0);
+    } catch (err) {
+      console.error("Error fetching unread notifications:", err);
     }
   };
 
@@ -415,6 +468,58 @@ function HomeSimple() {
     } catch (err) {
       console.error("Error bookmarking post:", err);
       showToast("Failed to bookmark post", "error");
+    }
+  };
+
+  const handlePin = async (postId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showToast("Please log in to pin posts", "error");
+        return;
+      }
+
+      const response = await axios.post(
+        `${API_URL}/pins`,
+        { postId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setPinnedPosts((prev) => [...prev, postId]);
+      setPosts(sortPosts(posts, sortBy));
+      setAllPosts(sortPosts(allPosts, sortBy));
+      showToast("Post pinned to top!", "success");
+    } catch (err) {
+      console.error("Error pinning post:", err);
+      showToast(
+        err.response?.data?.error || "Failed to pin post",
+        "error"
+      );
+    }
+  };
+
+  const handleUnpin = async (postId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showToast("Please log in to unpin posts", "error");
+        return;
+      }
+
+      await axios.delete(`${API_URL}/pins/${postId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setPinnedPosts((prev) => prev.filter((id) => id !== postId));
+      setPosts(sortPosts(posts, sortBy));
+      setAllPosts(sortPosts(allPosts, sortBy));
+      showToast("Post unpinned", "success");
+    } catch (err) {
+      console.error("Error unpinning post:", err);
+      showToast(
+        err.response?.data?.error || "Failed to unpin post",
+        "error"
+      );
     }
   };
 
@@ -573,8 +678,17 @@ function HomeSimple() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Campus Feed</h1>
-          <p className="text-gray-400">Connect with your campus community</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Campus Feed</h1>
+              <p className="text-gray-400">Connect with your campus community</p>
+            </div>
+            {unreadNotifications > 0 && (
+              <div className="bg-red-500 text-white rounded-full px-3 py-1 text-sm font-semibold">
+                {unreadNotifications} new
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Search & Filter Bar */}
@@ -787,6 +901,34 @@ function HomeSimple() {
                       />
                     </svg>
                   </button>
+
+                  {post.userId === localStorage.getItem("userId") && (
+                    <button
+                      onClick={() =>
+                        pinnedPosts.includes(post.id)
+                          ? handleUnpin(post.id)
+                          : handlePin(post.id)
+                      }
+                      className={`flex items-center gap-2 hover:text-red-400 transition ${
+                        pinnedPosts.includes(post.id) ? "text-red-400" : ""
+                      }`}
+                      title={pinnedPosts.includes(post.id) ? "Unpin post" : "Pin to top"}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill={pinnedPosts.includes(post.id) ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                        />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

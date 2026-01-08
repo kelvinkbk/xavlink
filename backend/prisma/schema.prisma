@@ -115,9 +115,12 @@ model Post {
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   content       String
   image         String?
+  isPinned      Boolean      @default(false)
+  pinnedAt      DateTime?
   createdAt     DateTime     @default(now())
 
   @@index([userId])
+  @@index([isPinned])
 }
 
 model Like {
