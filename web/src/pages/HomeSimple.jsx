@@ -47,9 +47,44 @@ function HomeSimple() {
   const [newComment, setNewComment] = useState("");
   const [commentsLoading, setCommentsLoading] = useState(false);
 
+  // Pagination state for infinite scroll
+  const [currentPage, setCurrentPage] = useState(1);
+  const [postsPerPage] = useState(10);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Feed filtering state
+  const [sortBy, setSortBy] = useState("recent"); // recent, trending, mostLiked
+  const [bookmarkedPosts, setBookmarkedPosts] = useState([]);
+
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          hasMore &&
+          !loadingMore &&
+          !loading &&
+          searchQuery === ""
+        ) {
+          loadMorePosts();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const sentinel = document.getElementById("scroll-sentinel");
+    if (sentinel) observer.observe(sentinel);
+
+    return () => {
+      if (sentinel) observer.unobserve(sentinel);
+    };
+  }, [hasMore, loadingMore, loading, searchQuery]);
 
   // Listen for real-time comment updates
   useEffect(() => {
@@ -165,11 +200,12 @@ function HomeSimple() {
     try {
       setLoading(true);
       setError(null);
+      setCurrentPage(1);
 
       const token = localStorage.getItem("token");
       const response = await axios.get(`${API_URL}/posts/all`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        params: { page: 1, limit: 20 },
+        params: { page: 1, limit: postsPerPage },
       });
 
       let posts = response.data.posts || [];
@@ -195,6 +231,7 @@ function HomeSimple() {
                 likesCount: likeResponse.data.likesCount,
                 isLiked: likeResponse.data.isLiked,
                 commentsCount: (commentResponse.data.comments || []).length,
+                isBookmarked: bookmarkedPosts.includes(post.id),
               };
             } catch (err) {
               console.error(`Error fetching data for post ${post.id}:`, err);
@@ -205,7 +242,8 @@ function HomeSimple() {
       }
 
       setAllPosts(posts);
-      setPosts(posts);
+      setPosts(sortPosts(posts, sortBy));
+      setHasMore(posts.length === postsPerPage);
     } catch (err) {
       console.error("Error fetching posts:", err);
       setError("Unable to load posts. The server might be updating.");
@@ -216,17 +254,134 @@ function HomeSimple() {
     }
   };
 
+  const loadMorePosts = async () => {
+    try {
+      setLoadingMore(true);
+      const token = localStorage.getItem("token");
+      const nextPage = currentPage + 1;
+
+      const response = await axios.get(`${API_URL}/posts/all`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        params: { page: nextPage, limit: postsPerPage },
+      });
+
+      let newPosts = response.data.posts || [];
+
+      // Fetch like status and comment count for new posts
+      if (token && newPosts.length > 0) {
+        newPosts = await Promise.all(
+          newPosts.map(async (post) => {
+            try {
+              const likeResponse = await axios.get(
+                `${API_URL}/posts/${post.id}/likes`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+
+              const commentResponse = await axios.get(
+                `${API_URL}/posts/${post.id}/comments`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+
+              return {
+                ...post,
+                likesCount: likeResponse.data.likesCount,
+                isLiked: likeResponse.data.isLiked,
+                commentsCount: (commentResponse.data.comments || []).length,
+                isBookmarked: bookmarkedPosts.includes(post.id),
+              };
+            } catch (err) {
+              console.error(`Error fetching data for post ${post.id}:`, err);
+              return post;
+            }
+          })
+        );
+      }
+
+      setPosts((prev) => [...prev, ...newPosts]);
+      setAllPosts((prev) => [...prev, ...newPosts]);
+      setCurrentPage(nextPage);
+      setHasMore(newPosts.length === postsPerPage);
+    } catch (err) {
+      console.error("Error loading more posts:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const sortPosts = (postsToSort, sort) => {
+    const sorted = [...postsToSort];
+    switch (sort) {
+      case "trending":
+        return sorted.sort(
+          (a, b) =>
+            (b.likesCount || 0) +
+            (b.commentsCount || 0) * 2 -
+            ((a.likesCount || 0) + (a.commentsCount || 0) * 2)
+        );
+      case "mostLiked":
+        return sorted.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+      case "recent":
+      default:
+        return sorted.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+    }
+  };
+
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim() === "") {
-      setPosts(allPosts);
+      setPosts(sortPosts(allPosts, sortBy));
     } else {
       const filtered = allPosts.filter(
         (post) =>
           post.content.toLowerCase().includes(query.toLowerCase()) ||
           post.user?.name.toLowerCase().includes(query.toLowerCase())
       );
-      setPosts(filtered);
+      setPosts(sortPosts(filtered, sortBy));
+    }
+  };
+
+  const handleSortChange = (newSort) => {
+    setSortBy(newSort);
+    setPosts(sortPosts(posts, newSort));
+  };
+
+  const handleBookmark = async (postId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (bookmarkedPosts.includes(postId)) {
+        // Remove bookmark
+        setBookmarkedPosts((prev) => prev.filter((id) => id !== postId));
+        setPosts(
+          posts.map((post) =>
+            post.id === postId ? { ...post, isBookmarked: false } : post
+          )
+        );
+        setAllPosts(
+          allPosts.map((post) =>
+            post.id === postId ? { ...post, isBookmarked: false } : post
+          )
+        );
+        showToast("Post removed from bookmarks", "success");
+      } else {
+        // Add bookmark
+        setBookmarkedPosts((prev) => [...prev, postId]);
+        setPosts(
+          posts.map((post) =>
+            post.id === postId ? { ...post, isBookmarked: true } : post
+          )
+        );
+        setAllPosts(
+          allPosts.map((post) =>
+            post.id === postId ? { ...post, isBookmarked: true } : post
+          )
+        );
+        showToast("Post saved to bookmarks!", "success");
+      }
+    } catch (err) {
+      console.error("Error bookmarking post:", err);
+      showToast("Failed to bookmark post", "error");
     }
   };
 
@@ -241,7 +396,7 @@ function HomeSimple() {
       likesCount: newPost.likesCount || 0,
       commentsCount: newPost.commentsCount || 0,
       isLiked: newPost.isLiked || false,
-      isBookmarked: newPost.isBookmarked || false,
+      isBookmarked: false,
     };
     setPosts([postWithDefaults, ...posts]);
     setAllPosts([postWithDefaults, ...allPosts]);
@@ -389,8 +544,8 @@ function HomeSimple() {
           <p className="text-gray-400">Connect with your campus community</p>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6">
+        {/* Search & Filter Bar */}
+        <div className="mb-6 space-y-3">
           <input
             type="text"
             placeholder="🔍 Search posts or users..."
@@ -399,10 +554,44 @@ function HomeSimple() {
             className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none transition"
           />
           {searchQuery && (
-            <p className="text-gray-400 text-sm mt-2">
+            <p className="text-gray-400 text-sm">
               Found {posts.length} result{posts.length !== 1 ? "s" : ""}
             </p>
           )}
+
+          {/* Sort Controls */}
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => handleSortChange("recent")}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${
+                sortBy === "recent"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              }`}
+            >
+              🕐 Recent
+            </button>
+            <button
+              onClick={() => handleSortChange("trending")}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${
+                sortBy === "trending"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              }`}
+            >
+              🔥 Trending
+            </button>
+            <button
+              onClick={() => handleSortChange("mostLiked")}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${
+                sortBy === "mostLiked"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              }`}
+            >
+              👍 Most Liked
+            </button>
+          </div>
         </div>
 
         {/* Create Post Button */}
@@ -543,9 +732,49 @@ function HomeSimple() {
                       />
                     </svg>
                   </button>
+
+                  <button
+                    onClick={() => handleBookmark(post.id)}
+                    className={`flex items-center gap-2 hover:text-yellow-400 transition ${
+                      post.isBookmarked ? "text-yellow-400" : ""
+                    }`}
+                    title="Bookmark post"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill={post.isBookmarked ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 5a2 2 0 012-2h6a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))}
+            
+            {/* Infinite scroll sentinel */}
+            <div id="scroll-sentinel" className="h-10" />
+            
+            {/* Loading more indicator */}
+            {loadingMore && (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="text-gray-400 mt-2">Loading more posts...</p>
+              </div>
+            )}
+            
+            {/* No more posts indicator */}
+            {!hasMore && posts.length > 0 && (
+              <div className="text-center py-4">
+                <p className="text-gray-500">No more posts to load</p>
+              </div>
+            )}
           </div>
         )}
       </div>

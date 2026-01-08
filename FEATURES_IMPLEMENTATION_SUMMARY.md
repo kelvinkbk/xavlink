@@ -128,6 +128,115 @@ All 15 Home page features have been successfully implemented with full backend a
 
 ---
 
+## 📋 Extended Feature Roadmap (Post MVP)
+
+### **1. 🏠 Home (Feed & Posts)**
+
+- **Current**: Basic post creation, likes, comments, reports, edit/delete
+- **Proposed Enhancements**:
+  - ✨ **Infinite scroll with pagination** (load more posts as you scroll)
+  - 🎯 **Feed filtering** (sort by recent, trending, most liked)
+  - 💾 **Save/Bookmark posts** (save for later reading)
+  - 📌 **Pin favorite posts** (keep important posts on top)
+  - 👍 **Reaction emoji** (not just likes - add 👍❤️😂 etc)
+  - 🔔 **Real-time notifications** for likes/comments on your posts
+
+### **2. 🔍 Discover**
+
+- **Current**: User search, suggested users, start chat
+- **Proposed Enhancements**:
+  - 🏷️ **Filter by course/skills** (discover people by interest)
+  - ⭐ **User rating/reviews** (see quality endorsements)
+  - 📊 **Top skills trending** (see what's popular in your course)
+  - 🎓 **Filter by year** (find seniors/juniors)
+  - ❤️ **Add to favorites** (save interesting profiles)
+  - 🌟 **Quick view card** (hover preview without navigation)
+
+### **3. 👤 Profile**
+
+- **Current**: Edit profile, follow, followers, reviews, posts
+- **Proposed Enhancements**:
+  - 📊 **Profile stats dashboard** (views, followers growth graph)
+  - 🏆 **Achievement badges** (top skills, most followers, etc)
+  - 📸 **Photo gallery** (display multiple photos/portfolio)
+  - ✅ **Verification badge** (verified email/college account)
+  - 📅 **Activity timeline** (when joined, milestones)
+  - 🔗 **Social links** (LinkedIn, GitHub, portfolio links)
+  - 🔕 **Quick block button** (already have this!)
+
+### **4. 🎯 Skills**
+
+- **Current**: Add skills, search, request skills, browse
+- **Proposed Enhancements**:
+  - ⭐ **Skill endorsements** (others can endorse your skills)
+  - 🏆 **Skill proficiency levels** (Beginner/Intermediate/Expert)
+  - 💬 **Skill recommendations** (AI suggests skills based on profile)
+  - 📈 **Most endorsed skills** (trending section)
+  - 🎓 **Certifications integration** (link certifications to skills)
+  - 💰 **Price recommendations** (suggested rates for skills)
+  - 🔗 **Skill categories with subcategories** (better organization)
+
+### **5. 📬 Requests**
+
+- **Current**: View skill requests, accept/reject
+- **Proposed Enhancements**:
+  - 📅 **Request deadline/urgency** (mark as urgent)
+  - 💬 **Inline messaging** (message requester before responding)
+  - 🔄 **Counter-offer** (offer different terms/price)
+  - 📊 **Request history** (view past requests/completion rate)
+  - ⏰ **Reminders** (get notified if request pending >3 days)
+  - 📋 **Request templates** (save common responses)
+  - 🌟 **Rate after completion** (leave a review for requester)
+
+### **6. 🔔 Notifications**
+
+- **Current**: Fetch, mark as read, delete, categorization
+- **Proposed Enhancements**:
+  - 📂 **Smart grouping** (Group by type: follows, likes, messages)
+  - ⏰ **Time-based filters** (Today, This week, This month)
+  - 🔊 **Notification preferences** (enable/disable specific types)
+  - 💾 **Notification history** (archive deleted notifications)
+  - 🔗 **Quick actions** (Accept/Reject right from notification)
+  - 📌 **Pin important** (keep important notifications on top)
+  - 🌙 **Quiet hours** (no notifications between specific times)
+
+### **7. 🛡️ Moderation**
+
+- **Current**: Basic moderation UI
+- **Proposed Enhancements**:
+  - 📊 **Moderation dashboard** (overview of flagged content)
+  - 🔍 **Advanced filtering** (by user, date, category, severity)
+  - ⚖️ **Action history** (see what was actioned)
+  - 📝 **Mod notes** (add private notes to violations)
+  - 🚫 **Auto-flagging system** (suspicious content patterns)
+  - 📧 **User warnings** (send warnings before bans)
+
+### **8. ⚙️ Admin**
+
+- **Current**: Admin panel exists
+- **Proposed Enhancements**:
+  - 📊 **Analytics dashboard** (users, posts, activity graphs)
+  - 👥 **User management** (view, edit, suspend users)
+  - 🔐 **Permissions management** (role-based access)
+  - 🗑️ **Content moderation** (bulk delete, archive)
+  - 📈 **System health** (database, API performance metrics)
+  - 📧 **Email campaigns** (send announcements to users)
+  - 🔧 **System settings** (maintenance mode, feature flags)
+
+### **9. ⚙️ Settings**
+
+- **Current**: Profile settings exists
+- **Proposed Enhancements**:
+  - 🔐 **Privacy settings** (who can message, see profile, etc)
+  - 🔔 **Notification preferences** (granular control per feature)
+  - 🌓 **Theme options** (light/dark, custom colors)
+  - 🗑️ **Data management** (download/delete account data)
+  - 🔒 **Security** (change password, 2FA - already have this!)
+  - 🌐 **Language preference** (i18n support)
+  - 📱 **Device management** (logout from other devices)
+
+---
+
 ## 🏗️ Architecture Overview
 
 ### Database Schema
