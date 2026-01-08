@@ -47,7 +47,10 @@ exports.markAllAsRead = async (req, res) => {
       where: { userId, read: false },
       data: { read: true },
     });
-    res.json({ message: "All notifications marked as read", updatedCount: result.count });
+    res.json({
+      message: "All notifications marked as read",
+      updatedCount: result.count,
+    });
   } catch (error) {
     res.status(500).json({
       message: "Failed to mark notifications as read",
@@ -68,15 +71,13 @@ exports.deleteNotification = async (req, res) => {
       .status(500)
       .json({ message: "Failed to delete notification", error: error.message });
   }
-};userId = req.user?.id;
+};
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
-
-
-exports.getUnreadCount = async (req, res) => {
-  try {
-    const { userId } = req.params;
     const count = await prisma.notification.count({
       where: { userId, read: false },
     });
