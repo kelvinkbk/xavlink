@@ -407,8 +407,20 @@ function HomeSimple() {
                   {post.content}
                 </p>
 
+                {/* Post Image */}
+                {post.image && (
+                  <img
+                    src={post.image}
+                    alt="Post image"
+                    className="w-full rounded-lg mb-4 max-h-96 object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                )}
+
                 {/* Post Actions */}
-                <div className="flex items-center gap-6 text-gray-400">
+                <div className="flex items-center gap-6 text-gray-400">{
                   <button
                     onClick={() =>
                       post.isLiked ? handleUnlike(post.id) : handleLike(post.id)

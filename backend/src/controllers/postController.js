@@ -16,18 +16,40 @@ exports.createPost = async (req, res, next) => {
 
     console.log("📌 Creating post for user:", req.user.id);
 
-    // Only use content field (ignore image since table doesn't have it)
-    const post = await prisma.post.create({
-      data: {
-        content,
-        userId: req.user.id,
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, profilePic: true, course: true },
+    // Try to create with image field, fallback if column doesn't exist
+    let post;
+    try {
+      post = await prisma.post.create({
+        data: {
+          content,
+          image: image || null,
+          userId: req.user.id,
         },
-      },
-    });
+        include: {
+          user: {
+            select: { id: true, name: true, profilePic: true, course: true },
+          },
+        },
+      });
+    } catch (err) {
+      // If image column doesn't exist, create without it
+      if (err.code === 'P2010' || err.message.includes('image')) {
+        console.log("⚠️ Image column not found, creating post without image");
+        post = await prisma.post.create({
+          data: {
+            content,
+            userId: req.user.id,
+          },
+          include: {
+            user: {
+              select: { id: true, name: true, profilePic: true, course: true },
+            },
+          },
+        });
+      } else {
+        throw err;
+      }
+    }
 
     console.log("✅ Post created:", post.id);
 
