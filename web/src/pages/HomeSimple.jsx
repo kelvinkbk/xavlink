@@ -752,7 +752,7 @@ function HomeSimple() {
         <div className="mb-6 space-y-3">
           <input
             type="text"
-              placeholder="🔍 Search posts, users, hashtags, courses..."
+            placeholder="🔍 Search posts, users, hashtags, courses..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none transition"
