@@ -124,18 +124,6 @@ const CreatePostModal = ({ isOpen, onClose, onSuccess }) => {
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 Max 5MB. Supported: png, jpg, jpeg, gif, webp.
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  or
-                </span>
-                <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="flex-1 p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
             </div>
 
             {imageUrl.trim() && (
