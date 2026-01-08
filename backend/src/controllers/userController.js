@@ -383,6 +383,90 @@ exports.getMutualConnections = async (req, res, next) => {
   }
 };
 
+exports.getSkillBasedSuggestions = async (req, res, next) => {
+  try {
+    const currentUserId = req.user?.id;
+    const { limit = 15 } = req.query;
+
+    if (!currentUserId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Get current user's skills
+    const currentUserSkills = await prisma.skill.findMany({
+      where: { userId: currentUserId },
+      select: { title: true },
+    });
+
+    const skillTitles = currentUserSkills.map((s) => s.title);
+
+    if (skillTitles.length === 0) {
+      // No skills, return empty
+      return res.json({ skillSuggestions: [] });
+    }
+
+    // Get current user's following list
+    const currentUserFollowing = await prisma.follow.findMany({
+      where: { followerId: currentUserId },
+      select: { followingId: true },
+    });
+    const followingIds = new Set(
+      currentUserFollowing.map((f) => f.followingId)
+    );
+
+    // Find users with matching skills (excluding already followed)
+    const usersWithMatchingSkills = await prisma.skill.findMany({
+      where: {
+        title: { in: skillTitles, mode: "insensitive" },
+        userId: { not: currentUserId },
+      },
+      select: {
+        userId: true,
+        title: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profilePic: true,
+            bio: true,
+            course: true,
+            followersCount: true,
+          },
+        },
+      },
+    });
+
+    // Group by user and count matching skills
+    const userSkillCount = {};
+    const userDetails = {};
+
+    usersWithMatchingSkills.forEach((skill) => {
+      if (!followingIds.has(skill.userId)) {
+        userSkillCount[skill.userId] = (userSkillCount[skill.userId] || 0) + 1;
+        if (!userDetails[skill.userId]) {
+          userDetails[skill.userId] = skill.user;
+        }
+      }
+    });
+
+    // Sort by skill match count
+    const sortedUserIds = Object.keys(userSkillCount).sort(
+      (a, b) => userSkillCount[b] - userSkillCount[a]
+    );
+
+    const suggestedUsers = sortedUserIds
+      .slice(0, parseInt(limit))
+      .map((userId) => ({
+        ...userDetails[userId],
+        matchingSkillCount: userSkillCount[userId],
+      }));
+
+    res.json({ skillSuggestions: suggestedUsers });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.updateProfile = async (req, res, next) => {
   try {
     const { id } = req.params;

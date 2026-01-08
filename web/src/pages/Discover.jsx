@@ -14,10 +14,12 @@ export default function Discover() {
   const [searchResults, setSearchResults] = useState([]);
   const [suggestedCategories, setSuggestedCategories] = useState([]);
   const [mutualConnections, setMutualConnections] = useState([]);
-  const [activeTab, setActiveTab] = useState("suggested"); // 'suggested' or 'mutual'
+  const [skillSuggestions, setSkillSuggestions] = useState([]);
+  const [activeTab, setActiveTab] = useState("suggested"); // 'suggested', 'mutual', or 'skills'
   const [loading, setLoading] = useState(false);
   const [suggestedLoading, setSuggestedLoading] = useState(true);
   const [mutualLoading, setMutualLoading] = useState(true);
+  const [skillLoading, setSkillLoading] = useState(true);
   const [startingChats, setStartingChats] = useState(new Set());
 
   useEffect(() => {
@@ -51,6 +53,23 @@ export default function Discover() {
     };
 
     fetchMutualConnections();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const fetchSkillSuggestions = async () => {
+      try {
+        const { data } = await api.get("/users/suggestions/skills");
+        setSkillSuggestions(data.skillSuggestions || []);
+      } catch (error) {
+        console.error("Failed to fetch skill-based suggestions:", error);
+        showToast("Failed to load skill suggestions", "error");
+      } finally {
+        setSkillLoading(false);
+      }
+    };
+
+    fetchSkillSuggestions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -106,7 +125,7 @@ export default function Discover() {
     return icons[category] || "👤";
   };
 
-  const UserCard = ({ user }) => (
+  const UserCard = ({ user, showSkillMatch = false }) => (
     <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:border-primary hover:shadow-md transition">
       <Link
         to={`/profile/${user.id}`}
@@ -127,6 +146,12 @@ export default function Discover() {
           )}
           {user.bio && (
             <p className="text-sm text-gray-700 truncate mt-1">{user.bio}</p>
+          )}
+          {showSkillMatch && user.matchingSkillCount && (
+            <p className="text-sm text-blue-600 font-semibold mt-1">
+              💼 {user.matchingSkillCount} matching skill
+              {user.matchingSkillCount > 1 ? "s" : ""}
+            </p>
           )}
         </div>
         <div className="text-right text-sm text-gray-600">
@@ -229,6 +254,16 @@ export default function Discover() {
             }`}
           >
             🤝 Mutual Connections
+          </button>
+          <button
+            onClick={() => setActiveTab("skills")}
+            className={`px-4 py-3 font-semibold transition-colors ${
+              activeTab === "skills"
+                ? "text-primary border-b-2 border-primary"
+                : "text-gray-600 hover:text-secondary"
+            }`}
+          >
+            💼 Skills-Based
           </button>
         </div>
 
@@ -357,6 +392,63 @@ export default function Discover() {
                       showToast("Failed to load connections", "error");
                     } finally {
                       setMutualLoading(false);
+                    }
+                  }}
+                  className="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Skills-Based Tab */}
+        {activeTab === "skills" && (
+          <div>
+            {skillLoading ? (
+              <div className="space-y-6">
+                <SkeletonLoader type="card" />
+                <SkeletonLoader type="card" />
+              </div>
+            ) : skillSuggestions.length > 0 ? (
+              <div>
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-secondary mb-2">
+                    💼 Users with similar skills
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    People who share skills with you
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {skillSuggestions.map((user) => (
+                    <UserCard key={user.id} user={user} showSkillMatch={true} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-600">
+                No skill-based suggestions available. Add some skills to your
+                profile to get personalized recommendations!
+              </p>
+            )}
+            {skillSuggestions.length === 0 && !skillLoading && (
+              <div className="mt-4">
+                <button
+                  onClick={async () => {
+                    setSkillLoading(true);
+                    try {
+                      const { data } = await api.get(
+                        "/users/suggestions/skills"
+                      );
+                      setSkillSuggestions(data.skillSuggestions || []);
+                      showToast("Skills suggestions refreshed", "success");
+                    } catch (e) {
+                      console.error("Refresh skills failed:", e);
+                      showToast("Failed to load skill suggestions", "error");
+                    } finally {
+                      setSkillLoading(false);
                     }
                   }}
                   className="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600"
