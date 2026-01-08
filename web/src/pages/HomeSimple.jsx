@@ -58,12 +58,16 @@ function HomeSimple() {
   const [bookmarkedPosts, setBookmarkedPosts] = useState([]);
   const [pinnedPosts, setPinnedPosts] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [showFollowingOnly, setShowFollowingOnly] = useState(false);
+  const [followingUserIds, setFollowingUserIds] = useState([]);
+  const [trendingHashtags, setTrendingHashtags] = useState([]);
 
   useEffect(() => {
     fetchPosts();
     fetchBookmarkedPostIds();
     fetchPinnedPostIds();
     fetchUnreadNotificationCount();
+    fetchFollowingUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -259,6 +263,7 @@ function HomeSimple() {
       setAllPosts(posts);
       setPosts(sortPosts(posts, sortBy));
       setHasMore(posts.length === postsPerPage);
+      updateTrendingHashtags(posts);
     } catch (err) {
       console.error("Error fetching posts:", err);
       setError("Unable to load posts. The server might be updating.");
@@ -353,6 +358,45 @@ function HomeSimple() {
     return [...pinned, ...unpinned];
   };
 
+  const fetchFollowingUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await axios.get(`${API_URL}/users/me/following`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const followingIds = (response.data.following || []).map((u) => u.id);
+      setFollowingUserIds(followingIds);
+    } catch (err) {
+      console.error("Error fetching following users:", err);
+    }
+  };
+
+  const extractHashtags = (text) => {
+    if (!text) return [];
+    const matches = text.match(/#\w+/g) || [];
+    return matches.map((tag) => tag.toLowerCase());
+  };
+
+  const updateTrendingHashtags = (postsToAnalyze) => {
+    const hashtagCounts = {};
+    postsToAnalyze.forEach((post) => {
+      const tags = extractHashtags(post.content);
+      tags.forEach((tag) => {
+        hashtagCounts[tag] = (hashtagCounts[tag] || 0) + 1;
+      });
+    });
+
+    const trending = Object.entries(hashtagCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([tag]) => tag);
+
+    setTrendingHashtags(trending);
+  };
+
   const fetchBookmarkedPostIds = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -405,20 +449,32 @@ function HomeSimple() {
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim() === "") {
-      setPosts(sortPosts(allPosts, sortBy));
+      const filtered = showFollowingOnly
+        ? allPosts.filter((p) => followingUserIds.includes(p.userId))
+        : allPosts;
+      setPosts(sortPosts(filtered, sortBy));
     } else {
-      const filtered = allPosts.filter(
+      let filtered = allPosts.filter(
         (post) =>
           post.content.toLowerCase().includes(query.toLowerCase()) ||
-          post.user?.name.toLowerCase().includes(query.toLowerCase())
+          post.user?.name.toLowerCase().includes(query.toLowerCase()) ||
+          extractHashtags(post.content).some((tag) =>
+            tag.includes(query.toLowerCase().replace("#", ""))
+          )
       );
+      if (showFollowingOnly) {
+        filtered = filtered.filter((p) => followingUserIds.includes(p.userId));
+      }
       setPosts(sortPosts(filtered, sortBy));
     }
   };
 
   const handleSortChange = (newSort) => {
     setSortBy(newSort);
-    setPosts(sortPosts(posts, newSort));
+    const filtered = showFollowingOnly
+      ? posts.filter((p) => followingUserIds.includes(p.userId))
+      : posts;
+    setPosts(sortPosts(filtered, newSort));
   };
 
   const handleBookmark = async (postId) => {
@@ -781,6 +837,51 @@ function HomeSimple() {
                   <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mr-3">
                     {post.user?.name?.[0] || "U"}
                   </div>
+
+                  {/* Following Only Toggle */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => {
+                        setShowFollowingOnly(!showFollowingOnly);
+                        const filtered = !showFollowingOnly
+                          ? allPosts.filter((p) =>
+                              followingUserIds.includes(p.userId)
+                            )
+                          : allPosts;
+                        setPosts(sortPosts(filtered, sortBy));
+                      }}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                        showFollowingOnly
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      }`}
+                    >
+                      Following Only
+                    </button>
+                  </div>
+
+                  {/* Trending Hashtags */}
+                  {trendingHashtags.length > 0 && (
+                    <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                      <h3 className="font-bold text-sm mb-2 text-gray-700">
+                        Trending Hashtags
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {trendingHashtags.map((tag, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setSearchQuery(`#${tag}`);
+                              handleSearch(`#${tag}`);
+                            }}
+                            className="px-3 py-1 bg-white text-purple-600 border border-purple-300 rounded-full text-xs hover:bg-purple-50 transition"
+                          >
+                            #{tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <p className="font-semibold">
                       {post.user?.name || "Unknown User"}
@@ -901,7 +1002,8 @@ function HomeSimple() {
                     </svg>
                   </button>
 
-                  {String(post.userId) === String(localStorage.getItem("userId")) && (
+                  {String(post.userId) ===
+                    String(localStorage.getItem("userId")) && (
                     <button
                       onClick={() =>
                         pinnedPosts.includes(post.id)
