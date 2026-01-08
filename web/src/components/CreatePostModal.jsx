@@ -8,6 +8,16 @@ const CreatePostModal = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const sanitizeUrl = (raw) => {
+    if (!raw) return "";
+    let url = raw.toString().trim().replace(/[\n\r\t]/g, "");
+    // Prefer https to avoid mixed content blocking
+    if (url.startsWith("http://")) {
+      url = url.replace(/^http:\/\//, "https://");
+    }
+    return url;
+  };
+
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -36,7 +46,7 @@ const CreatePostModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       const newPost = await postService.createPost({
         content: content.trim(),
-        image: imageUrl.trim() || null,
+        image: sanitizeUrl(imageUrl) || null,
       });
       setContent("");
       setImageUrl("");
@@ -118,7 +128,10 @@ const CreatePostModal = ({ isOpen, onClose, onSuccess }) => {
                 <input
                   type="url"
                   value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
+                  onChange={(e) => setImageUrl(sanitizeUrl(e.target.value))}
+                  onBlur={(e) => setImageUrl(sanitizeUrl(e.target.value))}
+                  inputMode="url"
+                  pattern="https?://.+"
                   disabled={loading || uploading}
                   placeholder="https://example.com/image.jpg"
                   className="flex-1 p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
