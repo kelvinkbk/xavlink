@@ -119,9 +119,9 @@ const CreatePostModal = ({ isOpen, onClose, onSuccess }) => {
                   type="url"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
-                  disabled={loading}
+                  disabled={loading || uploading}
                   placeholder="https://example.com/image.jpg"
-                  className="flex-1 p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 />
               </div>
             </div>
