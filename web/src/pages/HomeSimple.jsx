@@ -150,10 +150,15 @@ function HomeSimple() {
       const response = await axios.get(`${API_URL}/posts/${postId}/comments`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      setComments(response.data.comments || []);
+      
+      // Get stored comments from localStorage (client-side tracking)
+      const storedComments = JSON.parse(localStorage.getItem(`comments_${postId}`) || "[]");
+      setComments(storedComments);
     } catch (err) {
       console.error("Error fetching comments:", err);
-      setComments([]);
+      // Try to load from localStorage anyway
+      const storedComments = JSON.parse(localStorage.getItem(`comments_${postId}`) || "[]");
+      setComments(storedComments);
     } finally {
       setCommentsLoading(false);
     }
@@ -173,7 +178,15 @@ function HomeSimple() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setComments([...comments, response.data]);
+      const newCommentObj = response.data;
+      
+      // Store in localStorage (client-side tracking)
+      const postId = selectedPost.id;
+      const storedComments = JSON.parse(localStorage.getItem(`comments_${postId}`) || "[]");
+      const updatedComments = [...storedComments, newCommentObj];
+      localStorage.setItem(`comments_${postId}`, JSON.stringify(updatedComments));
+      
+      setComments(updatedComments);
       setNewComment("");
 
       // Update post comment count
