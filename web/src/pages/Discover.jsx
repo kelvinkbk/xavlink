@@ -76,7 +76,7 @@ export default function Discover() {
   const UserCard = ({ user }) => (
     <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:border-primary hover:shadow-md transition">
       <Link
-        to={`/profile?id=${user.id}`}
+        to={`/profile/${user.id}`}
         className="flex items-center gap-4 flex-1 min-w-0"
       >
         <img
