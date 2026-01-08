@@ -420,7 +420,7 @@ function HomeSimple() {
                 )}
 
                 {/* Post Actions */}
-                <div className="flex items-center gap-6 text-gray-400">{
+                <div className="flex items-center gap-6 text-gray-400">
                   <button
                     onClick={() =>
                       post.isLiked ? handleUnlike(post.id) : handleLike(post.id)
