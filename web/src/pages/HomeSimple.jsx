@@ -111,10 +111,30 @@ function HomeSimple() {
       );
     });
 
+    // Listen for real-time new posts
+    socket.on("new_post", (data) => {
+      const { post } = data;
+      console.log(`📝 Real-time new post received:`, post);
+
+      // Only add if not already in the list (avoid duplicates for the creator)
+      setPosts((prevPosts) => {
+        const exists = prevPosts.some((p) => p.id === post.id);
+        if (exists) return prevPosts;
+        return [post, ...prevPosts];
+      });
+
+      setAllPosts((prevPosts) => {
+        const exists = prevPosts.some((p) => p.id === post.id);
+        if (exists) return prevPosts;
+        return [post, ...prevPosts];
+      });
+    });
+
     return () => {
       socket.off("new_comment");
       socket.off("post_liked");
       socket.off("post_unliked");
+      socket.off("new_post");
     };
   }, [selectedPost]);
 

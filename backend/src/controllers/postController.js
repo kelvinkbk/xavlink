@@ -62,6 +62,19 @@ exports.createPost = async (req, res, next) => {
     commentStore[post.id] = [];
     likeStore[post.id] = [];
 
+    // Emit real-time event for new post
+    if (global.io) {
+      global.io.emit("new_post", {
+        post: {
+          ...post,
+          likesCount: 0,
+          commentsCount: 0,
+          isLiked: false,
+          isBookmarked: false,
+        },
+      });
+    }
+
     res.status(201).json(post);
   } catch (err) {
     console.error("❌ createPost error:", err.message);
