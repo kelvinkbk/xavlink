@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "../context/ToastContext";
 import CreatePostModal from "../components/CreatePostModal";
 import axios from "axios";
+import { socket } from "../services/socket";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -35,6 +36,44 @@ function HomeSimple() {
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  // Listen for real-time comment updates
+  useEffect(() => {
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    socket.on("new_comment", (data) => {
+      const { postId, comment } = data;
+      console.log(`📨 Real-time comment received for post ${postId}:`, comment);
+
+      // Update comments if modal is open for this post
+      if (selectedPost && selectedPost.id === postId) {
+        setComments((prevComments) => [...prevComments, comment]);
+      }
+
+      // Update comment count in posts
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
+            : post
+        )
+      );
+
+      setAllPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
+            : post
+        )
+      );
+    });
+
+    return () => {
+      socket.off("new_comment");
+    };
+  }, [selectedPost]);
 
   const fetchPosts = async () => {
     try {

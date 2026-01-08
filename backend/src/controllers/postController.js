@@ -189,7 +189,18 @@ exports.addComment = async (req, res, next) => {
     };
 
     commentStore[id].push(newComment);
-    console.log(`✅ Comment stored: post ${id} - total: ${commentStore[id].length}`);
+    console.log(
+      `✅ Comment stored: post ${id} - total: ${commentStore[id].length}`
+    );
+
+    // Emit real-time event to all connected clients
+    if (global.io) {
+      global.io.emit("new_comment", {
+        postId: id,
+        comment: newComment,
+      });
+      console.log(`📡 Broadcasted new comment for post ${id}`);
+    }
 
     return res.status(201).json(newComment);
   } catch (err) {
