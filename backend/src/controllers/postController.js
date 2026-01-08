@@ -2,6 +2,9 @@ const prisma = require("../config/prismaClient");
 const { createNotification } = require("./notificationController");
 const crypto = require("crypto");
 
+// In-memory comment store (since database table is missing/broken)
+const commentStore = {};
+
 exports.createPost = async (req, res, next) => {
   try {
     console.log("📌 createPost called with body:", req.body);
@@ -165,13 +168,17 @@ exports.addComment = async (req, res, next) => {
       user = { id: userId, name: "Unknown User", profilePic: null };
     }
 
-    // Generate comment ID and return success (client-side tracking only)
+    // Create comment and store in memory
     const commentId = crypto.randomUUID();
     const createdAt = new Date();
 
-    console.log(`✅ Comment registered (client-side): post ${id} by user ${userId}`);
+    // Initialize post comments if not exists
+    if (!commentStore[id]) {
+      commentStore[id] = [];
+    }
 
-    return res.status(201).json({
+    // Add comment to store
+    const newComment = {
       id: commentId,
       postId: id,
       userId,
@@ -179,7 +186,12 @@ exports.addComment = async (req, res, next) => {
       user,
       createdAt,
       updatedAt: createdAt,
-    });
+    };
+
+    commentStore[id].push(newComment);
+    console.log(`✅ Comment stored: post ${id} - total: ${commentStore[id].length}`);
+
+    return res.status(201).json(newComment);
   } catch (err) {
     console.error("Error in addComment:", err.message);
     res.status(500).json({ message: "Failed to add comment" });
@@ -189,11 +201,12 @@ exports.addComment = async (req, res, next) => {
 exports.getComments = async (req, res, next) => {
   try {
     const { id } = req.params;
-    
-    // Return empty array (client-side tracking only)
-    // Comment table doesn't exist or is broken in production
-    console.log(`📝 Comments requested for post ${id} (client-side tracking)`);
-    res.json([]);
+
+    // Return comments from memory store
+    const comments = commentStore[id] || [];
+    console.log(`📖 Retrieved ${comments.length} comments for post ${id}`);
+
+    res.json({ comments });
   } catch (err) {
     console.error("Error in getComments:", err.message);
     res.status(500).json({ message: "Failed to load comments" });
