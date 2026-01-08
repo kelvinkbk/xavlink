@@ -190,10 +190,17 @@ exports.getFollowers = async (req, res) => {
   }
 };
 
-// GET /api/users/:id/following
+// GET /api/users/:id/following or /api/users/me/following
 exports.getFollowing = async (req, res) => {
   try {
-    const { id: userId } = req.params;
+    const { id } = req.params;
+    // If route is /me/following, use authenticated user's ID
+    const userId = id === 'me' || !id ? req.user?.id : id;
+    
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
     const { cursor, limit = 20 } = req.query;
 
     const queryOptions = {

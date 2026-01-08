@@ -10,6 +10,9 @@ const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+// Specific routes first (before dynamic :id)
+router.get("/me/following", authMiddleware, getFollowing);
+
 router.post("/:id/follow", authMiddleware, followUser);
 router.delete("/:id/follow", authMiddleware, unfollowUser);
 router.get("/:id/followers", getFollowers);
