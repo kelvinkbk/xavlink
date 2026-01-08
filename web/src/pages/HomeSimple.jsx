@@ -486,8 +486,9 @@ function HomeSimple() {
       {/* Create Post Modal */}
       {showCreateModal && (
         <CreatePostModal
+          isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
-          onPostCreated={handlePostCreated}
+          onSuccess={handlePostCreated}
         />
       )}
 
