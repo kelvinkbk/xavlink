@@ -9,12 +9,14 @@ const likeStore = {}; // { postId: [userId1, userId2, ...] }
 exports.createPost = async (req, res, next) => {
   try {
     console.log("📌 createPost called with body:", req.body);
-    const { content } = req.body;
+    const { content, image } = req.body;
     if (!content) {
       return res.status(400).json({ message: "content is required" });
     }
 
     console.log("📌 Creating post for user:", req.user.id);
+    
+    // Only use content field (ignore image since table doesn't have it)
     const post = await prisma.post.create({
       data: {
         content,
@@ -28,6 +30,11 @@ exports.createPost = async (req, res, next) => {
     });
 
     console.log("✅ Post created:", post.id);
+    
+    // Initialize empty comment and like stores for this post
+    commentStore[post.id] = [];
+    likeStore[post.id] = [];
+    
     res.status(201).json(post);
   } catch (err) {
     console.error("❌ createPost error:", err.message);
