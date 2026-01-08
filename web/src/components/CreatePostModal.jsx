@@ -10,7 +10,10 @@ const CreatePostModal = ({ isOpen, onClose, onSuccess }) => {
 
   const sanitizeUrl = (raw) => {
     if (!raw) return "";
-    let url = raw.toString().trim().replace(/[\n\r\t]/g, "");
+    let url = raw
+      .toString()
+      .trim()
+      .replace(/[\n\r\t]/g, "");
     // Prefer https to avoid mixed content blocking
     if (url.startsWith("http://")) {
       url = url.replace(/^http:\/\//, "https://");
@@ -126,13 +129,11 @@ const CreatePostModal = ({ isOpen, onClose, onSuccess }) => {
                   or
                 </span>
                 <input
-                  type="url"
+                  type="text"
                   value={imageUrl}
-                  onChange={(e) => setImageUrl(sanitizeUrl(e.target.value))}
+                  onChange={(e) => setImageUrl(e.target.value)}
                   onBlur={(e) => setImageUrl(sanitizeUrl(e.target.value))}
-                  inputMode="url"
-                  pattern="https?://.+"
-                  disabled={loading || uploading}
+                  disabled={loading}
                   placeholder="https://example.com/image.jpg"
                   className="flex-1 p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 />
