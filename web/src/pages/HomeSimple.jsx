@@ -458,6 +458,8 @@ function HomeSimple() {
         (post) =>
           post.content.toLowerCase().includes(query.toLowerCase()) ||
           post.user?.name.toLowerCase().includes(query.toLowerCase()) ||
+          post.user?.course?.toLowerCase().includes(query.toLowerCase()) ||
+          post.user?.year?.toString().includes(query) ||
           extractHashtags(post.content).some((tag) =>
             tag.includes(query.toLowerCase().replace("#", ""))
           )
@@ -750,7 +752,7 @@ function HomeSimple() {
         <div className="mb-6 space-y-3">
           <input
             type="text"
-            placeholder="🔍 Search posts or users..."
+              placeholder="🔍 Search posts, users, hashtags, courses..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none transition"
@@ -793,7 +795,46 @@ function HomeSimple() {
             >
               👍 Most Liked
             </button>
+            <button
+              onClick={() => {
+                setShowFollowingOnly(!showFollowingOnly);
+                const filtered = !showFollowingOnly
+                  ? allPosts.filter((p) => followingUserIds.includes(p.userId))
+                  : allPosts;
+                setPosts(sortPosts(filtered, sortBy));
+              }}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${
+                showFollowingOnly
+                  ? "bg-purple-600 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              }`}
+            >
+              👥 Following Only
+            </button>
           </div>
+
+          {/* Trending Hashtags */}
+          {trendingHashtags.length > 0 && (
+            <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+              <h3 className="font-bold text-sm mb-2 text-gray-700">
+                🔥 Trending Hashtags
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {trendingHashtags.map((tag, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setSearchQuery(`#${tag}`);
+                      handleSearch(`#${tag}`);
+                    }}
+                    className="px-3 py-1 bg-white text-purple-600 border border-purple-300 rounded-full text-xs hover:bg-purple-50 transition"
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Create Post Button */}
@@ -837,51 +878,6 @@ function HomeSimple() {
                   <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mr-3">
                     {post.user?.name?.[0] || "U"}
                   </div>
-
-                  {/* Following Only Toggle */}
-                  <div className="flex gap-2 mb-4">
-                    <button
-                      onClick={() => {
-                        setShowFollowingOnly(!showFollowingOnly);
-                        const filtered = !showFollowingOnly
-                          ? allPosts.filter((p) =>
-                              followingUserIds.includes(p.userId)
-                            )
-                          : allPosts;
-                        setPosts(sortPosts(filtered, sortBy));
-                      }}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                        showFollowingOnly
-                          ? "bg-purple-600 text-white"
-                          : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                      }`}
-                    >
-                      Following Only
-                    </button>
-                  </div>
-
-                  {/* Trending Hashtags */}
-                  {trendingHashtags.length > 0 && (
-                    <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-                      <h3 className="font-bold text-sm mb-2 text-gray-700">
-                        Trending Hashtags
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {trendingHashtags.map((tag, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => {
-                              setSearchQuery(`#${tag}`);
-                              handleSearch(`#${tag}`);
-                            }}
-                            className="px-3 py-1 bg-white text-purple-600 border border-purple-300 rounded-full text-xs hover:bg-purple-50 transition"
-                          >
-                            #{tag}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   <div>
                     <p className="font-semibold">
                       {post.user?.name || "Unknown User"}
