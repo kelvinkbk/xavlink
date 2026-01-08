@@ -131,7 +131,7 @@ function HomeSimple() {
 
       let posts = response.data.posts || [];
 
-      // Fetch like status for each post
+      // Fetch like status and comment count for each post
       if (token && posts.length > 0) {
         posts = await Promise.all(
           posts.map(async (post) => {
@@ -140,13 +140,21 @@ function HomeSimple() {
                 `${API_URL}/posts/${post.id}/likes`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
+
+              // Fetch comment count
+              const commentResponse = await axios.get(
+                `${API_URL}/posts/${post.id}/comments`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+
               return {
                 ...post,
                 likesCount: likeResponse.data.likesCount,
                 isLiked: likeResponse.data.isLiked,
+                commentsCount: (commentResponse.data.comments || []).length,
               };
             } catch (err) {
-              console.error(`Error fetching likes for post ${post.id}:`, err);
+              console.error(`Error fetching data for post ${post.id}:`, err);
               return post;
             }
           })
@@ -199,16 +207,12 @@ function HomeSimple() {
       const { likesCount } = response.data;
       setPosts(
         posts.map((post) =>
-          post.id === postId
-            ? { ...post, isLiked: true, likesCount }
-            : post
+          post.id === postId ? { ...post, isLiked: true, likesCount } : post
         )
       );
       setAllPosts(
         allPosts.map((post) =>
-          post.id === postId
-            ? { ...post, isLiked: true, likesCount }
-            : post
+          post.id === postId ? { ...post, isLiked: true, likesCount } : post
         )
       );
     } catch (err) {
