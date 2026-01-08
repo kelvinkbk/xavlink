@@ -59,6 +59,7 @@ function HomeSimple() {
 
   useEffect(() => {
     fetchPosts();
+    fetchBookmarkedPostIds();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -330,6 +331,21 @@ function HomeSimple() {
     }
   };
 
+  const fetchBookmarkedPostIds = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await axios.get(`${API_URL}/bookmarks/ids`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setBookmarkedPosts(response.data.bookmarkIds || []);
+    } catch (err) {
+      console.error("Error fetching bookmarked posts:", err);
+    }
+  };
+
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim() === "") {
@@ -351,8 +367,18 @@ function HomeSimple() {
 
   const handleBookmark = async (postId) => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showToast("Please log in to bookmark posts", "error");
+        return;
+      }
+
       if (bookmarkedPosts.includes(postId)) {
-        // Remove bookmark
+        // Remove bookmark via API
+        await axios.delete(`${API_URL}/bookmarks/${postId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
         setBookmarkedPosts((prev) => prev.filter((id) => id !== postId));
         setPosts(
           posts.map((post) =>
@@ -366,7 +392,13 @@ function HomeSimple() {
         );
         showToast("Post removed from bookmarks", "success");
       } else {
-        // Add bookmark
+        // Add bookmark via API
+        await axios.post(
+          `${API_URL}/bookmarks`,
+          { postId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
         setBookmarkedPosts((prev) => [...prev, postId]);
         setPosts(
           posts.map((post) =>
@@ -758,10 +790,10 @@ function HomeSimple() {
                 </div>
               </div>
             ))}
-            
+
             {/* Infinite scroll sentinel */}
             <div id="scroll-sentinel" className="h-10" />
-            
+
             {/* Loading more indicator */}
             {loadingMore && (
               <div className="text-center py-4">
@@ -769,7 +801,7 @@ function HomeSimple() {
                 <p className="text-gray-400 mt-2">Loading more posts...</p>
               </div>
             )}
-            
+
             {/* No more posts indicator */}
             {!hasMore && posts.length > 0 && (
               <div className="text-center py-4">

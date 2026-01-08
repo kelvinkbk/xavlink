@@ -20,6 +20,7 @@ const modRoutes = require("./routes/modRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const twoFactorRoutes = require("./routes/twoFactorRoutes");
 const blockRoutes = require("./routes/blockRoutes");
+const bookmarkRoutes = require("./routes/bookmarkRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const {
   checkExpiredSuspensions,
@@ -77,6 +78,7 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/bookmarks", bookmarkRoutes);
 app.use("/api/2fa", twoFactorRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/mod", modRoutes);
