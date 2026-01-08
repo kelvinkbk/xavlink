@@ -2,8 +2,9 @@ const prisma = require("../config/prismaClient");
 const { createNotification } = require("./notificationController");
 const crypto = require("crypto");
 
-// In-memory comment store (since database table is missing/broken)
+// In-memory stores (since database tables are missing/broken)
 const commentStore = {};
+const likeStore = {}; // { postId: [userId1, userId2, ...] }
 
 exports.createPost = async (req, res, next) => {
   try {
@@ -108,13 +109,36 @@ exports.likePost = async (req, res, next) => {
       return res.status(400).json({ message: "Missing postId or userId" });
     }
 
-    // For now, just return success (client-side tracking only)
-    // Database doesn't have Like table in current schema
+    // Initialize post likes if not exists
+    if (!likeStore[id]) {
+      likeStore[id] = [];
+    }
+
+    // Check if already liked
+    if (likeStore[id].includes(userId)) {
+      return res.status(400).json({ message: "Post already liked" });
+    }
+
+    // Add like
+    likeStore[id].push(userId);
     console.log(
-      `✅ Like registered (client-side): post ${id} by user ${userId}`
+      `❤️ Like stored: post ${id} by user ${userId} - total: ${likeStore[id].length}`
     );
 
-    return res.status(200).json({ message: "Post liked" });
+    // Emit real-time event
+    if (global.io) {
+      global.io.emit("post_liked", {
+        postId: id,
+        userId,
+        likesCount: likeStore[id].length,
+      });
+      console.log(`📡 Broadcasted like for post ${id}`);
+    }
+
+    return res.status(200).json({
+      message: "Post liked",
+      likesCount: likeStore[id].length,
+    });
   } catch (err) {
     console.error("Error in likePost:", err.message);
     res.status(500).json({ message: "Failed to like post" });
@@ -130,12 +154,37 @@ exports.unlikePost = async (req, res, next) => {
       return res.status(400).json({ message: "Missing postId or userId" });
     }
 
-    // For now, just return success (client-side tracking only)
+    // Initialize post likes if not exists
+    if (!likeStore[id]) {
+      likeStore[id] = [];
+    }
+
+    // Check if not liked
+    const index = likeStore[id].indexOf(userId);
+    if (index === -1) {
+      return res.status(400).json({ message: "Post not liked yet" });
+    }
+
+    // Remove like
+    likeStore[id].splice(index, 1);
     console.log(
-      `✅ Unlike registered (client-side): post ${id} by user ${userId}`
+      `💔 Unlike stored: post ${id} by user ${userId} - total: ${likeStore[id].length}`
     );
 
-    return res.status(200).json({ message: "Post unliked" });
+    // Emit real-time event
+    if (global.io) {
+      global.io.emit("post_unliked", {
+        postId: id,
+        userId,
+        likesCount: likeStore[id].length,
+      });
+      console.log(`📡 Broadcasted unlike for post ${id}`);
+    }
+
+    return res.status(200).json({
+      message: "Post unliked",
+      likesCount: likeStore[id].length,
+    });
   } catch (err) {
     console.error("Error in unlikePost:", err.message);
     res.status(500).json({ message: "Failed to unlike post" });
@@ -221,6 +270,27 @@ exports.getComments = async (req, res, next) => {
   } catch (err) {
     console.error("Error in getComments:", err.message);
     res.status(500).json({ message: "Failed to load comments" });
+  }
+};
+
+exports.getLikeCount = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    // Get like count and check if user liked
+    const likes = likeStore[id] || [];
+    const isLiked = userId ? likes.includes(userId) : false;
+    const likesCount = likes.length;
+
+    console.log(
+      `❤️ Like count for post ${id}: ${likesCount}, user liked: ${isLiked}`
+    );
+
+    res.json({ likesCount, isLiked });
+  } catch (err) {
+    console.error("Error in getLikeCount:", err.message);
+    res.status(500).json({ message: "Failed to get like count" });
   }
 };
 

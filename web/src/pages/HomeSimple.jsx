@@ -70,8 +70,51 @@ function HomeSimple() {
       );
     });
 
+    // Listen for real-time like updates
+    socket.on("post_liked", (data) => {
+      const { postId, likesCount } = data;
+      console.log(
+        `❤️ Real-time like received for post ${postId}, count: ${likesCount}`
+      );
+
+      // Update like count in posts
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId ? { ...post, likesCount } : post
+        )
+      );
+
+      setAllPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId ? { ...post, likesCount } : post
+        )
+      );
+    });
+
+    socket.on("post_unliked", (data) => {
+      const { postId, likesCount } = data;
+      console.log(
+        `💔 Real-time unlike received for post ${postId}, count: ${likesCount}`
+      );
+
+      // Update like count in posts
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId ? { ...post, likesCount } : post
+        )
+      );
+
+      setAllPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId ? { ...post, likesCount } : post
+        )
+      );
+    });
+
     return () => {
       socket.off("new_comment");
+      socket.off("post_liked");
+      socket.off("post_unliked");
     };
   }, [selectedPost]);
 
@@ -86,8 +129,32 @@ function HomeSimple() {
         params: { page: 1, limit: 20 },
       });
 
-      setAllPosts(response.data.posts || []);
-      setPosts(response.data.posts || []);
+      let posts = response.data.posts || [];
+
+      // Fetch like status for each post
+      if (token && posts.length > 0) {
+        posts = await Promise.all(
+          posts.map(async (post) => {
+            try {
+              const likeResponse = await axios.get(
+                `${API_URL}/posts/${post.id}/likes`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              return {
+                ...post,
+                likesCount: likeResponse.data.likesCount,
+                isLiked: likeResponse.data.isLiked,
+              };
+            } catch (err) {
+              console.error(`Error fetching likes for post ${post.id}:`, err);
+              return post;
+            }
+          })
+        );
+      }
+
+      setAllPosts(posts);
+      setPosts(posts);
     } catch (err) {
       console.error("Error fetching posts:", err);
       setError("Unable to load posts. The server might be updating.");
@@ -122,20 +189,30 @@ function HomeSimple() {
   const handleLike = async (postId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
+      const response = await axios.post(
         `${API_URL}/posts/${postId}/like`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      // Update state with server's like count
+      const { likesCount } = response.data;
       setPosts(
         posts.map((post) =>
           post.id === postId
-            ? { ...post, isLiked: true, likesCount: (post.likesCount || 0) + 1 }
+            ? { ...post, isLiked: true, likesCount }
             : post
         )
       );
-    } catch {
+      setAllPosts(
+        allPosts.map((post) =>
+          post.id === postId
+            ? { ...post, isLiked: true, likesCount }
+            : post
+        )
+      );
+    } catch (err) {
+      console.error("Error liking post:", err);
       showToast("Failed to like post", "error");
     }
   };
@@ -143,17 +220,19 @@ function HomeSimple() {
   const handleUnlike = async (postId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`${API_URL}/posts/${postId}/like`, {
+      const response = await axios.delete(`${API_URL}/posts/${postId}/like`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      // Update state with server's like count
+      const { likesCount } = response.data;
       setPosts(
         posts.map((post) =>
           post.id === postId
             ? {
                 ...post,
                 isLiked: false,
-                likesCount: Math.max(0, (post.likesCount || 0) - 1),
+                likesCount,
               }
             : post
         )
@@ -164,7 +243,7 @@ function HomeSimple() {
             ? {
                 ...post,
                 isLiked: false,
-                likesCount: Math.max(0, (post.likesCount || 0) - 1),
+                likesCount,
               }
             : post
         )

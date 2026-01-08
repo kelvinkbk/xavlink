@@ -15,6 +15,7 @@ const {
   getBookmarkedPosts,
   addReaction,
   removeReaction,
+  getLikeCount,
   // New endpoints
   searchPosts,
   getTrendingTopics,
@@ -83,6 +84,7 @@ router.delete("/comments/:commentId", authMiddleware, deleteComment);
 // Likes
 router.post("/:id/like", authMiddleware, likePost);
 router.delete("/:id/like", authMiddleware, unlikePost);
+router.get("/:id/likes", authMiddleware, getLikeCount);
 
 // Bookmarks
 router.post("/:id/bookmark", authMiddleware, bookmarkPost);
