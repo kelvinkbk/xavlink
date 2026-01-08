@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
     setToken(authToken);
     localStorage.setItem("token", authToken);
     localStorage.setItem("user", JSON.stringify(userData));
-  localStorage.setItem("userId", userData.id || userData._id);
+    localStorage.setItem("userId", userData.id || userData._id);
   };
 
   const logout = () => {
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-  localStorage.removeItem("userId");
+    localStorage.removeItem("userId");
   };
 
   const value = { user, token, login, logout, isAuthenticated: !!token };
