@@ -34,14 +34,14 @@ const CreatePostModal = ({ isOpen, onClose, onSuccess }) => {
     setError("");
 
     try {
-      await postService.createPost({
+      const newPost = await postService.createPost({
         content: content.trim(),
         image: imageUrl.trim() || null,
       });
       setContent("");
       setImageUrl("");
       setError("");
-      onSuccess?.();
+      onSuccess?.(newPost);
       onClose();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to create post");
