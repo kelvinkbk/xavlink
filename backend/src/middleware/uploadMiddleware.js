@@ -44,9 +44,26 @@ const imageFileFilter = (req, file, cb) => {
 // File filter for chat attachments (more permissive)
 const chatFileFilter = (req, file, cb) => {
   const allowed = [
-    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".heic", ".heif", // Images
-    ".pdf", ".doc", ".docx", ".txt", ".xls", ".xlsx", ".ppt", ".pptx", // Documents
-    ".mp3", ".wav", ".mp4", ".mov", ".avi", // Media
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".heic",
+    ".heif", // Images
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".txt",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx", // Documents
+    ".mp3",
+    ".wav",
+    ".mp4",
+    ".mov",
+    ".avi", // Media
   ];
   const ext = path.extname(file.originalname).toLowerCase();
   if (!allowed.includes(ext)) {

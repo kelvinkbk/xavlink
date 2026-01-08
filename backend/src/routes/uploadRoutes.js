@@ -1,6 +1,10 @@
 const express = require("express");
 const authMiddleware = require("../middleware/authMiddleware");
-const { upload, chatUpload, setUploadFolder } = require("../middleware/uploadMiddleware");
+const {
+  upload,
+  chatUpload,
+  setUploadFolder,
+} = require("../middleware/uploadMiddleware");
 const {
   uploadProfilePic,
   uploadPostImage,
