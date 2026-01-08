@@ -115,7 +115,6 @@ exports.likePost = async (req, res, next) => {
     res.status(500).json({ message: "Failed to like post" });
   }
 };
-};
 
 exports.unlikePost = async (req, res, next) => {
   try {
