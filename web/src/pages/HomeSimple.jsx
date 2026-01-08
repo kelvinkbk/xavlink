@@ -6,6 +6,15 @@ import { socket } from "../services/socket";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+// Helper to convert relative URLs to absolute based on API origin
+const API_ORIGIN = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/api$/, "");
+const toAbsolute = (url) => {
+  if (!url) return url;
+  const clean = url.toString().trim().replace(/[\n\r\t]/g, "");
+  if (/^https?:\/\//i.test(clean)) return clean;
+  return `${API_ORIGIN}${clean}`;
+};
+
 // Format relative time (e.g., "2 hours ago")
 const formatRelativeTime = (date) => {
   const now = new Date();
@@ -116,17 +125,26 @@ function HomeSimple() {
       const { post } = data;
       console.log(`📝 Real-time new post received:`, post);
 
+      // Normalize URLs for image and profilePic
+      const normalized = {
+        ...post,
+        image: toAbsolute(post.image),
+        user: post.user
+          ? { ...post.user, profilePic: toAbsolute(post.user.profilePic) }
+          : post.user,
+      };
+
       // Only add if not already in the list (avoid duplicates for the creator)
       setPosts((prevPosts) => {
-        const exists = prevPosts.some((p) => p.id === post.id);
+        const exists = prevPosts.some((p) => p.id === normalized.id);
         if (exists) return prevPosts;
-        return [post, ...prevPosts];
+        return [normalized, ...prevPosts];
       });
 
       setAllPosts((prevPosts) => {
-        const exists = prevPosts.some((p) => p.id === post.id);
+        const exists = prevPosts.some((p) => p.id === normalized.id);
         if (exists) return prevPosts;
-        return [post, ...prevPosts];
+        return [normalized, ...prevPosts];
       });
     });
 
@@ -208,9 +226,13 @@ function HomeSimple() {
   };
 
   const handlePostCreated = (newPost) => {
-    // Ensure the new post has all required fields
+    // Ensure the new post has all required fields and normalized URLs
     const postWithDefaults = {
       ...newPost,
+      image: toAbsolute(newPost.image),
+      user: newPost.user
+        ? { ...newPost.user, profilePic: toAbsolute(newPost.user.profilePic) }
+        : newPost.user,
       likesCount: newPost.likesCount || 0,
       commentsCount: newPost.commentsCount || 0,
       isLiked: newPost.isLiked || false,
