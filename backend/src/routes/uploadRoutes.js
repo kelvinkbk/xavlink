@@ -1,6 +1,6 @@
 const express = require("express");
 const authMiddleware = require("../middleware/authMiddleware");
-const { upload, setUploadFolder } = require("../middleware/uploadMiddleware");
+const { upload, chatUpload, setUploadFolder } = require("../middleware/uploadMiddleware");
 const {
   uploadProfilePic,
   uploadPostImage,
@@ -32,7 +32,7 @@ router.post(
   "/chat-attachment",
   authMiddleware,
   setUploadFolder("chats"),
-  upload.single("file"),
+  chatUpload.single("file"),
   uploadChatAttachment
 );
 
