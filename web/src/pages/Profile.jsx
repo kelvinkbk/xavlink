@@ -22,6 +22,8 @@ export default function Profile() {
     isFollowing: false,
     followsYou: false,
   });
+  const [skills, setSkills] = useState([]);
+  const [newSkill, setNewSkill] = useState("");
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -46,6 +48,15 @@ export default function Profile() {
             year: currentUser?.year || "",
             profilePic: currentUser?.profilePic || "",
           });
+          // Fetch own skills
+          try {
+            const { data: skillsData } = await api.get(
+              `/skills?userId=${currentUser?.id}`
+            );
+            setSkills(skillsData || []);
+          } catch (err) {
+            console.error("Failed to fetch skills:", err);
+          }
           setLoading(false);
         } else {
           const { data } = await api.get(`/users/${userId}`);
@@ -54,6 +65,15 @@ export default function Profile() {
             `/users/${userId}/follow-status`
           );
           setFollowStatus(status);
+          // Fetch user's skills
+          try {
+            const { data: skillsData } = await api.get(
+              `/skills?userId=${userId}`
+            );
+            setSkills(skillsData || []);
+          } catch (err) {
+            console.error("Failed to fetch skills:", err);
+          }
           setLoading(false);
         }
       } catch (error) {
@@ -149,6 +169,39 @@ export default function Profile() {
         error?.response?.data?.message || "Failed to upload avatar",
         "error"
       );
+    }
+  };
+
+  const handleAddSkill = async () => {
+    if (!newSkill.trim() || newSkill.trim().length < 2) {
+      showToast("Skill name must be at least 2 characters", "error");
+      return;
+    }
+
+    try {
+      const { data } = await api.post("/skills", {
+        title: newSkill.trim(),
+      });
+      setSkills([...skills, data]);
+      setNewSkill("");
+      showToast("Skill added", "success");
+    } catch (error) {
+      console.error("Failed to add skill:", error);
+      showToast(
+        error?.response?.data?.message || "Failed to add skill",
+        "error"
+      );
+    }
+  };
+
+  const handleRemoveSkill = async (skillId) => {
+    try {
+      await api.delete(`/skills/${skillId}`);
+      setSkills(skills.filter((s) => s.id !== skillId));
+      showToast("Skill removed", "success");
+    } catch (error) {
+      console.error("Failed to remove skill:", error);
+      showToast("Failed to remove skill", "error");
     }
   };
 
@@ -300,6 +353,33 @@ export default function Profile() {
             </div>
           )}
 
+          {/* Skills Section */}
+          {skills.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-secondary mb-3">
+                💼 Skills
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {skills.map((skill) => (
+                  <div
+                    key={skill.id}
+                    className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                  >
+                    <span>{skill.title}</span>
+                    {isOwnProfile && (
+                      <button
+                        onClick={() => handleRemoveSkill(skill.id)}
+                        className="ml-1 hover:text-blue-600 font-bold"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Reviews Section (viewable for everyone; only others can post) */}
           {user && (
             <ReviewSection
@@ -410,6 +490,50 @@ export default function Profile() {
                     )}
                   </div>
                 </div>
+
+                {/* Skills Management */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    💼 Skills
+                  </label>
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={newSkill}
+                      onChange={(e) => setNewSkill(e.target.value)}
+                      onKeyPress={(e) =>
+                        e.key === "Enter" && handleAddSkill()
+                      }
+                      placeholder="Add a skill (e.g., React, Python, Design)"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-gray-900"
+                    />
+                    <button
+                      onClick={handleAddSkill}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {skills.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {skills.map((skill) => (
+                        <div
+                          key={skill.id}
+                          className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                        >
+                          <span>{skill.title}</span>
+                          <button
+                            onClick={() => handleRemoveSkill(skill.id)}
+                            className="ml-1 hover:text-red-600 font-bold"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex gap-3">
                   <button
                     onClick={handleSaveProfile}
