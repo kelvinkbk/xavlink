@@ -116,9 +116,6 @@ model Post {
   content       String
   image         String?
   createdAt     DateTime     @default(now())
-  likes         Like[]
-  comments      Comment[]
-  bookmarks     Bookmark[]
 
   @@index([userId])
 }
@@ -128,7 +125,6 @@ model Like {
   postId    String   @db.Uuid
   userId    String   @db.Uuid
   createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
@@ -142,7 +138,6 @@ model Comment {
   userId    String   @db.Uuid
   text      String
   createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([postId])
@@ -361,7 +356,6 @@ model Bookmark {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
   @@index([userId])

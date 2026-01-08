@@ -414,7 +414,7 @@ function HomeSimple() {
                     alt="Post image"
                     className="w-full rounded-lg mb-4 max-h-96 object-cover"
                     onError={(e) => {
-                      e.target.style.display = 'none';
+                      e.target.style.display = "none";
                     }}
                   />
                 )}
