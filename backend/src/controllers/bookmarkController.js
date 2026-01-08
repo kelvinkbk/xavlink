@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 // Get all bookmarked posts for the current user
 exports.getBookmarkedPosts = async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
@@ -44,7 +44,7 @@ exports.getBookmarkedPosts = async (req, res) => {
 // Get bookmark IDs for current user (for quick lookup)
 exports.getBookmarkIds = async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
@@ -67,7 +67,7 @@ exports.getBookmarkIds = async (req, res) => {
 exports.addBookmark = async (req, res) => {
   try {
     const { postId } = req.body;
-    const userId = req.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -122,7 +122,7 @@ exports.addBookmark = async (req, res) => {
 exports.removeBookmark = async (req, res) => {
   try {
     const { postId } = req.params;
-    const userId = req.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -160,7 +160,7 @@ exports.removeBookmark = async (req, res) => {
 exports.isBookmarked = async (req, res) => {
   try {
     const { postId } = req.params;
-    const userId = req.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
