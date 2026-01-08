@@ -13,8 +13,11 @@ export default function Discover() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [suggestedCategories, setSuggestedCategories] = useState([]);
+  const [mutualConnections, setMutualConnections] = useState([]);
+  const [activeTab, setActiveTab] = useState("suggested"); // 'suggested' or 'mutual'
   const [loading, setLoading] = useState(false);
   const [suggestedLoading, setSuggestedLoading] = useState(true);
+  const [mutualLoading, setMutualLoading] = useState(true);
   const [startingChats, setStartingChats] = useState(new Set());
 
   useEffect(() => {
@@ -31,6 +34,23 @@ export default function Discover() {
     };
 
     fetchSuggested();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const fetchMutualConnections = async () => {
+      try {
+        const { data } = await api.get("/users/connections/mutual");
+        setMutualConnections(data.connections || []);
+      } catch (error) {
+        console.error("Failed to fetch mutual connections:", error);
+        showToast("Failed to load mutual connections", "error");
+      } finally {
+        setMutualLoading(false);
+      }
+    };
+
+    fetchMutualConnections();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -79,6 +99,9 @@ export default function Discover() {
       "Similar to you": "🎓",
       Popular: "⭐",
       Suggested: "✨",
+      "Mutual Connections": "🤝",
+      "Followed by your follows": "👫",
+      "From your course": "🎓",
     };
     return icons[category] || "👤";
   };
@@ -185,69 +208,165 @@ export default function Discover() {
           </div>
         )}
 
-        {/* Suggested Users by Category */}
-        <div>
-          <h2 className="text-xl font-semibold text-secondary mb-6">
-            Suggested for You
-          </h2>
-          {suggestedLoading ? (
-            <div className="space-y-6">
-              <div>
-                <SkeletonLoader type="card" />
-              </div>
-              <div>
-                <SkeletonLoader type="card" />
-              </div>
-            </div>
-          ) : suggestedCategories.length > 0 ? (
-            <div className="space-y-8">
-              {suggestedCategories.map((group) => (
-                <div key={group.category}>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-2xl">
-                      {getCategoryIcon(group.category)}
-                    </span>
-                    <h3 className="text-lg font-semibold text-secondary">
-                      {group.category}
-                    </h3>
-                    <span className="text-sm text-gray-500">
-                      ({group.users.length})
-                    </span>
-                  </div>
-                  <div className="space-y-3">
-                    {group.users.map((user) => (
-                      <UserCard key={user.id} user={user} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-600">No suggestions available</p>
-          )}
-          {suggestedCategories.length === 0 && !suggestedLoading && (
-            <div className="mt-4">
-              <button
-                onClick={async () => {
-                  setSuggestedLoading(true);
-                  try {
-                    const { data } = await api.get("/users/suggested?limit=15");
-                    setSuggestedCategories(data.suggestions || []);
-                    showToast("Suggestions refreshed", "success");
-                  } catch (e) {
-                    console.error("Refresh suggestions failed:", e);
-                    showToast("Failed to load suggestions", "error");
-                  } finally {
-                    setSuggestedLoading(false);
-                  }
-                }}
-                className="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600"
-              >
-                Retry
-              </button>
-            </div>
-          )}
+        {/* Tab Navigation */}
+        <div className="flex gap-4 mb-8 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab("suggested")}
+            className={`px-4 py-3 font-semibold transition-colors ${
+              activeTab === "suggested"
+                ? "text-primary border-b-2 border-primary"
+                : "text-gray-600 hover:text-secondary"
+            }`}
+          >
+            ✨ Suggested for You
+          </button>
+          <button
+            onClick={() => setActiveTab("mutual")}
+            className={`px-4 py-3 font-semibold transition-colors ${
+              activeTab === "mutual"
+                ? "text-primary border-b-2 border-primary"
+                : "text-gray-600 hover:text-secondary"
+            }`}
+          >
+            🤝 Mutual Connections
+          </button>
         </div>
+
+        {/* Suggested Tab */}
+        {activeTab === "suggested" && (
+          <div>
+            {suggestedLoading ? (
+              <div className="space-y-6">
+                <SkeletonLoader type="card" />
+                <SkeletonLoader type="card" />
+              </div>
+            ) : suggestedCategories.length > 0 ? (
+              <div className="space-y-8">
+                {suggestedCategories.map((group) => (
+                  <div key={group.category}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-2xl">
+                        {getCategoryIcon(group.category)}
+                      </span>
+                      <div>
+                        <h3 className="text-lg font-semibold text-secondary">
+                          {group.category}
+                        </h3>
+                        {group.description && (
+                          <p className="text-sm text-gray-600">
+                            {group.description}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-500 ml-auto">
+                        ({group.users.length})
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {group.users.map((user) => (
+                        <UserCard key={user.id} user={user} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600">No suggestions available</p>
+            )}
+            {suggestedCategories.length === 0 && !suggestedLoading && (
+              <div className="mt-4">
+                <button
+                  onClick={async () => {
+                    setSuggestedLoading(true);
+                    try {
+                      const { data } = await api.get(
+                        "/users/suggested?limit=15"
+                      );
+                      setSuggestedCategories(data.suggestions || []);
+                      showToast("Suggestions refreshed", "success");
+                    } catch (e) {
+                      console.error("Refresh suggestions failed:", e);
+                      showToast("Failed to load suggestions", "error");
+                    } finally {
+                      setSuggestedLoading(false);
+                    }
+                  }}
+                  className="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mutual Connections Tab */}
+        {activeTab === "mutual" && (
+          <div>
+            {mutualLoading ? (
+              <div className="space-y-6">
+                <SkeletonLoader type="card" />
+                <SkeletonLoader type="card" />
+              </div>
+            ) : mutualConnections.length > 0 ? (
+              <div className="space-y-8">
+                {mutualConnections.map((group) => (
+                  <div key={group.category}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-2xl">
+                        {getCategoryIcon(group.category)}
+                      </span>
+                      <div>
+                        <h3 className="text-lg font-semibold text-secondary">
+                          {group.category}
+                        </h3>
+                        {group.description && (
+                          <p className="text-sm text-gray-600">
+                            {group.description}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-500 ml-auto">
+                        ({group.users.length})
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {group.users.map((user) => (
+                        <UserCard key={user.id} user={user} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600">No mutual connections available</p>
+            )}
+            {mutualConnections.length === 0 && !mutualLoading && (
+              <div className="mt-4">
+                <button
+                  onClick={async () => {
+                    setMutualLoading(true);
+                    try {
+                      const { data } = await api.get(
+                        "/users/connections/mutual"
+                      );
+                      setMutualConnections(data.connections || []);
+                      showToast("Connections refreshed", "success");
+                    } catch (e) {
+                      console.error("Refresh connections failed:", e);
+                      showToast("Failed to load connections", "error");
+                    } finally {
+                      setMutualLoading(false);
+                    }
+                  }}
+                  className="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </PageTransition>
   );

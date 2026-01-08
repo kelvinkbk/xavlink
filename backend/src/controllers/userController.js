@@ -99,7 +99,9 @@ exports.getSuggestedUsers = async (req, res, next) => {
       where: { followerId: currentUserId },
       select: { followingId: true },
     });
-    const followingIds = new Set(currentUserFollowing.map((f) => f.followingId));
+    const followingIds = new Set(
+      currentUserFollowing.map((f) => f.followingId)
+    );
 
     // Exclude current user and already-followed users
     const baseWhere = {
@@ -219,6 +221,163 @@ exports.getSuggestedUsers = async (req, res, next) => {
     }
 
     res.json({ suggestions });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getMutualConnections = async (req, res, next) => {
+  try {
+    const currentUserId = req.user?.id;
+    const { limit = 15 } = req.query;
+
+    if (!currentUserId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Get current user's following list
+    const currentUserFollowing = await prisma.follow.findMany({
+      where: { followerId: currentUserId },
+      select: { followingId: true },
+    });
+    const followingIds = new Set(
+      currentUserFollowing.map((f) => f.followingId)
+    );
+
+    // Get current user's followers list
+    const currentUserFollowers = await prisma.follow.findMany({
+      where: { followingId: currentUserId },
+      select: { followerId: true },
+    });
+    const followerIds = new Set(currentUserFollowers.map((f) => f.followerId));
+
+    // Get current user's info
+    const currentUser = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { course: true },
+    });
+
+    // 1. Mutual connections - People I follow who also follow me back
+    const mutualFollowIds = Array.from(followingIds).filter((id) =>
+      followerIds.has(id)
+    );
+
+    const mutualFollows = await prisma.user.findMany({
+      where: { id: { in: mutualFollowIds } },
+      take: 5,
+      orderBy: { followersCount: "desc" },
+      select: {
+        id: true,
+        name: true,
+        profilePic: true,
+        bio: true,
+        course: true,
+        followersCount: true,
+      },
+    });
+
+    // 2. Followed by your follows - People followed by people I follow
+    const networkFollows = await prisma.follow.findMany({
+      where: {
+        followerId: { in: Array.from(followingIds) },
+        followingId: { not: currentUserId },
+      },
+      select: { followingId: true },
+    });
+
+    const networkUserIds = [];
+    const idFrequency = {};
+    networkFollows.forEach((f) => {
+      if (!followingIds.has(f.followingId)) {
+        idFrequency[f.followingId] = (idFrequency[f.followingId] || 0) + 1;
+        if (!networkUserIds.includes(f.followingId)) {
+          networkUserIds.push(f.followingId);
+        }
+      }
+    });
+
+    networkUserIds.sort((a, b) => idFrequency[b] - idFrequency[a]);
+
+    const followedByYourFollows = await prisma.user.findMany({
+      where: { id: { in: networkUserIds.slice(0, 5) } },
+      select: {
+        id: true,
+        name: true,
+        profilePic: true,
+        bio: true,
+        course: true,
+        followersCount: true,
+      },
+    });
+
+    // 3. Same course - Users from my course (excluding already followed)
+    const sameCourseUsers = await prisma.user.findMany({
+      where: {
+        id: { not: currentUserId },
+        course: currentUser?.course,
+      },
+      take: 5,
+      orderBy: { followersCount: "desc" },
+      select: {
+        id: true,
+        name: true,
+        profilePic: true,
+        bio: true,
+        course: true,
+        followersCount: true,
+      },
+    });
+
+    // Build response with categories
+    const connections = [];
+
+    if (mutualFollows.length > 0) {
+      connections.push({
+        category: "Mutual Connections",
+        description: "People you follow who also follow you back",
+        users: mutualFollows,
+      });
+    }
+
+    if (followedByYourFollows.length > 0) {
+      connections.push({
+        category: "Followed by your follows",
+        description: "Popular among people you follow",
+        users: followedByYourFollows,
+      });
+    }
+
+    if (sameCourseUsers.length > 0) {
+      connections.push({
+        category: `From your course`,
+        description: `Other students in ${
+          currentUser?.course || "your course"
+        }`,
+        users: sameCourseUsers,
+      });
+    }
+
+    if (connections.length === 0) {
+      // Fallback: return popular users
+      const popularUsers = await prisma.user.findMany({
+        where: { id: { not: currentUserId } },
+        take: parseInt(limit),
+        orderBy: { followersCount: "desc" },
+        select: {
+          id: true,
+          name: true,
+          profilePic: true,
+          bio: true,
+          followersCount: true,
+        },
+      });
+      connections.push({
+        category: "Popular",
+        users: popularUsers,
+      });
+    }
+
+    res.json({ connections });
   } catch (err) {
     next(err);
   }
