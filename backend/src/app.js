@@ -137,6 +137,7 @@ app.use("/api/bookmarks", bookmarkRoutes);
 app.use("/api/pins", pinRoutes);
 app.use("/api/2fa", twoFactorRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/utils", require("./routes/adminUtilRoutes"));
 app.use("/api/mod", modRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/enhancements", enhancementRoutes);

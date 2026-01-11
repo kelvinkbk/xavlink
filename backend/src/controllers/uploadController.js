@@ -19,9 +19,9 @@ exports.uploadProfilePic = async (req, res, next) => {
 
     if (!publicUrl) {
       console.error("❌ Cloudinary upload failed - no URL returned");
-      return res.status(500).json({ 
+      return res.status(500).json({
         message: "File upload failed - no URL generated",
-        details: "Cloudinary may not be configured properly"
+        details: "Cloudinary may not be configured properly",
       });
     }
 
