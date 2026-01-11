@@ -3,11 +3,19 @@ const bcrypt = require("bcryptjs");
 
 // Helper to ensure a settings row exists with sensible defaults
 async function ensureUserSettings(userId) {
-  return prisma.userSettings.upsert({
-    where: { userId },
-    update: {},
-    create: { userId }, // defaults come from Prisma schema
-  });
+  try {
+    console.log("Ensuring settings for userId:", userId);
+    const settings = await prisma.userSettings.upsert({
+      where: { userId },
+      update: {},
+      create: { userId }, // defaults come from Prisma schema
+    });
+    console.log("Settings ensured successfully:", settings);
+    return settings;
+  } catch (error) {
+    console.error("Error in ensureUserSettings:", error);
+    throw error;
+  }
 }
 
 exports.getSettings = async (req, res) => {
@@ -75,6 +83,7 @@ exports.getMySettings = async (req, res) => {
     const settings = await ensureUserSettings(userId);
     res.json(settings);
   } catch (error) {
+    console.error("Error in getMySettings:", error);
     res
       .status(500)
       .json({ message: "Failed to fetch settings", error: error.message });
