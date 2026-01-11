@@ -25,8 +25,7 @@ export default function SocialLinks({ user, isOwnProfile, onUpdate }) {
     }
   };
 
-  const hasLinks =
-    user?.linkedInUrl || user?.githubUrl || user?.portfolioUrl;
+  const hasLinks = user?.linkedInUrl || user?.githubUrl || user?.portfolioUrl;
 
   if (!isOwnProfile && !hasLinks) {
     return null;
@@ -132,8 +131,18 @@ export default function SocialLinks({ user, isOwnProfile, onUpdate }) {
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                />
               </svg>
               Portfolio
             </a>

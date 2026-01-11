@@ -4,7 +4,14 @@ const prisma = require("../config/prismaClient");
 // so we fill required Prisma fields with sensible defaults.
 exports.addSkill = async (req, res, next) => {
   try {
-    const { title, description, category, priceRange } = req.body;
+    const {
+      title,
+      description,
+      category,
+      subcategory,
+      priceRange,
+      proficiency,
+    } = req.body;
     if (!title || !title.trim()) {
       return res.status(400).json({ message: "title is required" });
     }
@@ -12,9 +19,11 @@ exports.addSkill = async (req, res, next) => {
     const skill = await prisma.skill.create({
       data: {
         title: title.trim(),
-        description: (description || "" ).trim() || "General skill",
+        description: (description || "").trim() || "General skill",
         category: (category || "general").trim(),
+        subcategory: subcategory || null,
         priceRange,
+        proficiency: proficiency || "beginner",
         userId: req.user.id,
       },
     });
@@ -41,7 +50,9 @@ exports.getSkillsByUser = async (req, res, next) => {
         title: true,
         description: true,
         category: true,
+        subcategory: true,
         priceRange: true,
+        proficiency: true,
         userId: true,
       },
     });
@@ -62,7 +73,9 @@ exports.deleteSkill = async (req, res, next) => {
       return res.status(404).json({ message: "Skill not found" });
     }
     if (skill.userId !== req.user.id) {
-      return res.status(403).json({ message: "Not allowed to delete this skill" });
+      return res
+        .status(403)
+        .json({ message: "Not allowed to delete this skill" });
     }
 
     await prisma.skill.delete({ where: { id } });

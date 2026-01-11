@@ -10,6 +10,7 @@ const {
   uploadPostImage,
   uploadChatAttachment,
 } = require("../controllers/uploadController");
+const { uploadLimiter } = require("../middleware/securityMiddleware");
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ const router = express.Router();
 router.post(
   "/profile-pic",
   authMiddleware,
+  uploadLimiter,
   setUploadFolder("profile"),
   upload.single("image"),
   uploadProfilePic
@@ -26,6 +28,7 @@ router.post(
 router.post(
   "/post-image",
   authMiddleware,
+  uploadLimiter,
   setUploadFolder("posts"),
   upload.single("image"),
   uploadPostImage
@@ -35,6 +38,7 @@ router.post(
 router.post(
   "/chat-attachment",
   authMiddleware,
+  uploadLimiter,
   setUploadFolder("chats"),
   chatUpload.single("file"),
   uploadChatAttachment

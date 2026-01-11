@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import api, { uploadService, twoFactorService } from "../services/api";
+import { useToast } from "../context/ToastContext";
+import api, {
+  uploadService,
+  twoFactorService,
+  enhancementService,
+} from "../services/api";
 import PageTransition from "../components/PageTransition";
 import ConfirmModal from "../components/ConfirmModal";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const Settings = () => {
   const { user, isAuthenticated, logout, token, login } = useAuth();
@@ -259,6 +265,7 @@ const Settings = () => {
             "notifications",
             "appearance",
             "security",
+            "devices",
           ].map((tab) => (
             <button
               key={tab}
@@ -801,6 +808,9 @@ const Settings = () => {
           </div>
         )}
 
+        {/* Device Management */}
+        {activeTab === "devices" && <DeviceManagement />}
+
         {/* Logout Button */}
         <div className="mt-8 flex justify-end">
           <button
@@ -814,5 +824,200 @@ const Settings = () => {
     </PageTransition>
   );
 };
+
+// Device Management Component
+function DeviceManagement() {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [revoking, setRevoking] = useState(new Set());
+
+  const [currentDeviceId, setCurrentDeviceId] = useState(null);
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        setLoading(true);
+        const { sessions: sessionsData, currentDeviceId: deviceId } =
+          await enhancementService.getDeviceSessions();
+        setSessions(sessionsData || []);
+        setCurrentDeviceId(deviceId);
+      } catch (error) {
+        console.error("Failed to fetch device sessions:", error);
+        showToast("Failed to load device sessions", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      fetchSessions();
+    }
+  }, [user?.id, showToast]);
+
+  const handleRevokeSession = async (sessionId) => {
+    if (
+      !window.confirm(
+        "Revoke this device session? You'll need to log in again on that device."
+      )
+    ) {
+      return;
+    }
+
+    setRevoking((prev) => new Set(prev).add(sessionId));
+    try {
+      await enhancementService.revokeDeviceSession(sessionId);
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      showToast("Session revoked", "success");
+    } catch (error) {
+      console.error("Failed to revoke session:", error);
+      showToast("Failed to revoke session", "error");
+    } finally {
+      setRevoking((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(sessionId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleRevokeAllOther = async () => {
+    if (
+      !window.confirm(
+        "Revoke all other sessions? You'll stay logged in on this device only."
+      )
+    ) {
+      return;
+    }
+
+    if (!currentDeviceId) {
+      showToast("Unable to identify current device", "error");
+      return;
+    }
+
+    try {
+      await enhancementService.revokeAllOtherSessions(currentDeviceId);
+      setSessions((prev) => prev.filter((s) => s.deviceId === currentDeviceId));
+      showToast("All other sessions revoked", "success");
+    } catch (error) {
+      console.error("Failed to revoke all sessions:", error);
+      showToast("Failed to revoke sessions", "error");
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60)
+      return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    return date.toLocaleDateString();
+  };
+
+  const getDeviceInfo = (userAgent) => {
+    if (!userAgent) return "Unknown Device";
+
+    if (userAgent.includes("Mobile")) {
+      if (userAgent.includes("iPhone")) return "📱 iPhone";
+      if (userAgent.includes("Android")) return "📱 Android";
+      return "📱 Mobile Device";
+    }
+    if (userAgent.includes("Windows")) return "💻 Windows";
+    if (userAgent.includes("Mac")) return "💻 Mac";
+    if (userAgent.includes("Linux")) return "💻 Linux";
+    return "💻 Desktop";
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-secondary">
+              📱 Active Sessions
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Manage devices where you're logged in
+            </p>
+          </div>
+          {sessions.length > 1 && (
+            <button
+              onClick={handleRevokeAllOther}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              Revoke All Other Sessions
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <LoadingSpinner />
+          </div>
+        ) : sessions.length === 0 ? (
+          <p className="text-gray-600 text-center py-8">No active sessions</p>
+        ) : (
+          <div className="space-y-4">
+            {sessions.map((session) => (
+              <div
+                key={session.id}
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">
+                      {getDeviceInfo(session.userAgent).split(" ")[0]}
+                    </span>
+                    <div>
+                      <h3 className="font-semibold text-secondary">
+                        {session.deviceName || getDeviceInfo(session.userAgent)}
+                      </h3>
+                      {session.ipAddress && (
+                        <p className="text-sm text-gray-600">
+                          IP: {session.ipAddress}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Last active: {formatDate(session.lastActiveAt)}
+                      </p>
+                      {session.deviceId && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Device ID: {session.deviceId.substring(0, 8)}...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleRevokeSession(session.id)}
+                  disabled={revoking.has(session.id)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                >
+                  {revoking.has(session.id) ? "Revoking..." : "Revoke"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <p className="text-sm text-blue-800">
+          💡 <strong>Tip:</strong> If you notice suspicious activity, revoke all
+          sessions and change your password immediately.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default Settings;

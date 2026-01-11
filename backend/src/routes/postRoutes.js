@@ -37,26 +37,38 @@ const {
 } = require("../controllers/postController");
 const authMiddleware = require("../middleware/authMiddleware");
 const { optionalAuthMiddleware } = require("../middleware/authMiddleware");
+const { postLimiter } = require("../middleware/securityMiddleware");
+const { validatePagination } = require("../middleware/validationMiddleware");
 
 const router = express.Router();
 
 // === SPECIFIC ROUTES FIRST (before dynamic :id routes) ===
 
 // 1. Search
-router.get("/search", optionalAuthMiddleware, searchPosts);
+router.get("/search", optionalAuthMiddleware, validatePagination, searchPosts);
 
 // 2. Trending & Tags
 router.get("/trending/topics", getTrendingTopics);
 
 // 3. Draft management (specific paths)
-router.post("/drafts/create", authMiddleware, createDraft);
-router.get("/drafts", authMiddleware, getDrafts);
+router.post("/drafts/create", authMiddleware, postLimiter, createDraft);
+router.get("/drafts", authMiddleware, validatePagination, getDrafts);
 router.patch("/drafts/:draftId", authMiddleware, updateDraft);
-router.post("/drafts/:draftId/publish", authMiddleware, publishDraft);
+router.post(
+  "/drafts/:draftId/publish",
+  authMiddleware,
+  postLimiter,
+  publishDraft
+);
 router.delete("/drafts/:draftId", authMiddleware, deleteDraft);
 
 // 4. Bookmarks
-router.get("/bookmarks", authMiddleware, getBookmarkedPosts);
+router.get(
+  "/bookmarks",
+  authMiddleware,
+  validatePagination,
+  getBookmarkedPosts
+);
 
 // 5. Suggested users
 router.get("/users/suggested", authMiddleware, getSuggestedUsers);
@@ -67,13 +79,18 @@ router.delete("/mute-keywords/:muteId", authMiddleware, removeKeywordMute);
 router.get("/mute-keywords", authMiddleware, getMutedKeywords);
 
 // 7. Tags by tag name
-router.get("/tags/:tag", optionalAuthMiddleware, getPostsByTag);
+router.get(
+  "/tags/:tag",
+  optionalAuthMiddleware,
+  validatePagination,
+  getPostsByTag
+);
 
 // === DYNAMIC :id ROUTES (most specific after static routes) ===
 
 // Basic CRUD
-router.post("/create", authMiddleware, createPost);
-router.get("/all", optionalAuthMiddleware, getAllPosts);
+router.post("/create", authMiddleware, postLimiter, createPost);
+router.get("/all", optionalAuthMiddleware, validatePagination, getAllPosts);
 
 // Comments
 router.post("/:id/comments", authMiddleware, addComment);

@@ -17,6 +17,14 @@ enum RequestStatus {
   pending
   accepted
   rejected
+  completed
+  cancelled
+}
+
+enum SkillProficiency {
+  beginner
+  intermediate
+  expert
 }
 
 enum NotificationType {
@@ -49,43 +57,57 @@ enum AuditAction {
 }
 
 model User {
-  id                      String            @id @default(uuid()) @db.Uuid
+  id                      String             @id @default(uuid()) @db.Uuid
   name                    String
-  email                   String            @unique
+  email                   String             @unique
   password                String
-  role                    Role              @default(user)
-  isSuspended             Boolean           @default(false)
+  role                    Role               @default(user)
+  isSuspended             Boolean            @default(false)
   suspensionEndsAt        DateTime?
   course                  String?
   year                    Int?
   bio                     String?
   profilePic              String?
-  followersCount          Int               @default(0)
-  followingCount          Int               @default(0)
-  postsCount              Int               @default(0)
+  followersCount          Int                @default(0)
+  followingCount          Int                @default(0)
+  postsCount              Int                @default(0)
   resetToken              String?
   resetTokenExpiry        DateTime?
-  emailVerified           Boolean           @default(false)
+  emailVerified           Boolean            @default(false)
   verificationToken       String?
   verificationTokenExpiry DateTime?
   twoFactorSecret         String?
-  twoFactorEnabled        Boolean           @default(false)
-  createdAt               DateTime          @default(now())
+  twoFactorEnabled        Boolean            @default(false)
+  createdAt               DateTime           @default(now())
+  // New fields
+  linkedInUrl             String?
+  githubUrl               String?
+  portfolioUrl            String?
+  profileViews            Int                @default(0)
+  lastActiveAt            DateTime?
   skills                  Skill[]
   posts                   Post[]
-  sentRequests            Request[]         @relation("RequestsSent")
-  receivedRequests        Request[]         @relation("RequestsReceived")
-  messages                Message[]         @relation("UserMessages")
+  sentRequests            Request[]          @relation("RequestsSent")
+  receivedRequests        Request[]          @relation("RequestsReceived")
+  messages                Message[]          @relation("UserMessages")
   chatParticipants        ChatParticipant[]
   notifications           Notification[]
   settings                UserSettings?
-  followers               Follow[]          @relation("Following")
-  following               Follow[]          @relation("Followers")
+  followers               Follow[]           @relation("Following")
+  following               Follow[]           @relation("Followers")
   likes                   Like[]
   comments                Comment[]
-  reviewsGiven            Review[]          @relation("ReviewsGiven")
-  reviewsReceived         Review[]          @relation("ReviewsReceived")
+  reviewsGiven            Review[]           @relation("ReviewsGiven")
+  reviewsReceived         Review[]           @relation("ReviewsReceived")
   bookmarks               Bookmark[]
+  favorites               Favorite[]         @relation("FavoritesGiven")
+  favoriteOf              Favorite[]         @relation("FavoritesReceived")
+  profileViewsHistory     ProfileView[]
+  skillEndorsements       SkillEndorsement[]
+  deviceSessions          DeviceSession[]
+  photos                  UserPhoto[]
+  achievements            Achievement[]
+  modNotesCreated         ModNote[]
 
   reportsCreated  Report[]   @relation("ReportsCreated")
   reportsReceived Report[]   @relation("ReportsReceived")
@@ -94,30 +116,36 @@ model User {
 }
 
 model Skill {
-  id          String    @id @default(uuid()) @db.Uuid
-  userId      String    @db.Uuid
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title       String
-  description String
-  category    String
-  priceRange  String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  requests    Request[]
+  id             String               @id @default(uuid()) @db.Uuid
+  userId         String               @db.Uuid
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  category       String
+  subcategory    String?
+  priceRange     String?
+  proficiency    SkillProficiency     @default(beginner)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  requests       Request[]
+  endorsements   SkillEndorsement[]
+  certifications SkillCertification[]
 
   @@index([title])
   @@index([category])
+  @@index([proficiency])
 }
 
 model Post {
-  id            String       @id @default(uuid()) @db.Uuid
-  userId        String       @db.Uuid
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content       String
-  image         String?
-  isPinned      Boolean      @default(false)
-  pinnedAt      DateTime?
-  createdAt     DateTime     @default(now())
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  image     String?
+  isPinned  Boolean   @default(false)
+  pinnedAt  DateTime?
+  createdAt DateTime  @default(now())
+  comments  Comment[]
 
   @@index([userId])
   @@index([isPinned])
@@ -142,22 +170,34 @@ model Comment {
   text      String
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
   @@index([userId])
 }
 
 model Request {
-  id         String        @id @default(uuid()) @db.Uuid
-  fromUserId String        @db.Uuid
-  toUserId   String        @db.Uuid
-  skillId    String        @db.Uuid
-  status     RequestStatus @default(pending)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-  fromUser   User          @relation("RequestsSent", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser     User          @relation("RequestsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
-  skill      Skill         @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  id             String        @id @default(uuid()) @db.Uuid
+  fromUserId     String        @db.Uuid
+  toUserId       String        @db.Uuid
+  skillId        String        @db.Uuid
+  status         RequestStatus @default(pending)
+  message        String?
+  deadline       DateTime?
+  isUrgent       Boolean       @default(false)
+  counterOffer   String?
+  counterPrice   String?
+  completedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  fromUser       User          @relation("RequestsSent", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser         User          @relation("RequestsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  skill          Skill         @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  reminderSentAt DateTime?
+
+  @@index([toUserId, status])
+  @@index([deadline])
+  @@index([isUrgent])
 }
 
 model Chat {
@@ -233,12 +273,18 @@ model Notification {
   message   String
   relatedId String? // ID of related resource (request, user, etc)
   read      Boolean          @default(false)
+  isPinned  Boolean          @default(false)
+  archived  Boolean          @default(false)
+  actionUrl String? // URL for quick action
   createdAt DateTime         @default(now())
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([read])
   @@index([createdAt])
+  @@index([type])
+  @@index([isPinned])
+  @@index([archived])
 }
 
 model UserSettings {
@@ -257,6 +303,11 @@ model UserSettings {
   requestNotifications  Boolean @default(true)
   messageNotifications  Boolean @default(true)
   activityNotifications Boolean @default(true)
+  likeNotifications     Boolean @default(true)
+  commentNotifications  Boolean @default(true)
+  followNotifications   Boolean @default(true)
+  quietHoursStart       String? // HH:mm format
+  quietHoursEnd         String? // HH:mm format
 
   // Appearance Settings
   theme    String @default("light") // light, dark, auto
@@ -313,9 +364,10 @@ model Report {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
-  reporter       User  @relation("ReportsCreated", fields: [reporterId], references: [id], onDelete: Cascade)
-  reportedUser   User? @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
-  resolvedByUser User? @relation("ReportsResolved", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  reporter       User      @relation("ReportsCreated", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser   User?     @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  resolvedByUser User?     @relation("ReportsResolved", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  modNotes       ModNote[]
 
   @@index([reporterId])
   @@index([reportedUserId])
@@ -363,4 +415,133 @@ model Bookmark {
   @@unique([userId, postId])
   @@index([userId])
   @@index([postId])
+}
+
+// New models for missing features
+
+model Favorite {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  favoriteUserId String   @db.Uuid
+  createdAt      DateTime @default(now())
+
+  user         User @relation("FavoritesGiven", fields: [userId], references: [id], onDelete: Cascade)
+  favoriteUser User @relation("FavoritesReceived", fields: [favoriteUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, favoriteUserId])
+  @@index([userId])
+  @@index([favoriteUserId])
+}
+
+model ProfileView {
+  id       String   @id @default(uuid()) @db.Uuid
+  userId   String   @db.Uuid
+  viewerId String   @db.Uuid
+  viewedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([viewerId])
+  @@index([viewedAt])
+}
+
+model SkillEndorsement {
+  id         String   @id @default(uuid()) @db.Uuid
+  skillId    String   @db.Uuid
+  endorserId String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  skill    Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  endorser User  @relation(fields: [endorserId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, endorserId])
+  @@index([skillId])
+  @@index([endorserId])
+}
+
+model SkillCertification {
+  id             String    @id @default(uuid()) @db.Uuid
+  skillId        String    @db.Uuid
+  name           String
+  issuer         String
+  issueDate      DateTime?
+  expiryDate     DateTime?
+  certificateUrl String?
+  createdAt      DateTime  @default(now())
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([skillId])
+}
+
+model RequestTemplate {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  title     String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model ModNote {
+  id          String   @id @default(uuid()) @db.Uuid
+  reportId    String   @db.Uuid
+  moderatorId String   @db.Uuid
+  note        String
+  createdAt   DateTime @default(now())
+
+  report    Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  moderator User   @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([moderatorId])
+}
+
+model DeviceSession {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  deviceId     String
+  deviceName   String?
+  ipAddress    String?
+  userAgent    String?
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+}
+
+model UserPhoto {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  url       String
+  caption   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([order])
+}
+
+model Achievement {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  type        String // "top_skill", "most_followers", etc
+  title       String
+  description String?
+  icon        String?
+  earnedAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@index([type])
 }

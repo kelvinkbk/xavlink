@@ -7,6 +7,88 @@ const {
   sendVerificationEmail,
 } = require("../services/emailService");
 
+// Helper function to create or update device session
+async function createOrUpdateDeviceSession(userId, req) {
+  try {
+    const userAgent = req.headers["user-agent"] || "Unknown";
+    const ipAddress =
+      req.ip ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      "Unknown";
+
+    // Generate a device ID based on user agent and IP (simplified fingerprint)
+    const deviceFingerprint = crypto
+      .createHash("sha256")
+      .update(`${userAgent}-${ipAddress}`)
+      .digest("hex")
+      .substring(0, 16);
+
+    // Try to find existing session for this device
+    const existingSession = await prisma.deviceSession.findFirst({
+      where: {
+        userId,
+        deviceId: deviceFingerprint,
+      },
+    });
+
+    if (existingSession) {
+      // Update last active time
+      await prisma.deviceSession.update({
+        where: { id: existingSession.id },
+        data: { lastActiveAt: new Date() },
+      });
+      return existingSession;
+    } else {
+      // Create new session
+      const deviceName = getUserDeviceName(userAgent);
+      const session = await prisma.deviceSession.create({
+        data: {
+          userId,
+          deviceId: deviceFingerprint,
+          deviceName,
+          ipAddress,
+          userAgent,
+          lastActiveAt: new Date(),
+        },
+      });
+      return session;
+    }
+  } catch (error) {
+    // Don't fail login if device session creation fails
+    console.error("Failed to create device session:", error);
+    return null;
+  }
+}
+
+// Helper function to extract device name from user agent
+function getUserDeviceName(userAgent) {
+  if (!userAgent) return "Unknown Device";
+
+  if (userAgent.includes("Windows")) {
+    if (userAgent.includes("Mobile")) return "Windows Mobile";
+    return "Windows PC";
+  }
+  if (userAgent.includes("Mac")) {
+    if (userAgent.includes("iPhone")) return "iPhone";
+    if (userAgent.includes("iPad")) return "iPad";
+    return "Mac";
+  }
+  if (userAgent.includes("Linux")) {
+    if (userAgent.includes("Android")) {
+      // Try to extract Android version
+      const androidMatch = userAgent.match(/Android\s([\d.]+)/);
+      return androidMatch ? `Android ${androidMatch[1]}` : "Android Device";
+    }
+    return "Linux";
+  }
+  if (userAgent.includes("iPhone")) return "iPhone";
+  if (userAgent.includes("iPad")) return "iPad";
+  if (userAgent.includes("Android")) return "Android Device";
+
+  return "Unknown Device";
+}
+
 const sanitizeUser = (user) => {
   if (!user) return null;
   // Remove sensitive fields before returning to clients
@@ -24,6 +106,88 @@ const signToken = (user) => {
     }
   );
 };
+
+// Helper function to create or update device session
+async function createOrUpdateDeviceSession(userId, req) {
+  try {
+    const userAgent = req.headers["user-agent"] || "Unknown";
+    const ipAddress =
+      req.ip ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      "Unknown";
+
+    // Generate a device ID based on user agent and IP (simplified fingerprint)
+    const deviceFingerprint = crypto
+      .createHash("sha256")
+      .update(`${userAgent}-${ipAddress}`)
+      .digest("hex")
+      .substring(0, 16);
+
+    // Try to find existing session for this device
+    const existingSession = await prisma.deviceSession.findFirst({
+      where: {
+        userId,
+        deviceId: deviceFingerprint,
+      },
+    });
+
+    if (existingSession) {
+      // Update last active time
+      await prisma.deviceSession.update({
+        where: { id: existingSession.id },
+        data: { lastActiveAt: new Date() },
+      });
+      return existingSession;
+    } else {
+      // Create new session
+      const deviceName = getUserDeviceName(userAgent);
+      const session = await prisma.deviceSession.create({
+        data: {
+          userId,
+          deviceId: deviceFingerprint,
+          deviceName,
+          ipAddress,
+          userAgent,
+          lastActiveAt: new Date(),
+        },
+      });
+      return session;
+    }
+  } catch (error) {
+    // Don't fail login if device session creation fails
+    console.error("Failed to create device session:", error);
+    return null;
+  }
+}
+
+// Helper function to extract device name from user agent
+function getUserDeviceName(userAgent) {
+  if (!userAgent) return "Unknown Device";
+
+  if (userAgent.includes("Windows")) {
+    if (userAgent.includes("Mobile")) return "Windows Mobile";
+    return "Windows PC";
+  }
+  if (userAgent.includes("Mac")) {
+    if (userAgent.includes("iPhone")) return "iPhone";
+    if (userAgent.includes("iPad")) return "iPad";
+    return "Mac";
+  }
+  if (userAgent.includes("Linux")) {
+    if (userAgent.includes("Android")) {
+      // Try to extract Android version
+      const androidMatch = userAgent.match(/Android\s([\d.]+)/);
+      return androidMatch ? `Android ${androidMatch[1]}` : "Android Device";
+    }
+    return "Linux";
+  }
+  if (userAgent.includes("iPhone")) return "iPhone";
+  if (userAgent.includes("iPad")) return "iPad";
+  if (userAgent.includes("Android")) return "Android Device";
+
+  return "Unknown Device";
+}
 
 exports.register = async (req, res, next) => {
   try {
@@ -155,6 +319,10 @@ exports.login = async (req, res, next) => {
     }
 
     const token = signToken(user);
+
+    // Create or update device session
+    await createOrUpdateDeviceSession(user.id, req);
+
     res.json({ token, user: sanitizeUser(user) });
   } catch (err) {
     next(err);
@@ -356,6 +524,10 @@ exports.verifyTwoFactorToken = async (req, res, next) => {
 
     // Generate JWT token
     const jwtToken = signToken(user);
+
+    // Create or update device session
+    await createOrUpdateDeviceSession(user.id, req);
+
     res.json({ token: jwtToken, user: sanitizeUser(user) });
   } catch (err) {
     next(err);

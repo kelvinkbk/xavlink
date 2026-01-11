@@ -53,7 +53,11 @@ const router = express.Router();
 router.get("/discover/filter", filterUsersByCourseAndSkills);
 router.get("/discover/trending-skills", getTrendingSkills);
 router.post("/discover/favorites", authMiddleware, addToFavorites);
-router.delete("/discover/favorites/:favoriteUserId", authMiddleware, removeFromFavorites);
+router.delete(
+  "/discover/favorites/:favoriteUserId",
+  authMiddleware,
+  removeFromFavorites
+);
 router.get("/discover/favorites", authMiddleware, getFavorites);
 
 // Profile enhancements
@@ -69,22 +73,42 @@ router.get("/profile/:userId/achievements", getAchievements);
 router.post("/skills/:skillId/endorse", authMiddleware, endorseSkill);
 router.delete("/skills/:skillId/endorse", authMiddleware, removeEndorsement);
 router.get("/skills/trending/endorsed", getMostEndorsedSkills);
-router.post("/skills/:skillId/certifications", authMiddleware, addCertification);
+router.post(
+  "/skills/:skillId/certifications",
+  authMiddleware,
+  addCertification
+);
 router.get("/skills/:skillId/certifications", getSkillCertifications);
 router.get("/skills/recommendations", authMiddleware, getSkillRecommendations);
 
 // Requests enhancements
 router.post("/requests/templates", authMiddleware, createRequestTemplate);
 router.get("/requests/templates", authMiddleware, getRequestTemplates);
-router.delete("/requests/templates/:templateId", authMiddleware, deleteRequestTemplate);
+router.delete(
+  "/requests/templates/:templateId",
+  authMiddleware,
+  deleteRequestTemplate
+);
 router.get("/requests/history", authMiddleware, getRequestHistory);
-router.post("/requests/:requestId/counter-offer", authMiddleware, sendCounterOffer);
+router.post(
+  "/requests/:requestId/counter-offer",
+  authMiddleware,
+  sendCounterOffer
+);
 router.post("/requests/:requestId/complete", authMiddleware, completeRequest);
 
 // Notifications enhancements
 router.get("/notifications/grouped", authMiddleware, getGroupedNotifications);
-router.post("/notifications/:notificationId/pin", authMiddleware, pinNotification);
-router.post("/notifications/:notificationId/archive", authMiddleware, archiveNotification);
+router.post(
+  "/notifications/:notificationId/pin",
+  authMiddleware,
+  pinNotification
+);
+router.post(
+  "/notifications/:notificationId/archive",
+  authMiddleware,
+  archiveNotification
+);
 router.get("/notifications/archived", authMiddleware, getArchivedNotifications);
 
 // Moderation enhancements
@@ -98,7 +122,15 @@ router.get("/admin/health", authMiddleware, getSystemHealth);
 
 // Device management
 router.get("/devices/sessions", authMiddleware, getDeviceSessions);
-router.delete("/devices/sessions/:sessionId", authMiddleware, revokeDeviceSession);
-router.post("/devices/sessions/revoke-all", authMiddleware, revokeAllOtherSessions);
+router.delete(
+  "/devices/sessions/:sessionId",
+  authMiddleware,
+  revokeDeviceSession
+);
+router.post(
+  "/devices/sessions/revoke-all",
+  authMiddleware,
+  revokeAllOtherSessions
+);
 
 module.exports = router;

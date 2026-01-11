@@ -1,45 +1,119 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { skillService, requestService } from "../services/api";
+import {
+  skillService,
+  requestService,
+  enhancementService,
+} from "../services/api";
 import PageTransition from "../components/PageTransition";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../context/ToastContext";
 
-function SkillCard({ skill, onRequest }) {
+function SkillCard({ skill, onRequest, currentUserId, onEndorse }) {
+  const [endorsed, setEndorsed] = useState(false);
+  const [endorsementCount, setEndorsementCount] = useState(
+    skill.endorsementCount || 0
+  );
+
+  const proficiencyColors = {
+    beginner: "bg-green-100 text-green-800",
+    intermediate: "bg-yellow-100 text-yellow-800",
+    expert: "bg-red-100 text-red-800",
+  };
+
+  const handleEndorse = async () => {
+    if (!currentUserId || currentUserId === skill.userId) return;
+
+    try {
+      if (endorsed) {
+        await enhancementService.removeEndorsement(skill.id);
+        setEndorsed(false);
+        setEndorsementCount((prev) => Math.max(0, prev - 1));
+      } else {
+        await enhancementService.endorseSkill(skill.id);
+        setEndorsed(true);
+        setEndorsementCount((prev) => prev + 1);
+      }
+      if (onEndorse) onEndorse();
+    } catch (error) {
+      console.error("Failed to toggle endorsement:", error);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition">
       <div className="flex justify-between items-start mb-2">
-        <div>
+        <div className="flex-1">
           <h3 className="font-semibold text-secondary text-lg">
             {skill.title}
           </h3>
-          <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded mt-1">
-            {skill.category}
-          </span>
+          <div className="flex flex-wrap gap-2 mt-1">
+            <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+              {skill.category}
+            </span>
+            {skill.subcategory && (
+              <span className="inline-block bg-gray-100 text-gray-800 text-xs font-semibold px-2 py-1 rounded">
+                {skill.subcategory}
+              </span>
+            )}
+            {skill.proficiency && (
+              <span
+                className={`inline-block text-xs font-semibold px-2 py-1 rounded capitalize ${
+                  proficiencyColors[skill.proficiency] ||
+                  proficiencyColors.beginner
+                }`}
+              >
+                {skill.proficiency}
+              </span>
+            )}
+          </div>
         </div>
         {skill.priceRange && (
-          <p className="text-primary font-semibold">{skill.priceRange}</p>
+          <p className="text-primary font-semibold ml-2">{skill.priceRange}</p>
         )}
       </div>
 
       <p className="text-gray-600 text-sm mb-3">{skill.description}</p>
 
       <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-        <span className="text-xs text-gray-500">{skill.user?.name}</span>
-        <button
-          onClick={() => onRequest(skill)}
-          className="bg-primary text-white px-4 py-1 rounded text-sm hover:bg-blue-600 transition"
-        >
-          Request Skill
-        </button>
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-gray-500">{skill.user?.name}</span>
+          {endorsementCount > 0 && (
+            <span className="text-xs text-gray-600 flex items-center gap-1">
+              <span>👍</span>
+              <span>{endorsementCount}</span>
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {currentUserId && currentUserId !== skill.userId && (
+            <button
+              onClick={handleEndorse}
+              className={`px-3 py-1 rounded text-sm transition ${
+                endorsed
+                  ? "bg-green-100 text-green-800 hover:bg-green-200"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+              title={endorsed ? "Remove endorsement" : "Endorse this skill"}
+            >
+              👍 {endorsed ? "Endorsed" : "Endorse"}
+            </button>
+          )}
+          <button
+            onClick={() => onRequest(skill)}
+            className="bg-primary text-white px-4 py-1 rounded text-sm hover:bg-blue-600 transition"
+          >
+            Request Skill
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
 export default function Skills() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
   const [skills, setSkills] = useState([]);
   const [search, setSearch] = useState("");
@@ -47,7 +121,9 @@ export default function Skills() {
     title: "",
     description: "",
     category: "Web Development",
+    subcategory: "",
     priceRange: "",
+    proficiency: "beginner",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -83,7 +159,9 @@ export default function Skills() {
         title: "",
         description: "",
         category: "Web Development",
+        subcategory: "",
         priceRange: "",
+        proficiency: "beginner",
       });
       setShowForm(false);
       // Refetch skills after adding new skill
@@ -199,6 +277,40 @@ export default function Skills() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
+                    Subcategory (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newSkill.subcategory}
+                    onChange={(e) =>
+                      setNewSkill({ ...newSkill, subcategory: e.target.value })
+                    }
+                    placeholder="e.g., React, Python, etc."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Proficiency Level
+                  </label>
+                  <select
+                    value={newSkill.proficiency}
+                    onChange={(e) =>
+                      setNewSkill({ ...newSkill, proficiency: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="expert">Expert</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
                     Price Range
                   </label>
                   <input
@@ -283,6 +395,7 @@ export default function Skills() {
                 key={skill.id}
                 skill={skill}
                 onRequest={handleRequestSkill}
+                currentUserId={user?.id}
               />
             ))}
           </div>

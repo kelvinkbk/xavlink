@@ -15,7 +15,9 @@ export default function PhotoGallery({ userId, isOwnProfile = false }) {
   useEffect(() => {
     const fetchPhotos = async () => {
       try {
-        const { photos: photosData } = await enhancementService.getUserPhotos(userId);
+        const { photos: photosData } = await enhancementService.getUserPhotos(
+          userId
+        );
         setPhotos(photosData || []);
       } catch (error) {
         console.error("Failed to fetch photos:", error);
@@ -106,7 +108,9 @@ export default function PhotoGallery({ userId, isOwnProfile = false }) {
 
         {photos.length === 0 ? (
           <p className="text-gray-500 text-center py-8">
-            {isOwnProfile ? "No photos yet. Add your first photo!" : "No photos available"}
+            {isOwnProfile
+              ? "No photos yet. Add your first photo!"
+              : "No photos available"}
           </p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

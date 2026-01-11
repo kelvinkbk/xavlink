@@ -507,10 +507,16 @@ exports.getHashtagBasedSuggestions = async (req, res, next) => {
     );
 
     // Find users with posts containing matching hashtags
-    // Note: Using simple query instead of full-text search for compatibility
+    // Use OR conditions with contains instead of search (which requires full-text index)
+    const hashtagArray = Array.from(hashtagSet);
     const postsWithHashtags = await prisma.post.findMany({
       where: {
         userId: { not: currentUserId },
+        OR: hashtagArray.map((hashtag) => ({
+          content: {
+            contains: hashtag,
+          },
+        })),
       },
       select: {
         userId: true,
@@ -528,17 +534,11 @@ exports.getHashtagBasedSuggestions = async (req, res, next) => {
       },
     });
 
-    // Filter posts that contain matching hashtags
-    const filteredPosts = postsWithHashtags.filter((post) => {
-      const postHashtags = post.content.match(hashtagRegex) || [];
-      return postHashtags.some((tag) => hashtagSet.has(tag.toLowerCase()));
-    });
-
     // Group by user and count hashtag matches
     const userHashtagCount = {};
     const userDetails = {};
 
-    filteredPosts.forEach((post) => {
+    postsWithHashtags.forEach((post) => {
       if (!followingIds.has(post.userId)) {
         const postHashtags = post.content.match(hashtagRegex) || [];
         const matchingCount = postHashtags.filter((tag) =>

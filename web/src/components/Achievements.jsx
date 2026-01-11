@@ -19,7 +19,8 @@ export default function Achievements({ userId }) {
   useEffect(() => {
     const fetchAchievements = async () => {
       try {
-        const { achievements: achievementsData } = await enhancementService.getAchievements(userId);
+        const { achievements: achievementsData } =
+          await enhancementService.getAchievements(userId);
         setAchievements(achievementsData || []);
       } catch (error) {
         console.error("Failed to fetch achievements:", error);
@@ -60,12 +61,18 @@ export default function Achievements({ userId }) {
             className="flex items-start p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <div className="text-4xl mr-4">
-              {achievement.icon || achievementIcons[achievement.type] || achievementIcons.default}
+              {achievement.icon ||
+                achievementIcons[achievement.type] ||
+                achievementIcons.default}
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-800">{achievement.title}</h3>
+              <h3 className="font-semibold text-gray-800">
+                {achievement.title}
+              </h3>
               {achievement.description && (
-                <p className="text-sm text-gray-600 mt-1">{achievement.description}</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {achievement.description}
+                </p>
               )}
               <p className="text-xs text-gray-500 mt-2">
                 Earned {new Date(achievement.earnedAt).toLocaleDateString()}

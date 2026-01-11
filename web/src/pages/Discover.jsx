@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PageTransition from "../components/PageTransition";
-import api from "../services/api";
+import api, { enhancementService } from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 import { chatService } from "../services/chatService";
 
 export default function Discover() {
   const { showToast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -16,13 +18,28 @@ export default function Discover() {
   const [mutualConnections, setMutualConnections] = useState([]);
   const [skillSuggestions, setSkillSuggestions] = useState([]);
   const [hashtagSuggestions, setHashtagSuggestions] = useState([]);
-  const [activeTab, setActiveTab] = useState("suggested"); // 'suggested', 'mutual', 'skills', or 'hashtags'
+  const [trendingSkills, setTrendingSkills] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [activeTab, setActiveTab] = useState("suggested"); // 'suggested', 'mutual', 'skills', 'hashtags', 'trending', 'favorites'
   const [loading, setLoading] = useState(false);
   const [suggestedLoading, setSuggestedLoading] = useState(true);
   const [mutualLoading, setMutualLoading] = useState(true);
   const [skillLoading, setSkillLoading] = useState(true);
   const [hashtagLoading, setHashtagLoading] = useState(true);
+  const [trendingLoading, setTrendingLoading] = useState(false);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
   const [startingChats, setStartingChats] = useState(new Set());
+
+  // Filters
+  const [filters, setFilters] = useState({
+    course: "",
+    skills: [],
+    year: "",
+  });
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [availableSkills, setAvailableSkills] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [filterLoading, setFilterLoading] = useState(false);
 
   useEffect(() => {
     const fetchSuggested = async () => {
@@ -92,6 +109,97 @@ export default function Discover() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const fetchTrendingSkills = async () => {
+      try {
+        setTrendingLoading(true);
+        const { trendingSkills: skills } =
+          await enhancementService.getTrendingSkills();
+        setTrendingSkills(skills || []);
+      } catch (error) {
+        console.error("Failed to fetch trending skills:", error);
+        showToast("Failed to load trending skills", "error");
+      } finally {
+        setTrendingLoading(false);
+      }
+    };
+
+    if (activeTab === "trending") {
+      fetchTrendingSkills();
+    }
+  }, [activeTab, showToast]);
+
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      try {
+        setFavoritesLoading(true);
+        const { favorites: favs } = await enhancementService.getFavorites();
+        setFavorites(favs || []);
+      } catch (error) {
+        console.error("Failed to fetch favorites:", error);
+        showToast("Failed to load favorites", "error");
+      } finally {
+        setFavoritesLoading(false);
+      }
+    };
+
+    if (activeTab === "favorites" && user?.id) {
+      fetchFavorites();
+    }
+  }, [activeTab, user?.id, showToast]);
+
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        // Fetch available courses and skills for filters
+        const { data: skillsData } = await api.get("/skills/all");
+        const uniqueCourses = new Set();
+        const uniqueSkills = new Set();
+
+        skillsData.forEach((skill) => {
+          if (skill.user?.course) {
+            uniqueCourses.add(skill.user.course);
+          }
+          uniqueSkills.add(skill.title);
+        });
+
+        setAvailableCourses(Array.from(uniqueCourses).sort());
+        setAvailableSkills(Array.from(uniqueSkills).sort());
+      } catch (error) {
+        console.error("Failed to fetch filter options:", error);
+      }
+    };
+
+    fetchFilterOptions();
+  }, []);
+
+  useEffect(() => {
+    const applyFilters = async () => {
+      if (!filters.course && filters.skills.length === 0 && !filters.year) {
+        setFilteredUsers([]);
+        return;
+      }
+
+      setFilterLoading(true);
+      try {
+        const params = {};
+        if (filters.course) params.course = filters.course;
+        if (filters.skills.length > 0) params.skills = filters.skills.join(",");
+        if (filters.year) params.year = filters.year;
+
+        const { users } = await enhancementService.filterUsers(params);
+        setFilteredUsers(users || []);
+      } catch (error) {
+        console.error("Failed to filter users:", error);
+        showToast("Failed to filter users", "error");
+      } finally {
+        setFilterLoading(false);
+      }
+    };
+
+    applyFilters();
+  }, [filters, showToast]);
+
   const handleSearch = async (e) => {
     e.preventDefault();
     if (searchQuery.trim().length < 2) return;
@@ -144,72 +252,140 @@ export default function Discover() {
     return icons[category] || "👤";
   };
 
+  const handleAddToFavorites = async (favoriteUserId) => {
+    try {
+      await enhancementService.addToFavorites(favoriteUserId);
+      setFavorites((prev) => {
+        const user =
+          searchResults.find((u) => u.id === favoriteUserId) ||
+          suggestedCategories
+            .flatMap((g) => g.users)
+            .find((u) => u.id === favoriteUserId);
+        return user ? [...prev, user] : prev;
+      });
+      showToast("Added to favorites", "success");
+    } catch (error) {
+      console.error("Failed to add to favorites:", error);
+      showToast("Failed to add to favorites", "error");
+    }
+  };
+
+  const handleRemoveFromFavorites = async (favoriteUserId) => {
+    try {
+      await enhancementService.removeFromFavorites(favoriteUserId);
+      setFavorites((prev) => prev.filter((u) => u.id !== favoriteUserId));
+      showToast("Removed from favorites", "success");
+    } catch (error) {
+      console.error("Failed to remove from favorites:", error);
+      showToast("Failed to remove from favorites", "error");
+    }
+  };
+
+  const isFavorite = (userId) => {
+    return favorites.some((f) => f.id === userId);
+  };
+
   const UserCard = ({
-    user,
+    user: cardUser,
     showSkillMatch = false,
     showHashtagMatch = false,
-  }) => (
-    <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:border-primary hover:shadow-md transition">
-      <Link
-        to={`/profile/${user.id}`}
-        className="flex items-center gap-4 flex-1 min-w-0"
-      >
-        <img
-          src={user.profilePic || "https://placehold.co/64x64?text=User"}
-          alt={user.name}
-          className="w-16 h-16 rounded-full object-cover"
-        />
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-secondary truncate">{user.name}</h3>
-          {user.email && (
-            <p className="text-sm text-gray-600 truncate">{user.email}</p>
+    showFavoriteButton = true,
+  }) => {
+    const favorited = isFavorite(cardUser.id);
+    const isOwnProfile = cardUser.id === user?.id;
+
+    return (
+      <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:border-primary hover:shadow-md transition">
+        <Link
+          to={`/profile/${cardUser.id}`}
+          className="flex items-center gap-4 flex-1 min-w-0"
+        >
+          <img
+            src={cardUser.profilePic || "https://placehold.co/64x64?text=User"}
+            alt={cardUser.name}
+            className="w-16 h-16 rounded-full object-cover"
+          />
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-secondary truncate">
+              {cardUser.name}
+            </h3>
+            {cardUser.email && (
+              <p className="text-sm text-gray-600 truncate">{cardUser.email}</p>
+            )}
+            {cardUser.course && (
+              <p className="text-sm text-gray-500">{cardUser.course}</p>
+            )}
+            {cardUser.year && (
+              <p className="text-sm text-gray-500">Year {cardUser.year}</p>
+            )}
+            {cardUser.bio && (
+              <p className="text-sm text-gray-700 truncate mt-1">
+                {cardUser.bio}
+              </p>
+            )}
+            {showSkillMatch && cardUser.matchingSkillCount && (
+              <p className="text-sm text-blue-600 font-semibold mt-1">
+                💼 {cardUser.matchingSkillCount} matching skill
+                {cardUser.matchingSkillCount > 1 ? "s" : ""}
+              </p>
+            )}
+            {showHashtagMatch && cardUser.matchingHashtagCount && (
+              <p className="text-sm text-purple-600 font-semibold mt-1">
+                # {cardUser.matchingHashtagCount} shared hashtag
+                {cardUser.matchingHashtagCount > 1 ? "s" : ""}
+              </p>
+            )}
+          </div>
+          <div className="text-right text-sm text-gray-600">
+            <p className="font-semibold">{cardUser.followersCount || 0}</p>
+            <p>Followers</p>
+          </div>
+        </Link>
+        <div className="flex items-center gap-2">
+          {showFavoriteButton && !isOwnProfile && user?.id && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (favorited) {
+                  handleRemoveFromFavorites(cardUser.id);
+                } else {
+                  handleAddToFavorites(cardUser.id);
+                }
+              }}
+              className={`p-2 rounded-lg transition ${
+                favorited
+                  ? "bg-yellow-100 text-yellow-600 hover:bg-yellow-200"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+              title={favorited ? "Remove from favorites" : "Add to favorites"}
+            >
+              ⭐
+            </button>
           )}
-          {user.course && (
-            <p className="text-sm text-gray-500">{user.course}</p>
-          )}
-          {user.bio && (
-            <p className="text-sm text-gray-700 truncate mt-1">{user.bio}</p>
-          )}
-          {showSkillMatch && user.matchingSkillCount && (
-            <p className="text-sm text-blue-600 font-semibold mt-1">
-              💼 {user.matchingSkillCount} matching skill
-              {user.matchingSkillCount > 1 ? "s" : ""}
-            </p>
-          )}
-          {showHashtagMatch && user.matchingHashtagCount && (
-            <p className="text-sm text-purple-600 font-semibold mt-1">
-              # {user.matchingHashtagCount} shared hashtag
-              {user.matchingHashtagCount > 1 ? "s" : ""}
-            </p>
-          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              startChat(cardUser.id);
+            }}
+            disabled={startingChats.has(cardUser.id)}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+          >
+            {startingChats.has(cardUser.id) ? (
+              <>
+                <LoadingSpinner size="sm" />
+                <span>Opening...</span>
+              </>
+            ) : (
+              <>
+                <span>💬</span>
+                <span>Message</span>
+              </>
+            )}
+          </button>
         </div>
-        <div className="text-right text-sm text-gray-600">
-          <p className="font-semibold">{user.followersCount || 0}</p>
-          <p>Followers</p>
-        </div>
-      </Link>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          startChat(user.id);
-        }}
-        disabled={startingChats.has(user.id)}
-        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
-      >
-        {startingChats.has(user.id) ? (
-          <>
-            <LoadingSpinner size="sm" />
-            <span>Opening...</span>
-          </>
-        ) : (
-          <>
-            <span>💬</span>
-            <span>Message</span>
-          </>
-        )}
-      </button>
-    </div>
-  );
+      </div>
+    );
+  };
 
   return (
     <PageTransition>
@@ -248,6 +424,112 @@ export default function Discover() {
           </p>
         </form>
 
+        {/* Filters */}
+        <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+          <h2 className="text-lg font-semibold text-secondary mb-4">
+            🔍 Filter Users
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Course
+              </label>
+              <select
+                value={filters.course}
+                onChange={(e) =>
+                  setFilters({ ...filters, course: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+              >
+                <option value="">All Courses</option>
+                {availableCourses.map((course) => (
+                  <option key={course} value={course}>
+                    {course}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Year
+              </label>
+              <select
+                value={filters.year}
+                onChange={(e) =>
+                  setFilters({ ...filters, year: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+              >
+                <option value="">All Years</option>
+                <option value="1">Year 1</option>
+                <option value="2">Year 2</option>
+                <option value="3">Year 3</option>
+                <option value="4">Year 4</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Skills
+              </label>
+              <select
+                multiple
+                value={filters.skills}
+                onChange={(e) => {
+                  const selected = Array.from(
+                    e.target.selectedOptions,
+                    (option) => option.value
+                  );
+                  setFilters({ ...filters, skills: selected });
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                size="3"
+              >
+                {availableSkills.map((skill) => (
+                  <option key={skill} value={skill}>
+                    {skill}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Hold Ctrl/Cmd to select multiple
+              </p>
+            </div>
+          </div>
+          {(filters.course || filters.skills.length > 0 || filters.year) && (
+            <button
+              onClick={() => setFilters({ course: "", skills: [], year: "" })}
+              className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+
+        {/* Filtered Results */}
+        {filteredUsers.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-secondary mb-4">
+              Filtered Results ({filteredUsers.length})
+            </h2>
+            {filterLoading ? (
+              <div className="space-y-3">
+                <SkeletonLoader type="card" />
+                <SkeletonLoader type="card" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredUsers.map((user) => (
+                  <UserCard
+                    key={user.id}
+                    user={user}
+                    showFavoriteButton={true}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Search Results */}
         {searchResults.length > 0 && (
           <div className="mb-8">
@@ -256,14 +538,14 @@ export default function Discover() {
             </h2>
             <div className="space-y-3">
               {searchResults.map((user) => (
-                <UserCard key={user.id} user={user} />
+                <UserCard key={user.id} user={user} showFavoriteButton={true} />
               ))}
             </div>
           </div>
         )}
 
         {/* Tab Navigation */}
-        <div className="flex gap-4 mb-8 border-b border-gray-200">
+        <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200">
           <button
             onClick={() => setActiveTab("suggested")}
             className={`px-4 py-3 font-semibold transition-colors ${
@@ -272,7 +554,7 @@ export default function Discover() {
                 : "text-gray-600 hover:text-secondary"
             }`}
           >
-            ✨ Suggested for You
+            ✨ Suggested
           </button>
           <button
             onClick={() => setActiveTab("mutual")}
@@ -282,7 +564,7 @@ export default function Discover() {
                 : "text-gray-600 hover:text-secondary"
             }`}
           >
-            🤝 Mutual Connections
+            🤝 Mutual
           </button>
           <button
             onClick={() => setActiveTab("skills")}
@@ -292,7 +574,7 @@ export default function Discover() {
                 : "text-gray-600 hover:text-secondary"
             }`}
           >
-            💼 Skills-Based
+            💼 Skills
           </button>
           <button
             onClick={() => setActiveTab("hashtags")}
@@ -302,7 +584,27 @@ export default function Discover() {
                 : "text-gray-600 hover:text-secondary"
             }`}
           >
-            # Hashtag-Based
+            # Hashtags
+          </button>
+          <button
+            onClick={() => setActiveTab("trending")}
+            className={`px-4 py-3 font-semibold transition-colors ${
+              activeTab === "trending"
+                ? "text-primary border-b-2 border-primary"
+                : "text-gray-600 hover:text-secondary"
+            }`}
+          >
+            🔥 Trending Skills
+          </button>
+          <button
+            onClick={() => setActiveTab("favorites")}
+            className={`px-4 py-3 font-semibold transition-colors ${
+              activeTab === "favorites"
+                ? "text-primary border-b-2 border-primary"
+                : "text-gray-600 hover:text-secondary"
+            }`}
+          >
+            ⭐ Favorites
           </button>
         </div>
 
@@ -496,7 +798,6 @@ export default function Discover() {
                 </button>
               </div>
             )}
-
           </div>
         )}
         {/* Hashtag-Based Tab */}
@@ -519,13 +820,18 @@ export default function Discover() {
                 </div>
                 <div className="space-y-3">
                   {hashtagSuggestions.map((user) => (
-                    <UserCard key={user.id} user={user} showHashtagMatch={true} />
+                    <UserCard
+                      key={user.id}
+                      user={user}
+                      showHashtagMatch={true}
+                    />
                   ))}
                 </div>
               </div>
             ) : (
               <p className="text-gray-600">
-                No hashtag-based suggestions available. Use hashtags in your posts to get personalized recommendations!
+                No hashtag-based suggestions available. Use hashtags in your
+                posts to get personalized recommendations!
               </p>
             )}
             {hashtagSuggestions.length === 0 && !hashtagLoading && (
@@ -558,6 +864,3 @@ export default function Discover() {
     </PageTransition>
   );
 }
-
-
-

@@ -3,7 +3,7 @@ const { createNotification } = require("./notificationController");
 
 exports.sendRequest = async (req, res, next) => {
   try {
-    const { toUserId, skillId } = req.body;
+    const { toUserId, skillId, message, deadline, isUrgent } = req.body;
     if (!toUserId || !skillId) {
       return res
         .status(400)
@@ -15,6 +15,9 @@ exports.sendRequest = async (req, res, next) => {
         fromUserId: req.user.id,
         toUserId,
         skillId,
+        message: message || null,
+        deadline: deadline ? new Date(deadline) : null,
+        isUrgent: isUrgent || false,
       },
       include: {
         fromUser: { select: { name: true } },
@@ -61,7 +64,11 @@ exports.updateRequestStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    if (!["pending", "accepted", "rejected"].includes(status)) {
+    if (
+      !["pending", "accepted", "rejected", "completed", "cancelled"].includes(
+        status
+      )
+    ) {
       return res.status(400).json({ message: "Invalid status" });
     }
 
