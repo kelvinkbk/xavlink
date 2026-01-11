@@ -18,17 +18,14 @@ export default function Discover() {
   const [mutualConnections, setMutualConnections] = useState([]);
   const [skillSuggestions, setSkillSuggestions] = useState([]);
   const [hashtagSuggestions, setHashtagSuggestions] = useState([]);
-  const [trendingSkills, setTrendingSkills] = useState([]);
-  const [favorites, setFavorites] = useState([]);
-  const [activeTab, setActiveTab] = useState("suggested"); // 'suggested', 'mutual', 'skills', 'hashtags', 'trending', 'favorites'
+  const [activeTab, setActiveTab] = useState("suggested"); // 'suggested', 'mutual', 'skills', 'hashtags'
   const [loading, setLoading] = useState(false);
   const [suggestedLoading, setSuggestedLoading] = useState(true);
   const [mutualLoading, setMutualLoading] = useState(true);
   const [skillLoading, setSkillLoading] = useState(true);
   const [hashtagLoading, setHashtagLoading] = useState(true);
-  const [trendingLoading, setTrendingLoading] = useState(false);
-  const [favoritesLoading, setFavoritesLoading] = useState(false);
   const [startingChats, setStartingChats] = useState(new Set());
+  const [favorites, setFavorites] = useState([]);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -108,45 +105,6 @@ export default function Discover() {
     fetchHashtagSuggestions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    const fetchTrendingSkills = async () => {
-      try {
-        setTrendingLoading(true);
-        const { trendingSkills: skills } =
-          await enhancementService.getTrendingSkills();
-        setTrendingSkills(skills || []);
-      } catch (error) {
-        console.error("Failed to fetch trending skills:", error);
-        showToast("Failed to load trending skills", "error");
-      } finally {
-        setTrendingLoading(false);
-      }
-    };
-
-    if (activeTab === "trending") {
-      fetchTrendingSkills();
-    }
-  }, [activeTab, showToast]);
-
-  useEffect(() => {
-    const fetchFavorites = async () => {
-      try {
-        setFavoritesLoading(true);
-        const { favorites: favs } = await enhancementService.getFavorites();
-        setFavorites(favs || []);
-      } catch (error) {
-        console.error("Failed to fetch favorites:", error);
-        showToast("Failed to load favorites", "error");
-      } finally {
-        setFavoritesLoading(false);
-      }
-    };
-
-    if (activeTab === "favorites" && user?.id) {
-      fetchFavorites();
-    }
-  }, [activeTab, user?.id, showToast]);
 
   useEffect(() => {
     const fetchFilterOptions = async () => {

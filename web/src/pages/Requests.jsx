@@ -6,7 +6,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../context/ToastContext";
 
-function RequestCard({ request, onStatusUpdate, currentUserId, isReceived }) {
+function RequestCard({ request, onStatusUpdate, isReceived }) {
   const [updating, setUpdating] = useState(false);
   const [showCounterOffer, setShowCounterOffer] = useState(false);
   const [counterOffer, setCounterOffer] = useState("");

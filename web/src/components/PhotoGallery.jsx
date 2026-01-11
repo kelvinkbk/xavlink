@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { enhancementService, uploadService } from "../services/api";
-import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import LoadingSpinner from "./LoadingSpinner";
 
 export default function PhotoGallery({ userId, isOwnProfile = false }) {
-  const { user: currentUser } = useAuth();
   const { showToast } = useToast();
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);

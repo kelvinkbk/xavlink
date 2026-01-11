@@ -496,8 +496,8 @@ export default function Discover() {
                 </button>
               </div>
             )}
-
-          </div>\n        )}
+          </div>
+        )}
         {/* Hashtag-Based Tab */}
         {activeTab === "hashtags" && (
           <div>
@@ -518,13 +518,18 @@ export default function Discover() {
                 </div>
                 <div className="space-y-3">
                   {hashtagSuggestions.map((user) => (
-                    <UserCard key={user.id} user={user} showHashtagMatch={true} />
+                    <UserCard
+                      key={user.id}
+                      user={user}
+                      showHashtagMatch={true}
+                    />
                   ))}
                 </div>
               </div>
             ) : (
               <p className="text-gray-600">
-                No hashtag-based suggestions available. Use hashtags in your posts to get personalized recommendations!
+                No hashtag-based suggestions available. Use hashtags in your
+                posts to get personalized recommendations!
               </p>
             )}
             {hashtagSuggestions.length === 0 && !hashtagLoading && (
@@ -557,4 +562,3 @@ export default function Discover() {
     </PageTransition>
   );
 }
-
