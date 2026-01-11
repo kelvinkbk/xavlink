@@ -84,15 +84,24 @@ ADD COLUMN     "archived" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "isPinned" BOOLEAN NOT NULL DEFAULT false;
 
 -- AlterTable
-ALTER TABLE "Post" DROP COLUMN "commentsCount",
-DROP COLUMN "images",
-DROP COLUMN "isDraft",
-DROP COLUMN "likesCount",
-DROP COLUMN "richContent",
-DROP COLUMN "scheduledAt",
-DROP COLUMN "templateType",
-DROP COLUMN "viewCount",
-ADD COLUMN     "image" TEXT;
+ALTER TABLE "Post" 
+DROP COLUMN IF EXISTS "commentsCount",
+DROP COLUMN IF EXISTS "images",
+DROP COLUMN IF EXISTS "isDraft",
+DROP COLUMN IF EXISTS "likesCount",
+DROP COLUMN IF EXISTS "richContent",
+DROP COLUMN IF EXISTS "scheduledAt",
+DROP COLUMN IF EXISTS "templateType",
+DROP COLUMN IF EXISTS "viewCount";
+
+-- Add image column only if it does not already exist
+DO $$
+BEGIN
+    ALTER TABLE "Post" ADD COLUMN "image" TEXT;
+EXCEPTION
+    WHEN duplicate_column THEN NULL;
+END;
+$$;
 
 -- AlterTable
 ALTER TABLE "Request" ADD COLUMN     "completedAt" TIMESTAMP(3),
