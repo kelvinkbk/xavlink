@@ -17,7 +17,7 @@ import SocialLinks from "../components/SocialLinks";
 import { enhancementService } from "../services/api";
 
 export default function Profile() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, updateUser } = useAuth();
   const { showToast } = useToast();
   const { userId } = useParams();
   const isOwnProfile = !userId || userId === currentUser?.id;
@@ -153,14 +153,7 @@ export default function Profile() {
       const { data } = await api.put(`/users/${currentUser.id}`, editForm);
       setUser(data);
       setIsEditing(false);
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      const updatedUser = { ...storedUser, ...data };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      showToast("Profile updated", "success");
-    } catch (error) {
-      console.error("Failed to update profile:", error);
-      showToast("Failed to update profile", "error");
-    }
+    updateUser(data); // Update AuthContext
   };
 
   const handleAvatarUpload = async (e) => {
@@ -171,17 +164,7 @@ export default function Profile() {
       setEditForm((prev) => ({ ...prev, profilePic: url }));
       if (updated) {
         setUser(updated);
-        const storedUser = JSON.parse(localStorage.getItem("user"));
-        const merged = { ...storedUser, ...updated };
-        localStorage.setItem("user", JSON.stringify(merged));
-      }
-      showToast("Profile photo updated", "success");
-    } catch (error) {
-      console.error("Avatar upload failed", error);
-      showToast(
-        error?.response?.data?.message || "Failed to upload avatar",
-        "error"
-      );
+      updateUser(updated); // Update AuthContext
     }
   };
 

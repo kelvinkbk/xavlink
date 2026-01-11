@@ -34,7 +34,20 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("userId");
   };
 
-  const value = { user, token, login, logout, isAuthenticated: !!token };
+  const updateUser = (updatedUserData) => {
+    const merged = { ...user, ...updatedUserData };
+    setUser(merged);
+    localStorage.setItem("user", JSON.stringify(merged));
+  };
+
+  const value = { 
+    user, 
+    token, 
+    login, 
+    logout, 
+    updateUser,
+    isAuthenticated: !!token 
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
