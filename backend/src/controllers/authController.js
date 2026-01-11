@@ -216,7 +216,8 @@ exports.register = async (req, res, next) => {
     const verificationTokenExpiry = new Date(Date.now() + 24 * 3600000); // 24 hours
 
     // Auto-verify email if EMAIL_PROVIDER is not configured
-    const emailVerified = !process.env.EMAIL_PROVIDER;
+    // Email verification is now required for all users
+    const emailVerified = false;
 
     const user = await prisma.user.create({
       data: {
@@ -235,16 +236,15 @@ exports.register = async (req, res, next) => {
     });
 
     // Only send verification email if EMAIL_PROVIDER is configured
-    if (process.env.EMAIL_PROVIDER) {
-      const verificationLink = `${
-        process.env.FRONTEND_URL || "http://localhost:5173"
-      }/verify-email?token=${verificationToken}`;
-      await sendVerificationEmail(user.email, user.name, verificationLink);
-    }
+     // Always send verification email
+     const verificationLink = `${
+       process.env.FRONTEND_URL || "http://localhost:5173"
+     }/verify-email?token=${verificationToken}`;
+     await sendVerificationEmail(user.email, user.name, verificationLink);
 
     res.status(201).json({
       message: emailVerified
-        ? "Registration successful"
+        ? "Registration successful. Please verify your email."
         : "Registration successful. Please verify your email.",
       user: sanitizeUser(user),
     });
