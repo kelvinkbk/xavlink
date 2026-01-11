@@ -75,7 +75,14 @@ exports.createPost = async (req, res, next) => {
       });
     }
 
-    res.status(201).json(post);
+    // Return post with same structure as socket emission
+    res.status(201).json({
+      ...post,
+      likesCount: 0,
+      commentsCount: 0,
+      isLiked: false,
+      isBookmarked: false,
+    });
   } catch (err) {
     console.error("❌ createPost error:", err.message);
     console.error("❌ Full error:", err);

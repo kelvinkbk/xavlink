@@ -20,8 +20,8 @@ const Notifications = () => {
 
     const fetchNotifications = async () => {
       try {
-        const { data } = await api.get(`/notifications/${user.id}`);
-        setNotifications(data);
+        const { data } = await api.get("/notifications");
+        setNotifications(data.notifications);
         setLoading(false);
       } catch (error) {
         console.error("Failed to fetch notifications:", error);
@@ -32,9 +32,7 @@ const Notifications = () => {
 
     const fetchUnreadCount = async () => {
       try {
-        const { data } = await api.get(
-          `/notifications/${user.id}/unread-count`
-        );
+        const { data } = await api.get("/notifications/unread-count");
         setUnreadCount(data.unreadCount);
       } catch (error) {
         console.error("Failed to fetch unread count:", error);
@@ -59,8 +57,8 @@ const Notifications = () => {
     try {
       await api.put(`/notifications/${id}/read`);
       // Refresh list
-      const { data } = await api.get(`/notifications/${user?.id}`);
-      setNotifications(data);
+      const { data } = await api.get("/notifications");
+      setNotifications(data.notifications);
       showToast("Marked as read", "success");
     } catch (error) {
       console.error("Failed to mark as read:", error);
@@ -70,9 +68,9 @@ const Notifications = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await api.put(`/notifications/${user?.id}/read-all`);
-      const { data } = await api.get(`/notifications/${user?.id}`);
-      setNotifications(data);
+      await api.put("/notifications/read-all");
+      const { data } = await api.get("/notifications");
+      setNotifications(data.notifications);
       setUnreadCount(0);
       showToast("All notifications marked as read", "success");
     } catch (error) {
@@ -84,8 +82,8 @@ const Notifications = () => {
   const handleDelete = async (id) => {
     try {
       await api.delete(`/notifications/${id}`);
-      const { data } = await api.get(`/notifications/${user?.id}`);
-      setNotifications(data);
+      const { data } = await api.get("/notifications");
+      setNotifications(data.notifications);
       showToast("Notification deleted", "success");
     } catch (error) {
       console.error("Failed to delete notification:", error);
@@ -159,8 +157,8 @@ const Notifications = () => {
               onClick={async () => {
                 setLoading(true);
                 try {
-                  const { data } = await api.get(`/notifications/${user?.id}`);
-                  setNotifications(data);
+                  const { data } = await api.get("/notifications");
+                  setNotifications(data.notifications);
                   showToast("Notifications refreshed", "success");
                 } catch (e) {
                   console.error("Refresh notifications failed:", e);

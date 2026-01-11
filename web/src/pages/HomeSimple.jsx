@@ -176,6 +176,13 @@ function HomeSimple() {
       const { post } = data;
       console.log(`📝 Real-time new post received:`, post);
 
+      // Skip if this is our own post (already added via handlePostCreated)
+      const currentUserId = localStorage.getItem("userId");
+      if (String(post.userId) === String(currentUserId)) {
+        console.log("⏭️ Skipping own post (already added locally)");
+        return;
+      }
+
       // Normalize URLs for image and profilePic
       const normalized = {
         ...post,
@@ -185,7 +192,7 @@ function HomeSimple() {
           : post.user,
       };
 
-      // Only add if not already in the list (avoid duplicates for the creator)
+      // Only add if not already in the list (avoid duplicates)
       setPosts((prevPosts) => {
         const exists = prevPosts.some((p) => p.id === normalized.id);
         if (exists) return prevPosts;
@@ -901,9 +908,9 @@ function HomeSimple() {
                 🔥 Trending Hashtags
               </h3>
               <div className="flex flex-wrap gap-2">
-                {trendingHashtags.map((tag, idx) => (
+                {trendingHashtags.map((tag) => (
                   <button
-                    key={idx}
+                    key={tag}
                     onClick={() => {
                       setSearchQuery(`#${tag}`);
                       handleSearch(`#${tag}`);
