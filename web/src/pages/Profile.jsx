@@ -153,7 +153,12 @@ export default function Profile() {
       const { data } = await api.put(`/users/${currentUser.id}`, editForm);
       setUser(data);
       setIsEditing(false);
-    updateUser(data); // Update AuthContext
+      updateUser(data); // Update AuthContext
+      showToast("Profile updated", "success");
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      showToast("Failed to update profile", "error");
+    }
   };
 
   const handleAvatarUpload = async (e) => {
@@ -164,7 +169,15 @@ export default function Profile() {
       setEditForm((prev) => ({ ...prev, profilePic: url }));
       if (updated) {
         setUser(updated);
-      updateUser(updated); // Update AuthContext
+        updateUser(updated); // Update AuthContext
+      }
+      showToast("Profile photo updated", "success");
+    } catch (error) {
+      console.error("Avatar upload failed", error);
+      showToast(
+        error?.response?.data?.message || "Failed to upload avatar",
+        "error"
+      );
     }
   };
 
