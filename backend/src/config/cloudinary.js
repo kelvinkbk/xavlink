@@ -8,6 +8,13 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Log configuration status (without exposing secrets)
+console.log("🔧 Cloudinary Configuration:", {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? "✅ Set" : "❌ Missing",
+  api_key: process.env.CLOUDINARY_API_KEY ? "✅ Set" : "❌ Missing",
+  api_secret: process.env.CLOUDINARY_API_SECRET ? "✅ Set" : "❌ Missing",
+});
+
 // Storage for profile pictures
 const profileStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
