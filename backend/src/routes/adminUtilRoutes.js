@@ -21,9 +21,8 @@ router.get("/check-profiles", authMiddleware, async (req, res) => {
       total: users.length,
       withOldUrls: users.filter((u) => u.profilePic?.includes("/uploads/"))
         .length,
-      withCloudinary: users.filter((u) =>
-        u.profilePic?.includes("cloudinary")
-      ).length,
+      withCloudinary: users.filter((u) => u.profilePic?.includes("cloudinary"))
+        .length,
       withNull: users.filter((u) => !u.profilePic).length,
     };
 
