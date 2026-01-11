@@ -1,9 +1,9 @@
 const express = require("express");
 const authMiddleware = require("../middleware/authMiddleware");
 const {
-  upload,
+  profileUpload,
+  postUpload,
   chatUpload,
-  setUploadFolder,
 } = require("../middleware/uploadMiddleware");
 const {
   uploadProfilePic,
@@ -19,8 +19,7 @@ router.post(
   "/profile-pic",
   authMiddleware,
   uploadLimiter,
-  setUploadFolder("profile"),
-  upload.single("image"),
+  profileUpload.single("image"),
   uploadProfilePic
 );
 
@@ -29,8 +28,7 @@ router.post(
   "/post-image",
   authMiddleware,
   uploadLimiter,
-  setUploadFolder("posts"),
-  upload.single("image"),
+  postUpload.single("image"),
   uploadPostImage
 );
 
@@ -39,7 +37,6 @@ router.post(
   "/chat-attachment",
   authMiddleware,
   uploadLimiter,
-  setUploadFolder("chats"),
   chatUpload.single("file"),
   uploadChatAttachment
 );

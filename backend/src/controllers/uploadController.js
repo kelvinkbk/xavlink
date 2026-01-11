@@ -12,7 +12,8 @@ exports.uploadProfilePic = async (req, res, next) => {
       size: req.file.size,
     });
     const userId = req.user.id;
-    const publicUrl = `/uploads/profile/${req.file.filename}`;
+    // Cloudinary URL is available in req.file.path
+    const publicUrl = req.file.path;
 
     const user = await prisma.user.update({
       where: { id: userId },
@@ -36,7 +37,8 @@ exports.uploadPostImage = async (req, res, next) => {
       originalname: req.file.originalname,
       size: req.file.size,
     });
-    const publicUrl = `/uploads/posts/${req.file.filename}`;
+    // Cloudinary URL is available in req.file.path
+    const publicUrl = req.file.path;
     return res.status(201).json({ url: publicUrl });
   } catch (err) {
     next(err);
@@ -53,7 +55,8 @@ exports.uploadChatAttachment = async (req, res, next) => {
       originalname: req.file.originalname,
       size: req.file.size,
     });
-    const publicUrl = `/uploads/chats/${req.file.filename}`;
+    // Cloudinary URL is available in req.file.path
+    const publicUrl = req.file.path;
     return res.status(201).json({ url: publicUrl });
   } catch (err) {
     next(err);

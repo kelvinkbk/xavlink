@@ -1,34 +1,10 @@
 const multer = require("multer");
 const path = require("path");
-const fs = require("fs");
-
-const UPLOAD_ROOT = path.join(__dirname, "..", "..", "uploads");
-
-// Ensure base upload directory exists
-if (!fs.existsSync(UPLOAD_ROOT)) {
-  fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Separate folders for profile pics and post images
-    const folder = req.uploadFolder || "misc";
-    const dest = path.join(UPLOAD_ROOT, folder);
-    if (!fs.existsSync(dest)) {
-      fs.mkdirSync(dest, { recursive: true });
-    }
-    cb(null, dest);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const base = path
-      .basename(file.originalname, ext)
-      .replace(/[^a-zA-Z0-9-_]/g, "_")
-      .slice(0, 50);
-    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, `${base}-${unique}${ext}`);
-  },
-});
+const {
+  profileStorage,
+  chatStorage,
+  postStorage,
+} = require("../config/cloudinary");
 
 const imageFileFilter = (req, file, cb) => {
   const allowed = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".heic", ".heif"];
@@ -74,23 +50,33 @@ const chatFileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-// 5 MB default limit
-const upload = multer({
-  storage,
+// Profile picture upload (using Cloudinary)
+const profileUpload = multer({
+  storage: profileStorage,
   fileFilter: imageFileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
 });
 
-// Chat upload (more permissive file types, 10 MB limit)
+// Post image upload (using Cloudinary)
+const postUpload = multer({
+  storage: postStorage,
+  fileFilter: imageFileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+});
+
+// Chat upload (using Cloudinary, more permissive file types, 10 MB limit)
 const chatUpload = multer({
-  storage,
+  storage: chatStorage,
   fileFilter: chatFileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
 });
 
 module.exports = {
-  upload,
+  profileUpload,
+  postUpload,
   chatUpload,
+  // Keep legacy exports for backward compatibility
+  upload: profileUpload,
   setUploadFolder: (folder) => (req, _res, next) => {
     req.uploadFolder = folder;
     next();
