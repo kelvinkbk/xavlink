@@ -11,6 +11,7 @@ This application uses Cloudinary for persistent file storage in production. Foll
 ## 2. Get Your Cloudinary Credentials
 
 From your Cloudinary Dashboard, you'll find:
+
 - **Cloud Name**: Found at the top of the dashboard
 - **API Key**: Found in the "Account Details" section
 - **API Secret**: Click "Reveal" next to API Key to see it
@@ -26,9 +27,11 @@ CLOUDINARY_API_SECRET=your_api_secret_here
 ```
 
 ### For Local Development:
+
 Update `backend/.env`
 
 ### For Production (Render):
+
 1. Go to your Render dashboard
 2. Select your backend service
 3. Go to "Environment" tab
@@ -41,6 +44,7 @@ Update `backend/.env`
 ## 4. File Organization
 
 Files are automatically organized in Cloudinary folders:
+
 - **Profile Pictures**: `xavlink/profile/`
 - **Post Images**: `xavlink/posts/`
 - **Chat Attachments**: `xavlink/chats/`
@@ -60,9 +64,11 @@ Files are automatically organized in Cloudinary folders:
 ## Supported File Types
 
 ### Images
+
 - `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.heic`, `.heif`
 
 ### Chat Attachments (also includes)
+
 - Documents: `.pdf`, `.doc`, `.docx`, `.txt`, `.xls`, `.xlsx`, `.ppt`, `.pptx`
 - Media: `.mp3`, `.wav`, `.mp4`, `.mov`, `.avi`
 

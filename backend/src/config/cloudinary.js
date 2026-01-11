@@ -23,7 +23,16 @@ const chatStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "xavlink/chats",
-    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx"],
+    allowed_formats: [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "webp",
+      "pdf",
+      "doc",
+      "docx",
+    ],
     resource_type: "auto", // Automatically detect file type
   },
 });
