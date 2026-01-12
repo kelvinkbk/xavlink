@@ -236,11 +236,11 @@ exports.register = async (req, res, next) => {
     });
 
     // Only send verification email if EMAIL_PROVIDER is configured
-     // Always send verification email
-     const verificationLink = `${
-       process.env.FRONTEND_URL || "http://localhost:5173"
-     }/verify-email?token=${verificationToken}`;
-     await sendVerificationEmail(user.email, user.name, verificationLink);
+    // Always send verification email
+    const verificationLink = `${
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    }/verify-email?token=${verificationToken}`;
+    await sendVerificationEmail(user.email, user.name, verificationLink);
 
     res.status(201).json({
       message: emailVerified
