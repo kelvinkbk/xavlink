@@ -19,7 +19,7 @@ const Settings = () => {
   const [message, setMessage] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  const applyTheme = (themeValue) => {
+  const applyTheme = () => {
     // Always use dark mode
     document.documentElement.dataset.theme = "dark";
     localStorage.setItem("theme", "dark");
@@ -257,15 +257,11 @@ const Settings = () => {
         <h1 className="text-3xl font-bold text-secondary mb-6">Settings</h1>
 
         {message && (
-          <div className="p-4 alert-primary rounded-lg mb-6">
-            ✅ {message}
-          </div>
+          <div className="p-4 alert-primary rounded-lg mb-6">✅ {message}</div>
         )}
 
         {error && (
-          <div className="p-4 alert-danger rounded-lg mb-6">
-            ❌ {error}
-          </div>
+          <div className="p-4 alert-danger rounded-lg mb-6">❌ {error}</div>
         )}
 
         {/* Tabs */}
@@ -538,7 +534,9 @@ const Settings = () => {
             </h2>
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-secondary mb-3">Color Palette</h3>
+                <h3 className="font-semibold text-secondary mb-3">
+                  Color Palette
+                </h3>
                 <select
                   value={settings?.colorPalette || "champagne"}
                   onChange={(e) =>
@@ -551,20 +549,45 @@ const Settings = () => {
                     borderColor: "var(--border)",
                   }}
                 >
-                  <option value="obsidian-blue">1️⃣ Obsidian Blue × Silver (Apple / Fintech)</option>
-                  <option value="emerald">2️⃣ Emerald × Graphite (Wealth / Premium)</option>
-                  <option value="royal-purple">3️⃣ Royal Purple × Onyx (High-Status Creators)</option>
-                  <option value="champagne">4️⃣ Champagne × Charcoal (Fashion / Luxury SaaS)</option>
-                  <option value="crimson">5️⃣ Crimson × Jet Black (Power / Exclusivity)</option>
-                  <option value="midnight-teal">6️⃣ Midnight Teal × Platinum (Private Bank)</option>
-                  <option value="graphite">7️⃣ Graphite × Ice White (Apple Pro / Minimal)</option>
-                  <option value="pearl">8️⃣ Pearl × Obsidian (Luxury Fashion / Editorial)</option>
-                  <option value="carbon-blue">9️⃣ Carbon × Electric Blue (Futuristic / AI)</option>
-                  <option value="mocha">🔟 Mocha × Linen (Calm Luxury / Lifestyle)</option>
-                  <option value="bronze">1️⃣1️⃣ Bronze × Ink Black (Old-Money / Legacy)</option>
+                  <option value="obsidian-blue">
+                    1️⃣ Obsidian Blue × Silver (Apple / Fintech)
+                  </option>
+                  <option value="emerald">
+                    2️⃣ Emerald × Graphite (Wealth / Premium)
+                  </option>
+                  <option value="royal-purple">
+                    3️⃣ Royal Purple × Onyx (High-Status Creators)
+                  </option>
+                  <option value="champagne">
+                    4️⃣ Champagne × Charcoal (Fashion / Luxury SaaS)
+                  </option>
+                  <option value="crimson">
+                    5️⃣ Crimson × Jet Black (Power / Exclusivity)
+                  </option>
+                  <option value="midnight-teal">
+                    6️⃣ Midnight Teal × Platinum (Private Bank)
+                  </option>
+                  <option value="graphite">
+                    7️⃣ Graphite × Ice White (Apple Pro / Minimal)
+                  </option>
+                  <option value="pearl">
+                    8️⃣ Pearl × Obsidian (Luxury Fashion / Editorial)
+                  </option>
+                  <option value="carbon-blue">
+                    9️⃣ Carbon × Electric Blue (Futuristic / AI)
+                  </option>
+                  <option value="mocha">
+                    🔟 Mocha × Linen (Calm Luxury / Lifestyle)
+                  </option>
+                  <option value="bronze">
+                    1️⃣1️⃣ Bronze × Ink Black (Old-Money / Legacy)
+                  </option>
                   <option value="gold">1️⃣2️⃣ Gold (Black × Gold Premium)</option>
                 </select>
-                <p className="mt-2 text-sm text-gray-600" style={{ color: "var(--muted)" }}>
+                <p
+                  className="mt-2 text-sm text-gray-600"
+                  style={{ color: "var(--muted)" }}
+                >
                   Choose a color palette that matches your style
                 </p>
               </div>

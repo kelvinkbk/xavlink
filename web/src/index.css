@@ -16,141 +16,141 @@
 
 /* 1️⃣ Obsidian Blue × Silver */
 [data-color-palette="obsidian-blue"] {
-  --primary: #0A2540;
-  --accent: #9CA3AF;
-  --highlight: #38BDF8;
-  --surface: #050B14;
-  --card: #0F172A;
-  --text: #E5E7EB;
-  --muted: #9CA3AF;
-  --border: #1E293B;
+  --primary: #0a2540;
+  --accent: #9ca3af;
+  --highlight: #38bdf8;
+  --surface: #050b14;
+  --card: #0f172a;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --border: #1e293b;
 }
 
 /* 2️⃣ Emerald × Graphite */
 [data-color-palette="emerald"] {
-  --primary: #064E3B;
-  --accent: #10B981;
-  --highlight: #A7F3D0;
-  --surface: #0B0F0E;
+  --primary: #064e3b;
+  --accent: #10b981;
+  --highlight: #a7f3d0;
+  --surface: #0b0f0e;
   --card: #111827;
-  --text: #ECFDF5;
-  --muted: #6B7280;
-  --border: #1F2937;
+  --text: #ecfdf5;
+  --muted: #6b7280;
+  --border: #1f2937;
 }
 
 /* 3️⃣ Royal Purple × Onyx */
 [data-color-palette="royal-purple"] {
-  --primary: #4C1D95;
-  --accent: #A78BFA;
-  --glow: #DDD6FE;
-  --surface: #09090B;
-  --card: #18181B;
-  --text: #FAFAFA;
-  --muted: #A1A1AA;
-  --border: #27272A;
+  --primary: #4c1d95;
+  --accent: #a78bfa;
+  --glow: #ddd6fe;
+  --surface: #09090b;
+  --card: #18181b;
+  --text: #fafafa;
+  --muted: #a1a1aa;
+  --border: #27272a;
 }
 
 /* 4️⃣ Champagne × Charcoal */
 [data-color-palette="champagne"] {
-  --primary: #E8C38E;
-  --accent: #C7A46A;
-  --surface: #0E0E0E;
-  --card: #1A1A1A;
-  --text: #F5F5F5;
-  --muted: #A3A3A3;
+  --primary: #e8c38e;
+  --accent: #c7a46a;
+  --surface: #0e0e0e;
+  --card: #1a1a1a;
+  --text: #f5f5f5;
+  --muted: #a3a3a3;
   --border: #262626;
 }
 
 /* 5️⃣ Crimson × Jet Black */
 [data-color-palette="crimson"] {
-  --primary: #7F1D1D;
-  --accent: #DC2626;
-  --highlight: #FCA5A5;
+  --primary: #7f1d1d;
+  --accent: #dc2626;
+  --highlight: #fca5a5;
   --surface: #070707;
   --card: #141414;
-  --text: #FAFAFA;
+  --text: #fafafa;
   --muted: #737373;
-  --border: #1F1F1F;
+  --border: #1f1f1f;
 }
 
 /* 6️⃣ Midnight Teal × Platinum */
 [data-color-palette="midnight-teal"] {
-  --primary: #0F766E;
-  --accent: #99F6E4;
-  --metallic: #D1D5DB;
-  --surface: #050F0E;
-  --card: #0F1E1C;
-  --text: #ECFEFF;
-  --muted: #9CA3AF;
-  --border: #1E3A38;
+  --primary: #0f766e;
+  --accent: #99f6e4;
+  --metallic: #d1d5db;
+  --surface: #050f0e;
+  --card: #0f1e1c;
+  --text: #ecfeff;
+  --muted: #9ca3af;
+  --border: #1e3a38;
 }
 
 /* 7️⃣ Graphite × Ice White */
 [data-color-palette="graphite"] {
   --primary: #111827;
-  --accent: #E5E7EB;
-  --highlight: #60A5FA;
+  --accent: #e5e7eb;
+  --highlight: #60a5fa;
   --surface: #020617;
-  --card: #0F172A;
-  --text: #F9FAFB;
-  --muted: #9CA3AF;
-  --border: #1E293B;
+  --card: #0f172a;
+  --text: #f9fafb;
+  --muted: #9ca3af;
+  --border: #1e293b;
 }
 
 /* 8️⃣ Pearl × Obsidian */
 [data-color-palette="pearl"] {
-  --primary: #F5F5F4;
-  --accent: #D6D3D1;
-  --ink: #09090B;
+  --primary: #f5f5f4;
+  --accent: #d6d3d1;
+  --ink: #09090b;
   --surface: #030303;
   --card: #111111;
-  --text: #FAFAFA;
-  --muted: #A8A29E;
-  --border: #1F1F1F;
+  --text: #fafafa;
+  --muted: #a8a29e;
+  --border: #1f1f1f;
 }
 
 /* 9️⃣ Carbon × Electric Blue */
 [data-color-palette="carbon-blue"] {
-  --primary: #0EA5E9;
-  --accent: #38BDF8;
-  --glow: #7DD3FC;
+  --primary: #0ea5e9;
+  --accent: #38bdf8;
+  --glow: #7dd3fc;
   --surface: #020617;
-  --card: #0B1220;
-  --text: #E0F2FE;
-  --muted: #94A3B8;
-  --border: #1E293B;
+  --card: #0b1220;
+  --text: #e0f2fe;
+  --muted: #94a3b8;
+  --border: #1e293b;
 }
 
 /* 🔟 Mocha × Linen */
 [data-color-palette="mocha"] {
-  --primary: #7C2D12;
-  --accent: #E7CBA9;
-  --surface: #0C0A09;
-  --card: #1C1917;
-  --text: #FAF7F5;
-  --muted: #A8A29E;
+  --primary: #7c2d12;
+  --accent: #e7cba9;
+  --surface: #0c0a09;
+  --card: #1c1917;
+  --text: #faf7f5;
+  --muted: #a8a29e;
   --border: #292524;
 }
 
 /* 1️⃣1️⃣ Bronze × Ink Black */
 [data-color-palette="bronze"] {
-  --primary: #CD7F32;
-  --accent: #E6B873;
+  --primary: #cd7f32;
+  --accent: #e6b873;
   --surface: #060606;
   --card: #151515;
-  --text: #FAFAF9;
-  --muted: #A1A1AA;
+  --text: #fafaf9;
+  --muted: #a1a1aa;
   --border: #262626;
 }
 
 /* 1️⃣2️⃣ Gold (Black × Gold) */
 [data-color-palette="gold"] {
-  --primary: #D4AF37;
-  --accent: #FFD966;
-  --surface: #0A0A0A;
+  --primary: #d4af37;
+  --accent: #ffd966;
+  --surface: #0a0a0a;
   --card: #161616;
-  --text: #FAFAF9;
-  --muted: #A1A1AA;
+  --text: #fafaf9;
+  --muted: #a1a1aa;
   --border: #262626;
 }
 
@@ -274,7 +274,7 @@ input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--primary) !important;
-  ring-color: var(--primary) !important;
+  outline-color: var(--primary) !important;
 }
 
 /* Alert/Toast backgrounds using palette colors */
