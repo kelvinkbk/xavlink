@@ -409,6 +409,7 @@ export default function Home() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [reportModal, setReportModal] = useState({
     isOpen: false,
     targetId: "",
