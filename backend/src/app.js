@@ -29,7 +29,7 @@ const {
   checkExpiredSuspensions,
 } = require("./middleware/suspensionCheckMiddleware");
 const requestLogger = require("./middleware/requestLogger");
-const { apiLimiter } = require("./middleware/securityMiddleware");
+const { apiLimiter } = require("./middleware/rateLimiter");
 const { sanitizeBody } = require("./middleware/validationMiddleware");
 
 const app = express();

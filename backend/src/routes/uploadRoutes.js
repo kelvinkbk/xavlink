@@ -10,7 +10,7 @@ const {
   uploadPostImage,
   uploadChatAttachment,
 } = require("../controllers/uploadController");
-const { uploadLimiter } = require("../middleware/securityMiddleware");
+const { uploadLimiter } = require("../middleware/rateLimiter");
 
 const router = express.Router();
 

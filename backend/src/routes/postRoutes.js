@@ -37,7 +37,11 @@ const {
 } = require("../controllers/postController");
 const authMiddleware = require("../middleware/authMiddleware");
 const { optionalAuthMiddleware } = require("../middleware/authMiddleware");
-const { postLimiter } = require("../middleware/securityMiddleware");
+const {
+  postCreationLimiter,
+  commentLimiter,
+  readLimiter,
+} = require("../middleware/rateLimiter");
 const { validatePagination } = require("../middleware/validationMiddleware");
 
 const router = express.Router();
@@ -45,19 +49,36 @@ const router = express.Router();
 // === SPECIFIC ROUTES FIRST (before dynamic :id routes) ===
 
 // 1. Search
-router.get("/search", optionalAuthMiddleware, validatePagination, searchPosts);
+router.get(
+  "/search",
+  readLimiter,
+  optionalAuthMiddleware,
+  validatePagination,
+  searchPosts
+);
 
 // 2. Trending & Tags
-router.get("/trending/topics", getTrendingTopics);
+router.get("/trending/topics", readLimiter, getTrendingTopics);
 
 // 3. Draft management (specific paths)
-router.post("/drafts/create", authMiddleware, postLimiter, createDraft);
-router.get("/drafts", authMiddleware, validatePagination, getDrafts);
-router.patch("/drafts/:draftId", authMiddleware, updateDraft);
+router.post("/drafts/create", authMiddleware, postCreationLimiter, createDraft);
+router.get(
+  "/drafts",
+  authMiddleware,
+  readLimiter,
+  validatePagination,
+  getDrafts
+);
+router.patch(
+  "/drafts/:draftId",
+  authMiddleware,
+  postCreationLimiter,
+  updateDraft
+);
 router.post(
   "/drafts/:draftId/publish",
   authMiddleware,
-  postLimiter,
+  postCreationLimiter,
   publishDraft
 );
 router.delete("/drafts/:draftId", authMiddleware, deleteDraft);
@@ -89,14 +110,30 @@ router.get(
 // === DYNAMIC :id ROUTES (most specific after static routes) ===
 
 // Basic CRUD
-router.post("/create", authMiddleware, postLimiter, createPost);
-router.get("/all", optionalAuthMiddleware, validatePagination, getAllPosts);
+router.post("/create", authMiddleware, postCreationLimiter, createPost);
+router.get(
+  "/all",
+  readLimiter,
+  optionalAuthMiddleware,
+  validatePagination,
+  getAllPosts
+);
 
 // Comments
-router.post("/:id/comments", authMiddleware, addComment);
-router.get("/:id/comments", getComments);
-router.patch("/comments/:commentId", authMiddleware, updateComment);
-router.delete("/comments/:commentId", authMiddleware, deleteComment);
+router.post("/:id/comments", authMiddleware, commentLimiter, addComment);
+router.get("/:id/comments", readLimiter, getComments);
+router.patch(
+  "/comments/:commentId",
+  authMiddleware,
+  commentLimiter,
+  updateComment
+);
+router.delete(
+  "/comments/:commentId",
+  authMiddleware,
+  commentLimiter,
+  deleteComment
+);
 
 // Likes
 router.post("/:id/like", authMiddleware, likePost);

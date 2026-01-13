@@ -12,12 +12,14 @@ const {
   bulkSetSuspended,
   bulkDeleteUsers,
 } = require("../controllers/adminController");
+const { getRateLimitStats } = require("../controllers/rateLimitController");
 
 const router = express.Router();
 
 router.use(authMiddleware, adminMiddleware);
 
 router.get("/stats", getStats);
+router.get("/rate-limits", getRateLimitStats);
 router.get("/users", listUsers);
 router.patch("/users/:id/role", updateUserRole);
 router.patch("/users/:id/suspend", setSuspended);

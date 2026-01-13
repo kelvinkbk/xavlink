@@ -17,5 +17,8 @@
   "json.schemaDownload.enable": false,
   "chat.extensionUnification.enabled": true,
   "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.skipLibCheck": true
+  "typescript.skipLibCheck": true,
+  "[sql]": {
+    "editor.defaultFormatter": "cweijan.vscode-mysql-client2"
+  }
 }
