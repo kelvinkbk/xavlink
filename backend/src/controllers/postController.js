@@ -1,5 +1,8 @@
 const prisma = require("../config/prismaClient");
-const { createNotification } = require("./notificationController");
+const {
+  notifyPostLike,
+  notifyPostComment,
+} = require("../services/notificationService");
 const crypto = require("crypto");
 
 // In-memory stores (since database tables are missing/broken)
@@ -181,6 +184,17 @@ exports.likePost = async (req, res, next) => {
       `❤️ Like stored: post ${id} by user ${userId} - total: ${likeStore[id].length}`
     );
 
+    // Create notification
+    try {
+      await notifyPostLike({
+        postId: id,
+        likerId: userId,
+        io: global.io,
+      });
+    } catch (notifErr) {
+      console.error("Failed to create like notification:", notifErr);
+    }
+
     // Emit real-time event
     if (global.io) {
       global.io.emit("post_liked", {
@@ -297,6 +311,17 @@ exports.addComment = async (req, res, next) => {
     console.log(
       `✅ Comment stored: post ${id} - total: ${commentStore[id].length}`
     );
+
+    // Create notification
+    try {
+      await notifyPostComment({
+        postId: id,
+        commenterId: userId,
+        io: global.io,
+      });
+    } catch (notifErr) {
+      console.error("Failed to create comment notification:", notifErr);
+    }
 
     // Emit real-time event to all connected clients
     if (global.io) {

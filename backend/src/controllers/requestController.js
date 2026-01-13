@@ -1,5 +1,9 @@
 const prisma = require("../config/prismaClient");
-const { createNotification } = require("./notificationController");
+const {
+  notifyRequest,
+  notifyRequestAccepted,
+  notifyRequestRejected,
+} = require("../services/notificationService");
 
 exports.sendRequest = async (req, res, next) => {
   try {
@@ -26,13 +30,17 @@ exports.sendRequest = async (req, res, next) => {
     });
 
     // Create notification for the recipient
-    await createNotification({
-      userId: toUserId,
-      type: "request_received",
-      title: "New Skill Request",
-      message: `${request.fromUser.name} requested your "${request.skill.title}" skill`,
-      relatedId: request.id,
-    });
+    try {
+      await notifyRequest({
+        requestId: request.id,
+        requestType: "skill",
+        senderId: req.user.id,
+        recipientId: toUserId,
+        io: global.io,
+      });
+    } catch (notifErr) {
+      console.error("Failed to create request notification:", notifErr);
+    }
 
     res.status(201).json(request);
   } catch (err) {
@@ -92,20 +100,25 @@ exports.updateRequestStatus = async (req, res, next) => {
     });
 
     // Create notification for the requester
-    const notificationTitle =
-      status === "accepted"
-        ? `${request.toUser.name} accepted your request`
-        : `${request.toUser.name} rejected your request`;
-    const notificationType =
-      status === "accepted" ? "request_accepted" : "request_rejected";
-
-    await createNotification({
-      userId: request.fromUserId,
-      type: notificationType,
-      title: notificationTitle,
-      message: `Your skill request has been ${status}`,
-      relatedId: id,
-    });
+    try {
+      if (status === "accepted") {
+        await notifyRequestAccepted({
+          requestId: id,
+          accepterId: req.user.id,
+          senderId: request.fromUserId,
+          io: global.io,
+        });
+      } else if (status === "rejected") {
+        await notifyRequestRejected({
+          requestId: id,
+          rejectedById: req.user.id,
+          senderId: request.fromUserId,
+          io: global.io,
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to create request status notification:", notifErr);
+    }
 
     res.json(updated);
   } catch (err) {

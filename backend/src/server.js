@@ -5,6 +5,10 @@ const prisma = require("./config/prismaClient");
 const {
   startScheduledPostsPublisher,
 } = require("./utils/scheduledPostsPublisher");
+const {
+  cleanupOldNotifications,
+  notifyMessage,
+} = require("./services/notificationService");
 
 const PORT = process.env.PORT || 5000;
 
@@ -90,6 +94,42 @@ io.on("connection", (socket) => {
   });
 
   /* -------------------------------
+     NOTIFICATION HANDLERS
+  -------------------------------- */
+  socket.on("notification:read", async ({ notificationId }) => {
+    try {
+      await prisma.notification.update({
+        where: { id: notificationId },
+        data: { read: true },
+      });
+
+      const unreadCount = await prisma.notification.count({
+        where: { userId: socket.userId, read: false },
+      });
+
+      io.to(`user:${socket.userId}`).emit("notification:unread-count", {
+        unreadCount,
+      });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  });
+
+  socket.on("notification:delete", async ({ notificationId }) => {
+    try {
+      await prisma.notification.delete({
+        where: { id: notificationId },
+      });
+
+      io.to(`user:${socket.userId}`).emit("notification:deleted", {
+        notificationId,
+      });
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
+  });
+
+  /* -------------------------------
      JOIN CHAT ROOM
      (frontend MUST call this)
   -------------------------------- */
@@ -152,6 +192,18 @@ io.on("connection", (socket) => {
       // Broadcast message to room
       io.to(chatId).emit("receive_message", message);
 
+      // Send message notification to other participants
+      try {
+        await notifyMessage({
+          chatId,
+          senderId,
+          senderName: message.sender.name,
+          io,
+        });
+      } catch (notifErr) {
+        console.error("Failed to send message notification:", notifErr);
+      }
+
       callback?.({
         success: true,
         message,
@@ -171,6 +223,9 @@ server.listen(PORT, () => {
 
   // Start background job for publishing scheduled posts
   startScheduledPostsPublisher(10000); // Run every 10 seconds
+
+  // Clean up old notifications daily
+  setInterval(cleanupOldNotifications, 24 * 60 * 60 * 1000);
 });
 
 /* -------------------------------

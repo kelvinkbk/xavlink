@@ -7,6 +7,8 @@ import {
 import { AuthProvider } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ModalProvider, useModal } from "./context/ModalContext";
+import { SocketProvider } from "./context/SocketContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import CreatePostModal from "./components/CreatePostModal";
 import AddSkillModal from "./components/AddSkillModal";
@@ -21,6 +23,7 @@ import Profile from "./pages/Profile";
 import Skills from "./pages/Skills";
 import Requests from "./pages/Requests";
 import Notifications from "./pages/Notifications";
+import NotificationsPage from "./pages/NotificationsPage";
 import Settings from "./pages/Settings";
 import ChatListPage from "./pages/ChatListPage";
 import ChatPage from "./pages/ChatPage";
@@ -102,7 +105,7 @@ function AppContent() {
           path="/notifications"
           element={
             <ProtectedRoute>
-              <Notifications />
+              <NotificationsPage />
             </ProtectedRoute>
           }
         />
@@ -182,13 +185,17 @@ function App() {
     <ErrorBoundary>
       <ToastProvider>
         <ModalProvider>
-          <Router>
-            <AuthProvider>
-              <MainLayout>
-                <AppContent />
-              </MainLayout>
-            </AuthProvider>
-          </Router>
+          <SocketProvider>
+            <NotificationProvider>
+              <Router>
+                <AuthProvider>
+                  <MainLayout>
+                    <AppContent />
+                  </MainLayout>
+                </AuthProvider>
+              </Router>
+            </NotificationProvider>
+          </SocketProvider>
         </ModalProvider>
       </ToastProvider>
     </ErrorBoundary>

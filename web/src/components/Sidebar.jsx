@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { chatService } from "../services/chatService";
 import { socket } from "../services/socket";
+import NotificationCenter from "./NotificationCenter";
 
 export default function Sidebar({ isOpen, onToggle }) {
   const { isAuthenticated, logout, user } = useAuth();
@@ -132,6 +133,7 @@ export default function Sidebar({ isOpen, onToggle }) {
           >
             XavLink
           </button>
+          <NotificationCenter />
           <button
             onClick={onToggle}
             className="md:hidden p-1 hover:opacity-80 transition"

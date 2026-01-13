@@ -1,5 +1,6 @@
 const prisma = require("../config/prismaClient");
 const { checkForFlaggedContent } = require("../utils/contentFilter");
+const { notifyMessage } = require("../services/notificationService");
 
 /**
  * Get or create a 1-on-1 chat between two users

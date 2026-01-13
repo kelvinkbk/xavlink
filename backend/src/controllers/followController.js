@@ -1,5 +1,5 @@
 const prisma = require("../config/prismaClient");
-const { createNotification } = require("./notificationController");
+const { notifyFollow } = require("../services/notificationService");
 
 // POST /api/users/:id/follow
 exports.followUser = async (req, res) => {
@@ -51,17 +51,10 @@ exports.followUser = async (req, res) => {
 
     // Create notification
     try {
-      // Fetch follower's name for notification message
-      const followerUser = await prisma.user.findUnique({
-        where: { id: followerId },
-        select: { name: true },
-      });
-      await createNotification({
-        userId: followingId,
-        type: "follow",
-        title: "New Follower",
-        message: `${followerUser?.name || "Someone"} started following you`,
-        relatedId: followerId,
+      await notifyFollow({
+        followerId,
+        followingId,
+        io: global.io,
       });
     } catch (notifErr) {
       console.error("Failed to create follow notification:", notifErr);
