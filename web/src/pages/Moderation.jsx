@@ -35,23 +35,23 @@ export default function Moderation() {
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="border rounded p-4 bg-blue-50">
+          <div className="border rounded p-4 alert-primary">
             <div className="text-2xl font-bold">{stats.totalUsers}</div>
             <div className="text-sm text-gray-600">Total Users</div>
           </div>
-          <div className="border rounded p-4 bg-green-50">
+          <div className="border rounded p-4 alert-success">
             <div className="text-2xl font-bold">{stats.verifiedUsers}</div>
             <div className="text-sm text-gray-600">Verified</div>
           </div>
-          <div className="border rounded p-4 bg-red-50">
+          <div className="border rounded p-4 alert-danger">
             <div className="text-2xl font-bold">{stats.suspendedUsers}</div>
             <div className="text-sm text-gray-600">Suspended</div>
           </div>
-          <div className="border rounded p-4 bg-purple-50">
+          <div className="border rounded p-4 alert-primary">
             <div className="text-2xl font-bold">{stats.totalPosts}</div>
             <div className="text-sm text-gray-600">Total Posts</div>
           </div>
-          <div className="border rounded p-4 bg-yellow-50">
+          <div className="border rounded p-4 alert-warning">
             <div className="text-2xl font-bold">{stats.postsThisWeek}</div>
             <div className="text-sm text-gray-600">Posts This Week</div>
           </div>

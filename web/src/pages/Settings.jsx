@@ -257,13 +257,13 @@ const Settings = () => {
         <h1 className="text-3xl font-bold text-secondary mb-6">Settings</h1>
 
         {message && (
-          <div className="p-4 bg-blue-50 border border-primary rounded-lg mb-6">
-            {message}
+          <div className="p-4 alert-primary rounded-lg mb-6">
+            ✅ {message}
           </div>
         )}
 
         {error && (
-          <div className="p-4 bg-red-50 border border-red-300 text-red-700 rounded-lg mb-6">
+          <div className="p-4 alert-danger rounded-lg mb-6">
             ❌ {error}
           </div>
         )}
@@ -688,8 +688,8 @@ const Settings = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded">
-                    2FA is enabled on your account.
+                  <div className="alert-success p-3 rounded">
+                    ✅ 2FA is enabled on your account.
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -782,7 +782,7 @@ const Settings = () => {
               </form>
             </div>
 
-            <div className="bg-red-50 p-6 rounded-lg border border-red-200">
+            <div className="alert-danger p-6 rounded-lg">
               <h2 className="text-xl font-semibold text-red-600 mb-4">
                 ⚠️ Delete Account
               </h2>
@@ -1037,7 +1037,7 @@ function DeviceManagement() {
         )}
       </div>
 
-      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+      <div className="alert-primary p-4 rounded-lg">
         <p className="text-sm text-blue-800">
           💡 <strong>Tip:</strong> If you notice suspicious activity, revoke all
           sessions and change your password immediately.

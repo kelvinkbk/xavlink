@@ -255,7 +255,7 @@ export default function Profile() {
           <div className="flex justify-center py-6">
             <LoadingSpinner />
           </div>
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded mb-4 flex items-center justify-between">
+          <div className="alert-warning p-4 rounded mb-4 flex items-center justify-between">
             <span>Loading profile...</span>
             <button
               onClick={async () => {
