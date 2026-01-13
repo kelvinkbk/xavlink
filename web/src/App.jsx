@@ -26,6 +26,7 @@ import ChatListPage from "./pages/ChatListPage";
 import ChatPage from "./pages/ChatPage";
 import Admin from "./pages/Admin";
 import Moderation from "./pages/Moderation";
+import EnhancementsPage from "./pages/EnhancementsPage";
 import MainLayout from "./components/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -145,6 +146,15 @@ function AppContent() {
           element={
             <ProtectedRoute requiredRole="admin">
               <Admin />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/enhancements"
+          element={
+            <ProtectedRoute>
+              <EnhancementsPage />
             </ProtectedRoute>
           }
         />

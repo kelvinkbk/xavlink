@@ -599,3 +599,38 @@ exports.updateProfile = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.getFilterOptions = async (req, res, next) => {
+  try {
+    // Get distinct courses
+    const courses = await prisma.user.findMany({
+      where: { course: { not: null } },
+      distinct: ["course"],
+      select: { course: true },
+    });
+
+    // Get distinct years
+    const years = await prisma.user.findMany({
+      where: { year: { not: null } },
+      distinct: ["year"],
+      select: { year: true },
+    });
+
+    // Get all skills
+    const skills = await prisma.skill.findMany({
+      select: { name: true },
+      distinct: ["name"],
+    });
+
+    res.json({
+      courses: courses.map((c) => c.course).filter(Boolean),
+      years: years
+        .map((y) => y.year)
+        .filter(Boolean)
+        .sort(),
+      skills: skills.map((s) => s.name).sort(),
+    });
+  } catch (err) {
+    next(err);
+  }
+};

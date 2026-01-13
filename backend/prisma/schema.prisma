@@ -81,8 +81,11 @@ model User {
   createdAt               DateTime           @default(now())
   // New fields
   linkedInUrl             String?
+  linkedInVerified        Boolean            @default(false)
   githubUrl               String?
+  githubVerified          Boolean            @default(false)
   portfolioUrl            String?
+  portfolioVerified       Boolean            @default(false)
   profileViews            Int                @default(0)
   lastActiveAt            DateTime?
   skills                  Skill[]
@@ -107,6 +110,8 @@ model User {
   deviceSessions          DeviceSession[]
   photos                  UserPhoto[]
   achievements            Achievement[]
+  activities              Activity[]
+  skillRecommendations    SkillRecommendation[]
   modNotesCreated         ModNote[]
 
   reportsCreated  Report[]   @relation("ReportsCreated")
@@ -137,18 +142,23 @@ model Skill {
 }
 
 model Post {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @db.Uuid
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content   String
-  image     String?
-  isPinned  Boolean   @default(false)
-  pinnedAt  DateTime?
-  createdAt DateTime  @default(now())
-  comments  Comment[]
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content     String
+  image       String?
+  isPinned    Boolean   @default(false)
+  pinnedAt    DateTime?
+  scheduledAt DateTime? // For scheduled posts
+  isScheduled Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  comments    Comment[]
+  activities  Activity[] @relation("PostActivity")
 
   @@index([userId])
   @@index([isPinned])
+  @@index([scheduledAt])
+  @@index([isScheduled])
 }
 
 model Like {
@@ -545,4 +555,33 @@ model Achievement {
   @@unique([userId, type])
   @@index([userId])
   @@index([type])
+}
+model Activity {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  type        String   // "login", "post_created", "follow", "skill_endorsed", etc
+  description String?
+  postId      String?  @db.Uuid
+  post        Post?    @relation("PostActivity", fields: [postId], references: [id], onDelete: SetNull)
+  targetUserId String? @db.Uuid
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model SkillRecommendation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  skillName String
+  reason    String   // "based_on_endorsements", "trending_in_course", etc
+  score     Float    // Relevance score 0-1
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillName])
+  @@index([userId])
+  @@index([score])
 }

@@ -2,6 +2,9 @@ const http = require("http");
 const { Server } = require("socket.io");
 const app = require("./app");
 const prisma = require("./config/prismaClient");
+const {
+  startScheduledPostsPublisher,
+} = require("./utils/scheduledPostsPublisher");
 
 const PORT = process.env.PORT || 5000;
 
@@ -165,6 +168,9 @@ io.on("connection", (socket) => {
 -------------------------------- */
 server.listen(PORT, () => {
   console.log(`🚀 XavLink backend running on port ${PORT}`);
+
+  // Start background job for publishing scheduled posts
+  startScheduledPostsPublisher(10000); // Run every 10 seconds
 });
 
 /* -------------------------------

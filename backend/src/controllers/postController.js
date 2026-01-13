@@ -94,7 +94,7 @@ exports.getAllPosts = async (req, res, next) => {
   try {
     console.log("📌 getAllPosts called");
 
-    // Use raw SQL to avoid Prisma schema issues
+    // Use raw SQL to avoid Prisma schema issues - exclude scheduled posts
     const posts = await prisma.$queryRaw`
       SELECT 
         "id", 
@@ -103,6 +103,7 @@ exports.getAllPosts = async (req, res, next) => {
         "image",
         "createdAt"
       FROM "Post" 
+      WHERE "isScheduled" = false OR "isScheduled" IS NULL
       ORDER BY "createdAt" DESC 
       LIMIT 20
     `;
@@ -783,6 +784,7 @@ exports.searchPosts = async (req, res, next) => {
       prisma.post.findMany({
         where: {
           isDraft: false,
+          isScheduled: false,
           OR: [{ content: { search: q } }, { richContent: { search: q } }],
         },
         orderBy:
@@ -807,6 +809,7 @@ exports.searchPosts = async (req, res, next) => {
       prisma.post.count({
         where: {
           isDraft: false,
+          isScheduled: false,
           OR: [{ content: { search: q } }, { richContent: { search: q } }],
         },
       }),
@@ -881,6 +884,7 @@ exports.getPostsByTag = async (req, res, next) => {
       prisma.post.findMany({
         where: {
           isDraft: false,
+          isScheduled: false,
           tags: {
             some: { tag: { mode: "insensitive", equals: tag } },
           },
@@ -903,6 +907,7 @@ exports.getPostsByTag = async (req, res, next) => {
       prisma.post.count({
         where: {
           isDraft: false,
+          isScheduled: false,
           tags: {
             some: { tag: { mode: "insensitive", equals: tag } },
           },

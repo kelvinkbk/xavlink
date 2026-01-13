@@ -10,7 +10,13 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../context/ToastContext";
 
-function SkillCard({ skill, onRequest, currentUserId, onEndorse }) {
+function SkillCard({
+  skill,
+  onRequest,
+  currentUserId,
+  onEndorse,
+  onViewCertifications,
+}) {
   const [endorsed, setEndorsed] = useState(false);
   const [endorsementCount, setEndorsementCount] = useState(
     skill.endorsementCount || 0
@@ -87,6 +93,15 @@ function SkillCard({ skill, onRequest, currentUserId, onEndorse }) {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {currentUserId && currentUserId === skill.userId && (
+            <button
+              onClick={() => onViewCertifications(skill)}
+              className="px-3 py-1 rounded text-sm bg-purple-100 text-purple-800 hover:bg-purple-200 transition"
+              title="View certifications"
+            >
+              📜 Certifications
+            </button>
+          )}
           {currentUserId && currentUserId !== skill.userId && (
             <button
               onClick={handleEndorse}
@@ -130,6 +145,27 @@ export default function Skills() {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Request modal states
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [selectedSkill, setSelectedSkill] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [customMessage, setCustomMessage] = useState("");
+  const [requestingSkill, setRequestingSkill] = useState(false);
+
+  // Certification states
+  const [showCertificationModal, setShowCertificationModal] = useState(false);
+  const [selectedSkillForCert, setSelectedSkillForCert] = useState(null);
+  const [certifications, setCertifications] = useState({});
+  const [newCertification, setNewCertification] = useState({
+    certificateTitle: "",
+    issuingOrganization: "",
+    issueDate: "",
+    expiryDate: "",
+    credentialUrl: "",
+  });
+  const [addingCert, setAddingCert] = useState(false);
+
   useEffect(() => {
     const fetchSkills = async () => {
       try {
@@ -147,6 +183,21 @@ export default function Skills() {
 
     fetchSkills();
   }, [search, showToast]);
+
+  // Fetch templates when authenticated
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const { templates: templatesData } =
+          await enhancementService.getRequestTemplates();
+        setTemplates(templatesData || []);
+      } catch (e) {
+        console.error("Error fetching templates:", e);
+      }
+    };
+    fetchTemplates();
+  }, [isAuthenticated]);
 
   const handleAddSkill = async (e) => {
     e.preventDefault();
@@ -177,22 +228,104 @@ export default function Skills() {
     }
   };
 
-  const handleRequestSkill = async (skill) => {
+  const handleRequestSkill = (skill) => {
     if (!isAuthenticated) {
       showToast("Please login to request skills", "error");
       return;
     }
+    setSelectedSkill(skill);
+    setCustomMessage("");
+    setSelectedTemplate(null);
+    setShowRequestModal(true);
+  };
 
+  const handleConfirmRequest = async () => {
+    if (!selectedSkill) return;
+
+    let message = "";
+    if (selectedTemplate) {
+      message = selectedTemplate.message;
+    } else if (customMessage) {
+      message = customMessage;
+    }
+
+    setRequestingSkill(true);
     try {
       await requestService.sendRequest({
-        toUserId: skill.userId,
-        skillId: skill.id,
+        toUserId: selectedSkill.userId,
+        skillId: selectedSkill.id,
+        message: message || undefined,
       });
-      showToast(`Request sent for "${skill.title}"!`, "success");
+      showToast(`Request sent for "${selectedSkill.title}"!`, "success");
+      setShowRequestModal(false);
+      setSelectedSkill(null);
+      setCustomMessage("");
+      setSelectedTemplate(null);
     } catch (e) {
       console.error("Error requesting skill:", e);
       showToast(e.response?.data?.message || "Failed to send request", "error");
+    } finally {
+      setRequestingSkill(false);
     }
+  };
+
+  const handleAddCertification = async () => {
+    if (
+      !newCertification.certificateTitle.trim() ||
+      !newCertification.issuingOrganization.trim() ||
+      !newCertification.issueDate
+    ) {
+      showToast("Please fill in all required fields", "error");
+      return;
+    }
+
+    setAddingCert(true);
+    try {
+      await enhancementService.addCertification(
+        selectedSkillForCert.id,
+        newCertification
+      );
+      showToast("Certification added", "success");
+      setShowCertificationModal(false);
+      setNewCertification({
+        certificateTitle: "",
+        issuingOrganization: "",
+        issueDate: "",
+        expiryDate: "",
+        credentialUrl: "",
+      });
+      // Refetch certifications
+      const { certifications: certsData } =
+        await enhancementService.getSkillCertifications(
+          selectedSkillForCert.id
+        );
+      setCertifications({
+        ...certifications,
+        [selectedSkillForCert.id]: certsData || [],
+      });
+    } catch (e) {
+      console.error("Error adding certification:", e);
+      showToast("Failed to add certification", "error");
+    } finally {
+      setAddingCert(false);
+    }
+  };
+
+  const handleOpenCertificationsModal = async (skill) => {
+    setSelectedSkillForCert(skill);
+    try {
+      if (!certifications[skill.id]) {
+        const { certifications: certsData } =
+          await enhancementService.getSkillCertifications(skill.id);
+        setCertifications({
+          ...certifications,
+          [skill.id]: certsData || [],
+        });
+      }
+    } catch (e) {
+      console.error("Error fetching certifications:", e);
+    }
+    setShowCertificationModal(true);
   };
 
   return (
@@ -396,8 +529,277 @@ export default function Skills() {
                 skill={skill}
                 onRequest={handleRequestSkill}
                 currentUserId={user?.id}
+                onViewCertifications={handleOpenCertificationsModal}
               />
             ))}
+          </div>
+        )}
+
+        {/* Request Modal */}
+        {showRequestModal && selectedSkill && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <h2 className="text-2xl font-bold text-secondary mb-2">
+                Request Skill
+              </h2>
+              <p className="text-gray-600 mb-4">
+                {selectedSkill.title} from {selectedSkill.user?.name}
+              </p>
+
+              {/* Template Selection */}
+              {templates.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="font-semibold text-secondary mb-2">
+                    Use Template
+                  </h3>
+                  <select
+                    value={selectedTemplate?.id || ""}
+                    onChange={(e) => {
+                      const template = templates.find(
+                        (t) => t.id === e.target.value
+                      );
+                      setSelectedTemplate(template || null);
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="">None - Write custom message</option>
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.title}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedTemplate && (
+                    <div className="mt-2 p-3 bg-blue-50 rounded border border-blue-200">
+                      <p className="text-sm text-blue-800">
+                        {selectedTemplate.message}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Custom Message */}
+              {!selectedTemplate && (
+                <div className="mb-4">
+                  <h3 className="font-semibold text-secondary mb-2">
+                    Message (Optional)
+                  </h3>
+                  <textarea
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    placeholder="Add a personal message..."
+                    rows="4"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowRequestModal(false);
+                    setSelectedSkill(null);
+                  }}
+                  disabled={requestingSkill}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmRequest}
+                  disabled={requestingSkill}
+                  className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {requestingSkill ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Send Request"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Certification Modal */}
+        {showCertificationModal && selectedSkillForCert && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold text-secondary mb-2">
+                Certifications
+              </h2>
+              <p className="text-gray-600 mb-6">{selectedSkillForCert.title}</p>
+
+              {/* Add Certification Form */}
+              <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                <h3 className="font-semibold text-secondary mb-4">
+                  Add New Certification
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Certificate Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={newCertification.certificateTitle}
+                      onChange={(e) =>
+                        setNewCertification({
+                          ...newCertification,
+                          certificateTitle: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., AWS Certified Solutions Architect"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Issuing Organization *
+                    </label>
+                    <input
+                      type="text"
+                      value={newCertification.issuingOrganization}
+                      onChange={(e) =>
+                        setNewCertification({
+                          ...newCertification,
+                          issuingOrganization: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., Amazon Web Services"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Issue Date *
+                      </label>
+                      <input
+                        type="date"
+                        value={newCertification.issueDate}
+                        onChange={(e) =>
+                          setNewCertification({
+                            ...newCertification,
+                            issueDate: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Expiry Date (Optional)
+                      </label>
+                      <input
+                        type="date"
+                        value={newCertification.expiryDate}
+                        onChange={(e) =>
+                          setNewCertification({
+                            ...newCertification,
+                            expiryDate: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Credential URL (Optional)
+                    </label>
+                    <input
+                      type="url"
+                      value={newCertification.credentialUrl}
+                      onChange={(e) =>
+                        setNewCertification({
+                          ...newCertification,
+                          credentialUrl: e.target.value,
+                        })
+                      }
+                      placeholder="https://..."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+                  <button
+                    onClick={handleAddCertification}
+                    disabled={addingCert}
+                    className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {addingCert ? (
+                      <>
+                        <LoadingSpinner size="sm" />
+                        Adding...
+                      </>
+                    ) : (
+                      "Add Certification"
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Certifications List */}
+              {certifications[selectedSkillForCert.id] &&
+              certifications[selectedSkillForCert.id].length > 0 ? (
+                <div>
+                  <h3 className="font-semibold text-secondary mb-4">
+                    Your Certifications
+                  </h3>
+                  <div className="space-y-3">
+                    {certifications[selectedSkillForCert.id].map((cert) => (
+                      <div
+                        key={cert.id}
+                        className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-semibold text-secondary">
+                              {cert.certificateTitle}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              {cert.issuingOrganization}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Issued:{" "}
+                              {new Date(cert.issueDate).toLocaleDateString()}
+                              {cert.expiryDate &&
+                                ` • Expires: ${new Date(
+                                  cert.expiryDate
+                                ).toLocaleDateString()}`}
+                            </p>
+                            {cert.credentialUrl && (
+                              <a
+                                href={cert.credentialUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary text-sm mt-2 inline-block hover:underline"
+                              >
+                                View Credential →
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-6">
+                  No certifications yet
+                </p>
+              )}
+
+              <button
+                onClick={() => setShowCertificationModal(false)}
+                className="w-full mt-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Close
+              </button>
+            </div>
           </div>
         )}
       </div>

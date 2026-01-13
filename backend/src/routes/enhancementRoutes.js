@@ -1,5 +1,6 @@
 const express = require("express");
 const authMiddleware = require("../middleware/authMiddleware");
+const { postUpload } = require("../middleware/uploadMiddleware");
 const {
   // Discover
   filterUsersByCourseAndSkills,
@@ -11,6 +12,7 @@ const {
   trackProfileView,
   getProfileStats,
   updateSocialLinks,
+  verifySocialLink,
   addUserPhoto,
   getUserPhotos,
   deleteUserPhoto,
@@ -22,6 +24,7 @@ const {
   addCertification,
   getSkillCertifications,
   getSkillRecommendations,
+  generateSkillRecommendations,
   // Requests
   createRequestTemplate,
   getRequestTemplates,
@@ -34,17 +37,24 @@ const {
   pinNotification,
   archiveNotification,
   getArchivedNotifications,
-  // Moderation
-  addModNote,
-  getModNotes,
-  getModerationDashboard,
+  // Scheduled Posts
+  schedulePost,
+  getScheduledPosts,
+  cancelScheduledPost,
+  // Activity
+  getActivityTimeline,
   // Admin
   getAnalyticsDashboard,
   getSystemHealth,
+  getSystemHealthMetrics,
   // Device Management
   getDeviceSessions,
   revokeDeviceSession,
   revokeAllOtherSessions,
+  // Moderation
+  addModNote,
+  getModNotes,
+  getModerationDashboard,
 } = require("../controllers/enhancementController");
 
 const router = express.Router();
@@ -64,6 +74,11 @@ router.get("/discover/favorites", authMiddleware, getFavorites);
 router.post("/profile/:userId/view", trackProfileView);
 router.get("/profile/:userId/stats", getProfileStats);
 router.put("/profile/social-links", authMiddleware, updateSocialLinks);
+router.post(
+  "/profile/social-links/:platform/verify",
+  authMiddleware,
+  verifySocialLink
+);
 router.post("/profile/photos", authMiddleware, addUserPhoto);
 router.get("/profile/:userId/photos", getUserPhotos);
 router.delete("/profile/photos/:photoId", authMiddleware, deleteUserPhoto);
@@ -132,5 +147,29 @@ router.post(
   authMiddleware,
   revokeAllOtherSessions
 );
+
+// Scheduled posts
+router.post(
+  "/posts/schedule",
+  authMiddleware,
+  postUpload.single("image"),
+  schedulePost
+);
+router.get("/posts/scheduled", authMiddleware, getScheduledPosts);
+router.delete("/posts/scheduled/:postId", authMiddleware, cancelScheduledPost);
+
+// Activity timeline
+router.get("/activity/timeline", authMiddleware, getActivityTimeline);
+
+// Skill recommendations
+router.get("/skills/recommendations", authMiddleware, getSkillRecommendations);
+router.post(
+  "/skills/recommendations/generate",
+  authMiddleware,
+  generateSkillRecommendations
+);
+
+// System health metrics
+router.get("/admin/health/metrics", authMiddleware, getSystemHealthMetrics);
 
 module.exports = router;

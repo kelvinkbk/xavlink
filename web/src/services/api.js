@@ -426,6 +426,10 @@ export const enhancementService = {
     api.get(`/enhancements/profile/${userId}/stats`).then((res) => res.data),
   updateSocialLinks: (data) =>
     api.put("/enhancements/profile/social-links", data).then((res) => res.data),
+  verifySocialLink: (platform) =>
+    api
+      .post(`/enhancements/profile/social-links/${platform}/verify`)
+      .then((res) => res.data),
   addUserPhoto: (data) =>
     api.post("/enhancements/profile/photos", data).then((res) => res.data),
   getUserPhotos: (userId) =>
@@ -460,6 +464,10 @@ export const enhancementService = {
       .then((res) => res.data),
   getSkillRecommendations: () =>
     api.get("/enhancements/skills/recommendations").then((res) => res.data),
+  generateSkillRecommendations: () =>
+    api
+      .post("/enhancements/skills/recommendations/generate")
+      .then((res) => res.data),
 
   // Requests
   createRequestTemplate: (data) =>
@@ -516,6 +524,8 @@ export const enhancementService = {
     api.get("/enhancements/admin/analytics").then((res) => res.data),
   getSystemHealth: () =>
     api.get("/enhancements/admin/health").then((res) => res.data),
+  getSystemHealthMetrics: () =>
+    api.get("/enhancements/admin/health/metrics").then((res) => res.data),
 
   // Device Management
   getDeviceSessions: () =>
@@ -527,6 +537,26 @@ export const enhancementService = {
   revokeAllOtherSessions: (currentDeviceId) =>
     api
       .post("/enhancements/devices/sessions/revoke-all", { currentDeviceId })
+      .then((res) => res.data),
+
+  // Scheduled Posts
+  schedulePost: (data) =>
+    api
+      .post("/enhancements/posts/schedule", data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data),
+  getScheduledPosts: () =>
+    api.get("/enhancements/posts/scheduled").then((res) => res.data),
+  cancelScheduledPost: (postId) =>
+    api
+      .delete(`/enhancements/posts/scheduled/${postId}`)
+      .then((res) => res.data),
+
+  // Activity Timeline
+  getActivityTimeline: (limit = 20, offset = 0) =>
+    api
+      .get("/enhancements/activity/timeline", { params: { limit, offset } })
       .then((res) => res.data),
 };
 

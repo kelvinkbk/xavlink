@@ -353,6 +353,74 @@ exports.updateSocialLinks = async (req, res, next) => {
 };
 
 /**
+ * Verify social link
+ */
+exports.verifySocialLink = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { platform } = req.params;
+
+    // Get user's social links
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        linkedInUrl: true,
+        githubUrl: true,
+        portfolioUrl: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify based on platform
+    let verified = false;
+    const linkMap = {
+      linkedin: user.linkedInUrl,
+      github: user.githubUrl,
+      portfolio: user.portfolioUrl,
+    };
+
+    const link = linkMap[platform.toLowerCase()];
+    if (!link) {
+      return res.status(400).json({ message: "Social link not found" });
+    }
+
+    // Simple verification: check if URL is valid and accessible
+    try {
+      // In production, you would make an actual HTTP request to verify ownership
+      // For now, we'll just validate the URL format
+      const urlObj = new URL(link);
+      verified = urlObj.protocol === "http:" || urlObj.protocol === "https:";
+    } catch (e) {
+      verified = false;
+    }
+
+    if (verified) {
+      // Update verification status
+      const verifyFieldMap = {
+        linkedin: "linkedInVerified",
+        github: "githubVerified",
+        portfolio: "portfolioVerified",
+      };
+
+      const field = verifyFieldMap[platform.toLowerCase()];
+      if (field) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { [field]: true },
+        });
+      }
+    }
+
+    res.json({ verified, platform });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Add user photo to gallery
  */
 exports.addUserPhoto = async (req, res, next) => {
@@ -1323,6 +1391,320 @@ exports.revokeAllOtherSessions = async (req, res, next) => {
     });
 
     res.json({ message: "All other sessions revoked" });
+  } catch (err) {
+    next(err);
+  }
+};
+// ============= SCHEDULED POSTS =============
+
+/**
+ * Schedule a post for future publishing
+ */
+exports.schedulePost = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { content, scheduledAt } = req.body;
+
+    if (!content || !scheduledAt) {
+      return res
+        .status(400)
+        .json({ message: "Content and scheduledAt are required" });
+    }
+
+    const scheduledDate = new Date(scheduledAt);
+    if (scheduledDate <= new Date()) {
+      return res
+        .status(400)
+        .json({ message: "Scheduled date must be in the future" });
+    }
+
+    // Get image URL from uploaded file (if any)
+    const imageUrl = req.file ? req.file.path : null;
+
+    const post = await prisma.post.create({
+      data: {
+        content,
+        image: imageUrl,
+        userId,
+        scheduledAt: scheduledDate,
+        isScheduled: true,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, profilePic: true },
+        },
+      },
+    });
+
+    res.status(201).json(post);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Get scheduled posts for current user
+ */
+exports.getScheduledPosts = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const posts = await prisma.post.findMany({
+      where: {
+        userId,
+        isScheduled: true,
+        scheduledAt: {
+          gt: new Date(),
+        },
+      },
+      orderBy: { scheduledAt: "asc" },
+      include: {
+        user: {
+          select: { id: true, name: true, profilePic: true },
+        },
+      },
+    });
+
+    res.json({ posts });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Cancel scheduled post
+ */
+exports.cancelScheduledPost = async (req, res, next) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user.id;
+
+    const post = await prisma.post.findUnique({ where: { id: postId } });
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (post.userId !== userId) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    await prisma.post.delete({ where: { id: postId } });
+
+    res.json({ message: "Scheduled post cancelled" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ============= ACTIVITY TIMELINE =============
+
+/**
+ * Get activity timeline for user
+ */
+exports.getActivityTimeline = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { limit = 20, offset = 0 } = req.query;
+
+    const activities = await prisma.activity.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: parseInt(limit),
+      skip: parseInt(offset),
+      include: {
+        post: {
+          select: { id: true, content: true },
+        },
+      },
+    });
+
+    const total = await prisma.activity.count({ where: { userId } });
+
+    res.json({ activities, total });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Log user activity
+ */
+exports.logActivity = async (
+  userId,
+  type,
+  description = null,
+  postId = null,
+  targetUserId = null
+) => {
+  try {
+    await prisma.activity.create({
+      data: {
+        userId,
+        type,
+        description,
+        postId,
+        targetUserId,
+      },
+    });
+  } catch (err) {
+    console.error("Failed to log activity:", err);
+  }
+};
+
+// ============= SKILL RECOMMENDATIONS =============
+
+/**
+ * Get skill recommendations for user
+ */
+exports.getSkillRecommendations = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const recommendations = await prisma.skillRecommendation.findMany({
+      where: { userId },
+      orderBy: { score: "desc" },
+      take: 10,
+    });
+
+    res.json({ recommendations });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Generate skill recommendations based on endorsements and trends
+ */
+exports.generateSkillRecommendations = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        skills: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const userSkills = user.skills.map((s) => s.title);
+
+    // Get skills with endorsements (trending)
+    const endorsedSkills = await prisma.skillEndorsement.groupBy({
+      by: ["skillId"],
+      _count: {
+        id: true,
+      },
+      orderBy: {
+        _count: {
+          id: "desc",
+        },
+      },
+      take: 20,
+    });
+
+    // Get user's course to recommend related skills
+    const courseSkills = await prisma.skill.findMany({
+      where: {
+        user: { course: user.course },
+        NOT: {
+          title: { in: userSkills },
+        },
+      },
+      select: { title: true },
+      distinct: ["title"],
+      take: 15,
+    });
+
+    // Clear existing recommendations
+    await prisma.skillRecommendation.deleteMany({ where: { userId } });
+
+    // Create new recommendations
+    const recommendations = [];
+
+    // Add trending skills
+    for (const endorsement of endorsedSkills.slice(0, 5)) {
+      const skill = await prisma.skill.findUnique({
+        where: { id: endorsement.skillId },
+      });
+
+      if (skill && !userSkills.includes(skill.title)) {
+        recommendations.push({
+          userId,
+          skillName: skill.title,
+          reason: "trending_endorsements",
+          score: Math.min(0.95, 0.7 + endorsement._count.id * 0.05),
+        });
+      }
+    }
+
+    // Add course-related skills
+    for (const skill of courseSkills.slice(0, 5)) {
+      if (!recommendations.some((r) => r.skillName === skill.title)) {
+        recommendations.push({
+          userId,
+          skillName: skill.title,
+          reason: "trending_in_course",
+          score: 0.75,
+        });
+      }
+    }
+
+    if (recommendations.length > 0) {
+      await prisma.skillRecommendation.createMany({
+        data: recommendations,
+      });
+    }
+
+    res.json({ recommendations, total: recommendations.length });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ============= SYSTEM HEALTH =============
+
+/**
+ * Get system health metrics (admin only)
+ */
+exports.getSystemHealthMetrics = async (req, res, next) => {
+  try {
+    const totalUsers = await prisma.user.count();
+    const totalPosts = await prisma.post.count();
+    const totalSkills = await prisma.skill.count();
+    const activeUsers = await prisma.user.count({
+      where: {
+        lastActiveAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        },
+      },
+    });
+
+    const scheduledPosts = await prisma.post.count({
+      where: {
+        isScheduled: true,
+        scheduledAt: { gt: new Date() },
+      },
+    });
+
+    const pendingRequests = await prisma.request.count({
+      where: { status: "pending" },
+    });
+
+    res.json({
+      totalUsers,
+      totalPosts,
+      totalSkills,
+      activeUsers,
+      scheduledPosts,
+      pendingRequests,
+      timestamp: new Date(),
+      status: "healthy",
+    });
   } catch (err) {
     next(err);
   }

@@ -161,7 +161,9 @@ export default function Sidebar({ isOpen, onToggle }) {
               isActive("/home") ? "bg-primary" : "hover:opacity-80"
             }`}
             style={{
-              backgroundColor: isActive("/home") ? "var(--primary)" : "transparent",
+              backgroundColor: isActive("/home")
+                ? "var(--primary)"
+                : "transparent",
               color: isActive("/home") ? "var(--text)" : "var(--text)",
             }}
           >
@@ -173,7 +175,9 @@ export default function Sidebar({ isOpen, onToggle }) {
               isActive("/discover") ? "bg-primary" : "hover:opacity-80"
             }`}
             style={{
-              backgroundColor: isActive("/discover") ? "var(--primary)" : "transparent",
+              backgroundColor: isActive("/discover")
+                ? "var(--primary)"
+                : "transparent",
               color: isActive("/discover") ? "var(--text)" : "var(--text)",
             }}
           >
@@ -185,7 +189,9 @@ export default function Sidebar({ isOpen, onToggle }) {
               isActive("/profile") ? "bg-primary" : "hover:opacity-80"
             }`}
             style={{
-              backgroundColor: isActive("/profile") ? "var(--primary)" : "transparent",
+              backgroundColor: isActive("/profile")
+                ? "var(--primary)"
+                : "transparent",
               color: isActive("/profile") ? "var(--text)" : "var(--text)",
             }}
           >
@@ -197,7 +203,9 @@ export default function Sidebar({ isOpen, onToggle }) {
               isActive("/skills") ? "bg-primary" : "hover:opacity-80"
             }`}
             style={{
-              backgroundColor: isActive("/skills") ? "var(--primary)" : "transparent",
+              backgroundColor: isActive("/skills")
+                ? "var(--primary)"
+                : "transparent",
               color: isActive("/skills") ? "var(--text)" : "var(--text)",
             }}
           >
@@ -209,7 +217,9 @@ export default function Sidebar({ isOpen, onToggle }) {
               isActive("/requests") ? "bg-primary" : "hover:opacity-80"
             }`}
             style={{
-              backgroundColor: isActive("/requests") ? "var(--primary)" : "transparent",
+              backgroundColor: isActive("/requests")
+                ? "var(--primary)"
+                : "transparent",
               color: isActive("/requests") ? "var(--text)" : "var(--text)",
             }}
           >
@@ -243,7 +253,9 @@ export default function Sidebar({ isOpen, onToggle }) {
               isActive("/notifications") ? "bg-primary" : "hover:opacity-80"
             }`}
             style={{
-              backgroundColor: isActive("/notifications") ? "var(--primary)" : "transparent",
+              backgroundColor: isActive("/notifications")
+                ? "var(--primary)"
+                : "transparent",
               color: "var(--text)",
             }}
           >
@@ -256,7 +268,9 @@ export default function Sidebar({ isOpen, onToggle }) {
                 isActive("/moderation") ? "bg-primary" : "hover:opacity-80"
               }`}
               style={{
-                backgroundColor: isActive("/moderation") ? "var(--primary)" : "transparent",
+                backgroundColor: isActive("/moderation")
+                  ? "var(--primary)"
+                  : "transparent",
                 color: "var(--text)",
               }}
             >
@@ -270,7 +284,9 @@ export default function Sidebar({ isOpen, onToggle }) {
                 isActive("/admin") ? "bg-primary" : "hover:opacity-80"
               }`}
               style={{
-                backgroundColor: isActive("/admin") ? "var(--primary)" : "transparent",
+                backgroundColor: isActive("/admin")
+                  ? "var(--primary)"
+                  : "transparent",
                 color: "var(--text)",
               }}
             >
@@ -278,12 +294,28 @@ export default function Sidebar({ isOpen, onToggle }) {
             </Link>
           )}
           <Link
+            to="/enhancements"
+            className={`block px-4 py-2 rounded transition ${
+              isActive("/enhancements") ? "bg-primary" : "hover:opacity-80"
+            }`}
+            style={{
+              backgroundColor: isActive("/enhancements")
+                ? "var(--primary)"
+                : "transparent",
+              color: "var(--text)",
+            }}
+          >
+            ✨ Enhancements
+          </Link>
+          <Link
             to="/settings"
             className={`block px-4 py-2 rounded transition ${
               isActive("/settings") ? "bg-primary" : "hover:opacity-80"
             }`}
             style={{
-              backgroundColor: isActive("/settings") ? "var(--primary)" : "transparent",
+              backgroundColor: isActive("/settings")
+                ? "var(--primary)"
+                : "transparent",
               color: "var(--text)",
             }}
           >

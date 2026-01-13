@@ -24,6 +24,15 @@ export default function Discover() {
   const [hashtagLoading, setHashtagLoading] = useState(true);
   const [startingChats, setStartingChats] = useState(new Set());
 
+  // Filter states
+  const [filterCourse, setFilterCourse] = useState("");
+  const [filterYear, setFilterYear] = useState("");
+  const [filterSkill, setFilterSkill] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [allCourses, setAllCourses] = useState([]);
+  const [allYears, setAllYears] = useState([]);
+  const [allSkills, setAllSkills] = useState([]);
+
   useEffect(() => {
     const fetchSuggested = async () => {
       try {
@@ -91,6 +100,41 @@ export default function Discover() {
     fetchHashtagSuggestions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fetch filter options
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const { data } = await api.get("/users/filter-options");
+        if (data.courses) setAllCourses(data.courses);
+        if (data.years) setAllYears(data.years);
+        if (data.skills) setAllSkills(data.skills);
+      } catch (error) {
+        console.error("Failed to fetch filter options:", error);
+      }
+    };
+    fetchFilterOptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Apply filters to results
+  const applyFilters = (users) => {
+    return users.filter((user) => {
+      if (filterCourse && user.course !== filterCourse) return false;
+      if (filterYear && user.year !== filterYear) return false;
+      if (filterSkill && !user.skills?.some((s) => s.name === filterSkill))
+        return false;
+      return true;
+    });
+  };
+
+  const handleClearFilters = () => {
+    setFilterCourse("");
+    setFilterYear("");
+    setFilterSkill("");
+  };
+
+  const hasActiveFilters = filterCourse || filterYear || filterSkill;
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -248,6 +292,89 @@ export default function Discover() {
           </p>
         </form>
 
+        {/* Filter Toggle Button */}
+        <div className="mb-6 flex justify-between items-center">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary hover:text-white transition-colors"
+          >
+            <span>🔽</span>
+            <span>{showFilters ? "Hide Filters" : "Show Filters"}</span>
+          </button>
+          {hasActiveFilters && (
+            <button
+              onClick={handleClearFilters}
+              className="px-4 py-2 text-red-600 hover:text-red-700 font-semibold transition-colors"
+            >
+              ✕ Clear Filters
+            </button>
+          )}
+        </div>
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Course Filter */}
+              <div>
+                <label className="block text-sm font-semibold text-secondary mb-2">
+                  Course
+                </label>
+                <select
+                  value={filterCourse}
+                  onChange={(e) => setFilterCourse(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                >
+                  <option value="">All Courses</option>
+                  {allCourses.map((course) => (
+                    <option key={course} value={course}>
+                      {course}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Year Filter */}
+              <div>
+                <label className="block text-sm font-semibold text-secondary mb-2">
+                  Year
+                </label>
+                <select
+                  value={filterYear}
+                  onChange={(e) => setFilterYear(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                >
+                  <option value="">All Years</option>
+                  {allYears.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Skill Filter */}
+              <div>
+                <label className="block text-sm font-semibold text-secondary mb-2">
+                  Skill
+                </label>
+                <select
+                  value={filterSkill}
+                  onChange={(e) => setFilterSkill(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                >
+                  <option value="">All Skills</option>
+                  {allSkills.map((skill) => (
+                    <option key={skill} value={skill}>
+                      {skill}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Search Results */}
         {searchResults.length > 0 && (
           <div className="mb-8">
@@ -255,7 +382,7 @@ export default function Discover() {
               Search Results ({searchResults.length})
             </h2>
             <div className="space-y-3">
-              {searchResults.map((user) => (
+              {applyFilters(searchResults).map((user) => (
                 <UserCard key={user.id} user={user} />
               ))}
             </div>
@@ -337,7 +464,7 @@ export default function Discover() {
                       </span>
                     </div>
                     <div className="space-y-3">
-                      {group.users.map((user) => (
+                      {applyFilters(group.users).map((user) => (
                         <UserCard key={user.id} user={user} />
                       ))}
                     </div>
@@ -405,7 +532,7 @@ export default function Discover() {
                       </span>
                     </div>
                     <div className="space-y-3">
-                      {group.users.map((user) => (
+                      {applyFilters(group.users).map((user) => (
                         <UserCard key={user.id} user={user} />
                       ))}
                     </div>
@@ -461,7 +588,7 @@ export default function Discover() {
                   </p>
                 </div>
                 <div className="space-y-3">
-                  {skillSuggestions.map((user) => (
+                  {applyFilters(skillSuggestions).map((user) => (
                     <UserCard key={user.id} user={user} showSkillMatch={true} />
                   ))}
                 </div>
@@ -517,7 +644,7 @@ export default function Discover() {
                   </p>
                 </div>
                 <div className="space-y-3">
-                  {hashtagSuggestions.map((user) => (
+                  {applyFilters(hashtagSuggestions).map((user) => (
                     <UserCard
                       key={user.id}
                       user={user}

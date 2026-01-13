@@ -7,6 +7,7 @@ const {
   getSkillBasedSuggestions,
   getHashtagBasedSuggestions,
   updateProfile,
+  getFilterOptions,
 } = require("../controllers/userController");
 const authMiddleware = require("../middleware/authMiddleware");
 
@@ -14,6 +15,7 @@ const router = express.Router();
 
 // Specific routes MUST come before /:id to avoid route collision
 router.get("/search", searchUsers);
+router.get("/filter-options", getFilterOptions);
 router.get("/suggested", authMiddleware, getSuggestedUsers);
 router.get("/connections/mutual", authMiddleware, getMutualConnections);
 router.get("/suggestions/skills", authMiddleware, getSkillBasedSuggestions);
