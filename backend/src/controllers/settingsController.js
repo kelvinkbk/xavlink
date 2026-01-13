@@ -8,6 +8,16 @@ async function ensureUserSettings(userId) {
       throw new Error("UserId is required");
     }
     
+    // First verify the user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new Error(`User with id ${userId} does not exist`);
+    }
+    
     // First try to find existing settings
     let settings = await prisma.userSettings.findUnique({
       where: { userId },
@@ -54,6 +64,7 @@ exports.updateSettings = async (req, res) => {
       messageNotifications,
       activityNotifications,
       theme,
+      colorPalette,
       language,
     } = req.body;
 
@@ -71,6 +82,7 @@ exports.updateSettings = async (req, res) => {
         ...(messageNotifications !== undefined && { messageNotifications }),
         ...(activityNotifications !== undefined && { activityNotifications }),
         ...(theme !== undefined && { theme }),
+        ...(colorPalette !== undefined && { colorPalette }),
         ...(language !== undefined && { language }),
       },
     });
@@ -101,6 +113,14 @@ exports.getMySettings = async (req, res) => {
       userId: req.user?.id,
       errorCode: error.code,
     });
+    
+    // If user doesn't exist, return 401 (user might have been deleted)
+    if (error.message.includes("does not exist")) {
+      return res.status(401).json({
+        message: "User account not found. Please log in again.",
+      });
+    }
+    
     res.status(500).json({
       message: "Failed to fetch settings",
       error: process.env.NODE_ENV === "production" 
@@ -128,6 +148,7 @@ exports.updateMySettings = async (req, res) => {
       messageNotifications,
       activityNotifications,
       theme,
+      colorPalette,
       language,
     } = req.body;
 
@@ -145,6 +166,7 @@ exports.updateMySettings = async (req, res) => {
         ...(messageNotifications !== undefined && { messageNotifications }),
         ...(activityNotifications !== undefined && { activityNotifications }),
         ...(theme !== undefined && { theme }),
+        ...(colorPalette !== undefined && { colorPalette }),
         ...(language !== undefined && { language }),
       },
     });

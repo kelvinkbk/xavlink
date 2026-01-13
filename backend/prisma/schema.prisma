@@ -310,8 +310,9 @@ model UserSettings {
   quietHoursEnd         String? // HH:mm format
 
   // Appearance Settings
-  theme    String @default("light") // light, dark, auto
-  language String @default("en")
+  theme         String @default("dark") // Always dark mode
+  colorPalette  String @default("champagne") // obsidian-blue, emerald, royal-purple, champagne, crimson, midnight-teal, graphite, pearl, carbon-blue, mocha, bronze, gold
+  language      String @default("en")
 
   // Security Settings
   twoFactorEnabled Boolean   @default(false)
