@@ -672,6 +672,40 @@ export default function HomeEnhanced() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedFilter, sortBy, currentPage, mutedKeywords]);
 
+  // Refetch posts when user's profile pic changes (after update)
+  useEffect(() => {
+    if (currentPage === 1) {
+      setLoading(true);
+      const refetchPosts = async () => {
+        try {
+          const { data } = await postService.getAllPosts(
+            feedFilter,
+            sortBy,
+            1,
+            10
+          );
+          const filteredPosts = data.posts.filter((post) => {
+            const content = `${post.content} ${(post.tags || [])
+              .map((t) => t.tag)
+              .join(" ")}`.toLowerCase();
+            return !mutedKeywords.some((m) =>
+              content.includes(m.keyword.toLowerCase())
+            );
+          });
+          setPosts(filteredPosts);
+          setCurrentPage(1);
+          setHasMore(data.pagination.hasMore);
+        } catch (_e) {
+          console.error("Error refetching posts:", _e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      refetchPosts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.profilePic]); // Refetch when profile pic changes
+
   // Load trending topics and suggested users on mount
   useEffect(() => {
     const loadExtras = async () => {

@@ -464,6 +464,32 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedFilter, sortBy, currentPage]);
 
+  // Refetch posts when user's profile pic changes (after update)
+  useEffect(() => {
+    if (currentPage === 1) {
+      setLoading(true);
+      const refetchPosts = async () => {
+        try {
+          const { data } = await postService.getAllPosts(
+            feedFilter,
+            sortBy,
+            1,
+            10
+          );
+          setPosts(data.posts);
+          setCurrentPage(1);
+          setHasMore(data.pagination.hasMore);
+        } catch (e) {
+          console.error("Error refetching posts:", e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      refetchPosts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.profilePic]); // Refetch when profile pic changes
+
   // Fetch bookmarked posts
   useEffect(() => {
     if (!showBookmarks) return;
