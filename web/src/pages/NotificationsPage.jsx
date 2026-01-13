@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNotifications } from "../context/NotificationContext";
-import { Trash2, Filter, MoreVertical, CheckCircle } from "lucide-react";
+import { Trash2, CheckCircle } from "lucide-react";
 
 export default function NotificationsPage() {
   const { notifications, markAsRead, deleteNotification } = useNotifications();

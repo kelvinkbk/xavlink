@@ -1,17 +1,20 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+/* eslint-disable react-refresh/only-export-components */ import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import io from "socket.io-client";
 
 const SocketContext = createContext();
 
 const SOCKET_SERVER_URL =
-  process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
+  import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
 
 export const SocketProvider = ({ children }) => {
-  const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
-
-  useEffect(() => {
-    // Create socket connection
+  const [socket] = useState(() => {
+    // Initialize socket in lazy initializer to avoid setState in effect
     const newSocket = io(SOCKET_SERVER_URL, {
       reconnection: true,
       reconnectionDelay: 1000,
@@ -19,34 +22,42 @@ export const SocketProvider = ({ children }) => {
       reconnectionAttempts: 5,
       transports: ["polling"],
     });
+    return newSocket;
+  });
 
+  useEffect(() => {
     // Connection events
-    newSocket.on("connect", () => {
-      console.log("✅ Socket.io connected:", newSocket.id);
+    const handleConnect = () => {
+      console.log("✅ Socket.io connected:", socket.id);
       setIsConnected(true);
 
       // Notify server about user online status
       const userId = localStorage.getItem("userId");
       if (userId) {
-        newSocket.emit("user_online", { userId });
+        socket.emit("user_online", { userId });
       }
-    });
+    };
 
-    newSocket.on("disconnect", () => {
+    const handleDisconnect = () => {
       console.log("❌ Socket.io disconnected");
       setIsConnected(false);
-    });
+    };
 
-    newSocket.on("connect_error", (error) => {
+    const handleConnectError = (error) => {
       console.error("Socket connection error:", error);
-    });
+    };
 
-    setSocket(newSocket);
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("connect_error", handleConnectError);
 
     return () => {
-      newSocket.disconnect();
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("connect_error", handleConnectError);
+      socket.disconnect();
     };
-  }, []);
+  }, [socket]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>
