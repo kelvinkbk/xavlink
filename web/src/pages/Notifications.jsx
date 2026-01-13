@@ -130,9 +130,9 @@ const Notifications = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await api.put(`/notifications/${user?.id}/read-all`);
-      const { data } = await api.get(`/notifications/${user?.id}`);
-      setNotifications(data);
+      await api.put(`/notifications/read-all`);
+      const { data } = await api.get(`/notifications`);
+      setNotifications(data?.notifications || data || []);
       setUnreadCount(0);
       showToast("All notifications marked as read", "success");
     } catch (error) {

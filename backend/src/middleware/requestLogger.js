@@ -9,7 +9,7 @@ function requestLogger(req, res, next) {
   // Log request
   console.log(
     `[${timestamp}] ${req.method} ${req.path} - IP: ${
-      req.ip || req.connection.remoteAddress
+      req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || "Unknown"
     }`
   );
 

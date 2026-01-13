@@ -247,9 +247,7 @@ export default function Requests() {
           setRequests(data || []);
         } else if (activeTab === "sent" || activeTab === "history") {
           const { requests: historyData } =
-            await enhancementService.getRequestHistory(
-              activeTab === "sent" ? "sent" : "sent"
-            );
+            await enhancementService.getRequestHistory(activeTab);
           setRequests(historyData || []);
         }
       } catch (e) {
@@ -429,7 +427,7 @@ export default function Requests() {
                     setRequests(data || []);
                   } else if (activeTab === "history") {
                     const { requests: historyData } =
-                      await enhancementService.getRequestHistory("sent");
+                      await enhancementService.getRequestHistory("history");
                     setRequests(historyData || []);
                   }
                 };

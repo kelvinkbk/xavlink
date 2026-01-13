@@ -4,17 +4,27 @@ const bcrypt = require("bcryptjs");
 // Helper to ensure a settings row exists with sensible defaults
 async function ensureUserSettings(userId) {
   try {
-    console.log("Ensuring settings for userId:", userId);
-    const settings = await prisma.userSettings.upsert({
+    if (!userId) {
+      throw new Error("UserId is required");
+    }
+    
+    // First try to find existing settings
+    let settings = await prisma.userSettings.findUnique({
       where: { userId },
-      update: {},
-      create: { userId }, // defaults come from Prisma schema
     });
-    console.log("Settings ensured successfully:", settings);
+
+    // If not found, create with defaults
+    if (!settings) {
+      settings = await prisma.userSettings.create({
+        data: { userId }, // defaults come from Prisma schema
+      });
+    }
+    
     return settings;
   } catch (error) {
     console.error("Error in ensureUserSettings:", error);
-    throw error;
+    // Re-throw with more context
+    throw new Error(`Failed to ensure user settings: ${error.message}`);
   }
 }
 
@@ -80,13 +90,23 @@ exports.getMySettings = async (req, res) => {
     if (!userId) {
       return res.status(401).json({ message: "Authentication required" });
     }
+    
+    console.log("Fetching settings for userId:", userId);
     const settings = await ensureUserSettings(userId);
     res.json(settings);
   } catch (error) {
-    console.error("Error in getMySettings:", error);
-    res
-      .status(500)
-      .json({ message: "Failed to fetch settings", error: error.message });
+    console.error("Error in getMySettings:", {
+      message: error.message,
+      stack: error.stack,
+      userId: req.user?.id,
+      errorCode: error.code,
+    });
+    res.status(500).json({
+      message: "Failed to fetch settings",
+      error: process.env.NODE_ENV === "production" 
+        ? "Internal server error" 
+        : error.message,
+    });
   }
 };
 

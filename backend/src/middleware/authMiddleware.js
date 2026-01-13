@@ -33,8 +33,8 @@ async function updateDeviceSessionActivity(userId, req) {
     const userAgent = req.headers["user-agent"] || "Unknown";
     const ipAddress =
       req.ip ||
-      req.connection.remoteAddress ||
-      req.socket.remoteAddress ||
+      req.connection?.remoteAddress ||
+      req.socket?.remoteAddress ||
       "Unknown";
 
     const deviceFingerprint = crypto
@@ -81,5 +81,3 @@ function optionalAuthMiddleware(req, res, next) {
 
 module.exports = authMiddleware;
 module.exports.optionalAuthMiddleware = optionalAuthMiddleware;
-
-module.exports = authMiddleware;
