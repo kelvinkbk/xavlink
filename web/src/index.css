@@ -2,12 +2,156 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Default dark mode - always active */
 :root {
-  --primary: #3b82f6;
-  --secondary: #1e293b;
-  --surface: #f8fafc;
-  --text: #0f172a;
-  --muted: #475569;
+  --primary: #60a5fa;
+  --secondary: #0f172a;
+  --surface: #0b1223;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #60a5fa;
+  --card: #111827;
+  --border: #1f2937;
+}
+
+/* 1️⃣ Obsidian Blue × Silver */
+[data-color-palette="obsidian-blue"] {
+  --primary: #0A2540;
+  --accent: #9CA3AF;
+  --highlight: #38BDF8;
+  --surface: #050B14;
+  --card: #0F172A;
+  --text: #E5E7EB;
+  --muted: #9CA3AF;
+  --border: #1E293B;
+}
+
+/* 2️⃣ Emerald × Graphite */
+[data-color-palette="emerald"] {
+  --primary: #064E3B;
+  --accent: #10B981;
+  --highlight: #A7F3D0;
+  --surface: #0B0F0E;
+  --card: #111827;
+  --text: #ECFDF5;
+  --muted: #6B7280;
+  --border: #1F2937;
+}
+
+/* 3️⃣ Royal Purple × Onyx */
+[data-color-palette="royal-purple"] {
+  --primary: #4C1D95;
+  --accent: #A78BFA;
+  --glow: #DDD6FE;
+  --surface: #09090B;
+  --card: #18181B;
+  --text: #FAFAFA;
+  --muted: #A1A1AA;
+  --border: #27272A;
+}
+
+/* 4️⃣ Champagne × Charcoal */
+[data-color-palette="champagne"] {
+  --primary: #E8C38E;
+  --accent: #C7A46A;
+  --surface: #0E0E0E;
+  --card: #1A1A1A;
+  --text: #F5F5F5;
+  --muted: #A3A3A3;
+  --border: #262626;
+}
+
+/* 5️⃣ Crimson × Jet Black */
+[data-color-palette="crimson"] {
+  --primary: #7F1D1D;
+  --accent: #DC2626;
+  --highlight: #FCA5A5;
+  --surface: #070707;
+  --card: #141414;
+  --text: #FAFAFA;
+  --muted: #737373;
+  --border: #1F1F1F;
+}
+
+/* 6️⃣ Midnight Teal × Platinum */
+[data-color-palette="midnight-teal"] {
+  --primary: #0F766E;
+  --accent: #99F6E4;
+  --metallic: #D1D5DB;
+  --surface: #050F0E;
+  --card: #0F1E1C;
+  --text: #ECFEFF;
+  --muted: #9CA3AF;
+  --border: #1E3A38;
+}
+
+/* 7️⃣ Graphite × Ice White */
+[data-color-palette="graphite"] {
+  --primary: #111827;
+  --accent: #E5E7EB;
+  --highlight: #60A5FA;
+  --surface: #020617;
+  --card: #0F172A;
+  --text: #F9FAFB;
+  --muted: #9CA3AF;
+  --border: #1E293B;
+}
+
+/* 8️⃣ Pearl × Obsidian */
+[data-color-palette="pearl"] {
+  --primary: #F5F5F4;
+  --accent: #D6D3D1;
+  --ink: #09090B;
+  --surface: #030303;
+  --card: #111111;
+  --text: #FAFAFA;
+  --muted: #A8A29E;
+  --border: #1F1F1F;
+}
+
+/* 9️⃣ Carbon × Electric Blue */
+[data-color-palette="carbon-blue"] {
+  --primary: #0EA5E9;
+  --accent: #38BDF8;
+  --glow: #7DD3FC;
+  --surface: #020617;
+  --card: #0B1220;
+  --text: #E0F2FE;
+  --muted: #94A3B8;
+  --border: #1E293B;
+}
+
+/* 🔟 Mocha × Linen */
+[data-color-palette="mocha"] {
+  --primary: #7C2D12;
+  --accent: #E7CBA9;
+  --surface: #0C0A09;
+  --card: #1C1917;
+  --text: #FAF7F5;
+  --muted: #A8A29E;
+  --border: #292524;
+}
+
+/* 1️⃣1️⃣ Bronze × Ink Black */
+[data-color-palette="bronze"] {
+  --primary: #CD7F32;
+  --accent: #E6B873;
+  --surface: #060606;
+  --card: #151515;
+  --text: #FAFAF9;
+  --muted: #A1A1AA;
+  --border: #262626;
+}
+
+/* 1️⃣2️⃣ Gold (Black × Gold) */
+[data-color-palette="gold"] {
+  --primary: #D4AF37;
+  --accent: #FFD966;
+  --surface: #0A0A0A;
+  --card: #161616;
+  --text: #FAFAF9;
+  --muted: #A1A1AA;
+  --border: #262626;
 }
 
 * {
@@ -42,52 +186,110 @@ button {
   font-family: inherit;
 }
 
-/* Dark theme overrides using data-theme flag */
-[data-theme="dark"] {
-  --primary: #60a5fa;
-  --secondary: #0f172a;
-  --surface: #0b1223;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-}
-
+/* Always use dark theme - color palettes override these values */
 [data-theme="dark"] body {
   background-color: var(--surface);
   color: var(--text);
 }
 
-/* Tailwind class overrides for dark mode surfaces/text */
-[data-theme="dark"] .bg-gray-50 {
-  background-color: #0b1223 !important;
+/* Tailwind class overrides - always use color palette variables */
+.bg-gray-50,
+.bg-gray-100 {
+  background-color: var(--surface) !important;
 }
-[data-theme="dark"] .bg-white {
-  background-color: #111827 !important;
+.bg-white {
+  background-color: var(--card) !important;
 }
-[data-theme="dark"] .bg-secondary {
-  background-color: var(--secondary) !important;
+.bg-secondary {
+  background-color: var(--card) !important;
 }
-[data-theme="dark"] .bg-primary {
+.bg-primary {
   background-color: var(--primary) !important;
 }
-[data-theme="dark"] .text-primary {
+.bg-gray-700,
+.hover\:bg-gray-700:hover {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  opacity: 0.8;
+}
+.text-primary {
   color: var(--primary) !important;
 }
-[data-theme="dark"] .text-secondary {
+.text-secondary {
   color: var(--text) !important;
 }
-[data-theme="dark"] .text-gray-600 {
+.text-white {
+  color: var(--text) !important;
+}
+.text-gray-300,
+.text-gray-400 {
   color: var(--muted) !important;
 }
-[data-theme="dark"] .text-gray-700 {
+.text-gray-600 {
   color: var(--muted) !important;
 }
-[data-theme="dark"] .border-gray-200 {
-  border-color: #1f2937 !important;
+.text-gray-700 {
+  color: var(--text) !important;
 }
-[data-theme="dark"] .border-gray-300 {
-  border-color: #334155 !important;
+.border-gray-200 {
+  border-color: var(--border) !important;
 }
-[data-theme="dark"] .shadow-lg {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45),
-    0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+.border-gray-300 {
+  border-color: var(--border) !important;
+}
+.border-gray-700 {
+  border-color: var(--border) !important;
+}
+.hover\:bg-gray-100:hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+.shadow-lg {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Button overrides */
+button.bg-primary,
+.btn-primary,
+.bg-primary {
+  background-color: var(--primary) !important;
+  color: var(--text) !important;
+}
+button.bg-blue-500,
+button.bg-blue-600,
+.bg-blue-500,
+.bg-blue-600 {
+  background-color: var(--primary) !important;
+  color: var(--text) !important;
+}
+
+/* Input and form overrides */
+input,
+textarea,
+select {
+  background-color: var(--card) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--primary) !important;
+  ring-color: var(--primary) !important;
+}
+
+/* Card and container overrides */
+.bg-white,
+.card,
+.container {
+  background-color: var(--card) !important;
+  color: var(--text) !important;
+}
+
+/* Text color overrides */
+.text-black {
+  color: var(--text) !important;
+}
+.text-gray-800,
+.text-gray-900 {
+  color: var(--text) !important;
 }

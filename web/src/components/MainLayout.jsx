@@ -18,7 +18,11 @@ export default function MainLayout({ children }) {
         {isAuthenticated && (
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="md:hidden p-3 text-gray-600 hover:bg-gray-100"
+            className="md:hidden p-3 transition hover:opacity-80"
+            style={{
+              color: "var(--text)",
+              backgroundColor: "transparent",
+            }}
             title="Toggle sidebar"
           >
             <svg
@@ -36,7 +40,12 @@ export default function MainLayout({ children }) {
             </svg>
           </button>
         )}
-        <main className="flex-1 bg-gray-50">{children}</main>
+        <main
+          className="flex-1"
+          style={{ backgroundColor: "var(--surface)" }}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -20,9 +20,15 @@ const Settings = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const applyTheme = (themeValue) => {
-    if (!themeValue) return;
-    document.documentElement.dataset.theme = themeValue;
-    localStorage.setItem("theme", themeValue);
+    // Always use dark mode
+    document.documentElement.dataset.theme = "dark";
+    localStorage.setItem("theme", "dark");
+  };
+
+  const applyColorPalette = (paletteValue) => {
+    if (!paletteValue) return;
+    document.documentElement.dataset.colorPalette = paletteValue;
+    localStorage.setItem("colorPalette", paletteValue);
   };
 
   // Form states
@@ -57,7 +63,8 @@ const Settings = () => {
       try {
         const { data } = await api.get(`/settings/me`);
         setSettings(data);
-        applyTheme(data?.theme || "light");
+        applyTheme("dark");
+        applyColorPalette(data?.colorPalette || "champagne");
         setLoading(false);
       } catch {
         console.error("Failed to fetch settings:");
@@ -130,8 +137,12 @@ const Settings = () => {
     try {
       await api.put(`/settings/me`, { [key]: value });
       setSettings({ ...settings, [key]: value });
+      // Always ensure theme is dark
       if (key === "theme") {
-        applyTheme(value);
+        applyTheme("dark");
+      }
+      if (key === "colorPalette") {
+        applyColorPalette(value);
       }
       setMessage("✅ Settings updated");
       setTimeout(() => setMessage(""), 3000);
@@ -527,24 +538,35 @@ const Settings = () => {
             </h2>
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-secondary mb-3">Theme</h3>
-                <div className="space-y-2">
-                  {["light", "dark", "auto"].map((theme) => (
-                    <label key={theme} className="flex items-center">
-                      <input
-                        type="radio"
-                        name="theme"
-                        value={theme}
-                        checked={settings?.theme === theme}
-                        onChange={() => handleUpdateSettings("theme", theme)}
-                        className="w-4 h-4 cursor-pointer"
-                      />
-                      <span className="ml-3 capitalize text-gray-700">
-                        {theme}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                <h3 className="font-semibold text-secondary mb-3">Color Palette</h3>
+                <select
+                  value={settings?.colorPalette || "champagne"}
+                  onChange={(e) =>
+                    handleUpdateSettings("colorPalette", e.target.value)
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary bg-white text-gray-700"
+                  style={{
+                    backgroundColor: "var(--card)",
+                    color: "var(--text)",
+                    borderColor: "var(--border)",
+                  }}
+                >
+                  <option value="obsidian-blue">1️⃣ Obsidian Blue × Silver (Apple / Fintech)</option>
+                  <option value="emerald">2️⃣ Emerald × Graphite (Wealth / Premium)</option>
+                  <option value="royal-purple">3️⃣ Royal Purple × Onyx (High-Status Creators)</option>
+                  <option value="champagne">4️⃣ Champagne × Charcoal (Fashion / Luxury SaaS)</option>
+                  <option value="crimson">5️⃣ Crimson × Jet Black (Power / Exclusivity)</option>
+                  <option value="midnight-teal">6️⃣ Midnight Teal × Platinum (Private Bank)</option>
+                  <option value="graphite">7️⃣ Graphite × Ice White (Apple Pro / Minimal)</option>
+                  <option value="pearl">8️⃣ Pearl × Obsidian (Luxury Fashion / Editorial)</option>
+                  <option value="carbon-blue">9️⃣ Carbon × Electric Blue (Futuristic / AI)</option>
+                  <option value="mocha">🔟 Mocha × Linen (Calm Luxury / Lifestyle)</option>
+                  <option value="bronze">1️⃣1️⃣ Bronze × Ink Black (Old-Money / Legacy)</option>
+                  <option value="gold">1️⃣2️⃣ Gold (Black × Gold Premium)</option>
+                </select>
+                <p className="mt-2 text-sm text-gray-600" style={{ color: "var(--muted)" }}>
+                  Choose a color palette that matches your style
+                </p>
               </div>
 
               <hr />
@@ -556,7 +578,12 @@ const Settings = () => {
                   onChange={(e) =>
                     handleUpdateSettings("language", e.target.value)
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary bg-white text-gray-700"
+                  style={{
+                    backgroundColor: "var(--card)",
+                    color: "var(--text)",
+                    borderColor: "var(--border)",
+                  }}
                 >
                   <option value="en">English</option>
                   <option value="es">Español</option>

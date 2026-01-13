@@ -110,9 +110,13 @@ export default function Sidebar({ isOpen, onToggle }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:static w-64 bg-secondary text-white shadow-lg min-h-screen p-6 transform transition-transform duration-300 z-40 ${
+        className={`fixed md:static w-64 shadow-lg min-h-screen p-6 transform transition-transform duration-300 z-40 ${
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
+        style={{
+          backgroundColor: "var(--card)",
+          color: "var(--text)",
+        }}
       >
         <div className="flex items-center justify-between mb-8">
           <button
@@ -130,7 +134,8 @@ export default function Sidebar({ isOpen, onToggle }) {
           </button>
           <button
             onClick={onToggle}
-            className="md:hidden p-1 text-gray-300 hover:text-white"
+            className="md:hidden p-1 hover:opacity-80 transition"
+            style={{ color: "var(--muted)" }}
             title="Close sidebar"
           >
             <svg
@@ -153,48 +158,60 @@ export default function Sidebar({ isOpen, onToggle }) {
           <Link
             to="/home"
             className={`block px-4 py-2 rounded transition ${
-              isActive("/home") ? "bg-primary text-white" : "hover:bg-gray-700"
+              isActive("/home") ? "bg-primary" : "hover:opacity-80"
             }`}
+            style={{
+              backgroundColor: isActive("/home") ? "var(--primary)" : "transparent",
+              color: isActive("/home") ? "var(--text)" : "var(--text)",
+            }}
           >
             Home
           </Link>
           <Link
             to="/discover"
             className={`block px-4 py-2 rounded transition ${
-              isActive("/discover")
-                ? "bg-primary text-white"
-                : "hover:bg-gray-700"
+              isActive("/discover") ? "bg-primary" : "hover:opacity-80"
             }`}
+            style={{
+              backgroundColor: isActive("/discover") ? "var(--primary)" : "transparent",
+              color: isActive("/discover") ? "var(--text)" : "var(--text)",
+            }}
           >
             🔍 Discover
           </Link>
           <Link
             to="/profile"
             className={`block px-4 py-2 rounded transition ${
-              isActive("/profile")
-                ? "bg-primary text-white"
-                : "hover:bg-gray-700"
+              isActive("/profile") ? "bg-primary" : "hover:opacity-80"
             }`}
+            style={{
+              backgroundColor: isActive("/profile") ? "var(--primary)" : "transparent",
+              color: isActive("/profile") ? "var(--text)" : "var(--text)",
+            }}
           >
             Profile
           </Link>
           <Link
             to="/skills"
             className={`block px-4 py-2 rounded transition ${
-              isActive("/skills")
-                ? "bg-primary text-white"
-                : "hover:bg-gray-700"
+              isActive("/skills") ? "bg-primary" : "hover:opacity-80"
             }`}
+            style={{
+              backgroundColor: isActive("/skills") ? "var(--primary)" : "transparent",
+              color: isActive("/skills") ? "var(--text)" : "var(--text)",
+            }}
           >
             Skills
           </Link>
           <Link
             to="/requests"
             className={`block px-4 py-2 rounded transition ${
-              isActive("/requests")
-                ? "bg-primary text-white"
-                : "hover:bg-gray-700"
+              isActive("/requests") ? "bg-primary" : "hover:opacity-80"
             }`}
+            style={{
+              backgroundColor: isActive("/requests") ? "var(--primary)" : "transparent",
+              color: isActive("/requests") ? "var(--text)" : "var(--text)",
+            }}
           >
             Requests
           </Link>
@@ -202,9 +219,16 @@ export default function Sidebar({ isOpen, onToggle }) {
             to="/chats"
             className={`flex items-center justify-between px-4 py-2 rounded transition ${
               isActive("/chats") || location.pathname.startsWith("/chat")
-                ? "bg-primary text-white"
-                : "hover:bg-gray-700"
+                ? "bg-primary"
+                : "hover:opacity-80"
             }`}
+            style={{
+              backgroundColor:
+                isActive("/chats") || location.pathname.startsWith("/chat")
+                  ? "var(--primary)"
+                  : "transparent",
+              color: "var(--text)",
+            }}
           >
             <span>💬 Messages</span>
             {unreadTotal > 0 && (
@@ -216,10 +240,12 @@ export default function Sidebar({ isOpen, onToggle }) {
           <Link
             to="/notifications"
             className={`block px-4 py-2 rounded transition ${
-              isActive("/notifications")
-                ? "bg-primary text-white"
-                : "hover:bg-gray-700"
+              isActive("/notifications") ? "bg-primary" : "hover:opacity-80"
             }`}
+            style={{
+              backgroundColor: isActive("/notifications") ? "var(--primary)" : "transparent",
+              color: "var(--text)",
+            }}
           >
             🔔 Notifications
           </Link>
@@ -227,10 +253,12 @@ export default function Sidebar({ isOpen, onToggle }) {
             <Link
               to="/moderation"
               className={`block px-4 py-2 rounded transition ${
-                isActive("/moderation")
-                  ? "bg-primary text-white"
-                  : "hover:bg-gray-700"
+                isActive("/moderation") ? "bg-primary" : "hover:opacity-80"
               }`}
+              style={{
+                backgroundColor: isActive("/moderation") ? "var(--primary)" : "transparent",
+                color: "var(--text)",
+              }}
             >
               🛡️ Moderation
             </Link>
@@ -239,10 +267,12 @@ export default function Sidebar({ isOpen, onToggle }) {
             <Link
               to="/admin"
               className={`block px-4 py-2 rounded transition ${
-                isActive("/admin")
-                  ? "bg-primary text-white"
-                  : "hover:bg-gray-700"
+                isActive("/admin") ? "bg-primary" : "hover:opacity-80"
               }`}
+              style={{
+                backgroundColor: isActive("/admin") ? "var(--primary)" : "transparent",
+                color: "var(--text)",
+              }}
             >
               🧰 Admin
             </Link>
@@ -250,19 +280,28 @@ export default function Sidebar({ isOpen, onToggle }) {
           <Link
             to="/settings"
             className={`block px-4 py-2 rounded transition ${
-              isActive("/settings")
-                ? "bg-primary text-white"
-                : "hover:bg-gray-700"
+              isActive("/settings") ? "bg-primary" : "hover:opacity-80"
             }`}
+            style={{
+              backgroundColor: isActive("/settings") ? "var(--primary)" : "transparent",
+              color: "var(--text)",
+            }}
           >
             ⚙️ Settings
           </Link>
         </nav>
 
-        <div className="pt-8 border-t border-gray-700 mt-8">
+        <div
+          className="pt-8 border-t mt-8"
+          style={{ borderColor: "var(--border)" }}
+        >
           <button
             onClick={logout}
-            className="w-full bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
+            className="w-full px-4 py-2 rounded transition hover:opacity-90"
+            style={{
+              backgroundColor: "#DC2626",
+              color: "#FAFAFA",
+            }}
           >
             Logout
           </button>
