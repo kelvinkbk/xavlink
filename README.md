@@ -152,8 +152,60 @@ A modern full-stack web and mobile application connecting students to share skil
 
 - **Web Hosting**: Vercel
 - **Backend Hosting**: Render
-- **Database**: PostgreSQL (Render)
+- **Database**: PostgreSQL (Persistent Free-tier)
 - **Version Control**: GitHub
+
+---
+
+## 🗄️ **Database Migration - Away from Render Free Tier**
+
+### **Why We're Migrating**
+
+**Problem with Render's Free PostgreSQL:**
+
+- ⏰ **Temporary by Design**: Free PostgreSQL databases on Render are automatically **deleted after 90 days of inactivity**
+- 💀 **Data Loss Risk**: User accounts, messages, uploads, verification tokens, and all persistent data would be lost
+- 📅 **Active Project Burden**: Even with active development, the database will be deleted unless upgraded to a paid plan ($7-25/month)
+
+**Why This Matters for XavLink:**
+
+- 👥 Student/early-stage project with no funding for paid infrastructure
+- 💾 Critical persistent data cannot be lost (user accounts, messages, uploads)
+- 🔐 Security tokens (2FA, password reset, email verification) must persist reliably
+- 🚀 Project should scale freely during development without infrastructure constraints
+
+### **Solution: MongoDB Atlas (Free Tier)**
+
+We are migrating to **MongoDB Atlas Free Tier** for the following reasons:
+
+#### **Why MongoDB Atlas?**
+
+1. **🔒 Persistent Storage** - No automatic expiration or data deletion (unlike Render's free tier)
+2. **📊 User-Centric Schema** - NoSQL flexibility is ideal for evolving user profiles, posts, messages, and social features
+3. **🚀 Horizontal Scaling** - Easier to scale as the platform grows (sharding, replica sets)
+4. **🌱 Future-Proof** - Better suited for agile development where schema changes are frequent
+5. **💰 Free Forever** - 512MB storage, shared cluster, sufficient for student projects with real users
+
+#### **Technical Benefits for XavLink:**
+
+- **Flexible Documents**: User profiles with varying fields (skills, badges, social links) fit naturally in MongoDB
+- **Embedded Relationships**: Messages, comments, and notifications can be nested efficiently
+- **Schema Evolution**: Add new features (e.g., achievements, certifications) without rigid migrations
+- **Developer Experience**: JSON-like documents align with JavaScript/Node.js backend
+
+#### **Alternative Options Considered:**
+
+- **Neon** (PostgreSQL with free hobby tier, no auto-deletion)
+- **Supabase** (PostgreSQL-compatible, generous free tier)
+- **MongoDB Atlas** ✅ **CHOSEN** - Best fit for our use case
+
+### **Implementation Notes for Contributors**
+
+- This is an **infrastructure constraint**, not a code quality issue
+- Prisma supports MongoDB with the `mongodb` provider (schema will be updated)
+- Update your local `.env` `DATABASE_URL` to the MongoDB Atlas connection string
+- Run `npx prisma generate` and `npx prisma db push` for MongoDB migrations
+- No breaking changes to API endpoints or frontend code
 
 ---
 

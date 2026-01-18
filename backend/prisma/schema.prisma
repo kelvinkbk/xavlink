@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -57,7 +57,7 @@ enum AuditAction {
 }
 
 model User {
-  id                      String             @id @default(uuid()) @db.Uuid
+  id                      String             @id @default(auto()) @map("_id") @db.ObjectId
   name                    String
   email                   String             @unique
   password                String
@@ -121,8 +121,8 @@ model User {
 }
 
 model Skill {
-  id             String               @id @default(uuid()) @db.Uuid
-  userId         String               @db.Uuid
+  id             String               @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String               @db.ObjectId
   user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   title          String
   description    String
@@ -142,8 +142,8 @@ model Skill {
 }
 
 model Post {
-  id          String    @id @default(uuid()) @db.Uuid
-  userId      String    @db.Uuid
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @db.ObjectId
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   content     String
   image       String?
@@ -162,9 +162,9 @@ model Post {
 }
 
 model Like {
-  id        String   @id @default(uuid()) @db.Uuid
-  postId    String   @db.Uuid
-  userId    String   @db.Uuid
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  userId    String   @db.ObjectId
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -174,9 +174,9 @@ model Like {
 }
 
 model Comment {
-  id        String   @id @default(uuid()) @db.Uuid
-  postId    String   @db.Uuid
-  userId    String   @db.Uuid
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  userId    String   @db.ObjectId
   text      String
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -187,10 +187,10 @@ model Comment {
 }
 
 model Request {
-  id             String        @id @default(uuid()) @db.Uuid
-  fromUserId     String        @db.Uuid
-  toUserId       String        @db.Uuid
-  skillId        String        @db.Uuid
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  fromUserId     String        @db.ObjectId
+  toUserId       String        @db.ObjectId
+  skillId        String        @db.ObjectId
   status         RequestStatus @default(pending)
   message        String?
   deadline       DateTime?
@@ -211,7 +211,7 @@ model Request {
 }
 
 model Chat {
-  id           String            @id @default(uuid()) @db.Uuid
+  id           String            @id @default(auto()) @map("_id") @db.ObjectId
   name         String?
   isGroupChat  Boolean           @default(false)
   createdAt    DateTime          @default(now())
@@ -220,9 +220,9 @@ model Chat {
 }
 
 model ChatParticipant {
-  id          String   @id @default(uuid()) @db.Uuid
-  chatId      String   @db.Uuid
-  userId      String   @db.Uuid
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  chatId      String   @db.ObjectId
+  userId      String   @db.ObjectId
   chat        Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   joinedAt    DateTime @default(now())
@@ -233,9 +233,9 @@ model ChatParticipant {
 }
 
 model Message {
-  id            String            @id @default(uuid()) @db.Uuid
-  chatId        String            @db.Uuid
-  senderId      String            @db.Uuid
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  chatId        String            @db.ObjectId
+  senderId      String            @db.ObjectId
   text          String
   attachmentUrl String?
   isPinned      Boolean           @default(false)
@@ -252,9 +252,9 @@ model Message {
 }
 
 model MessageReaction {
-  id        String   @id @default(uuid()) @db.Uuid
-  messageId String   @db.Uuid
-  userId    String   @db.Uuid
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  messageId String   @db.ObjectId
+  userId    String   @db.ObjectId
   emoji     String
   createdAt DateTime @default(now())
   message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
@@ -264,9 +264,9 @@ model MessageReaction {
 }
 
 model MessageRead {
-  id        String   @id @default(uuid()) @db.Uuid
-  messageId String   @db.Uuid
-  userId    String   @db.Uuid
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  messageId String   @db.ObjectId
+  userId    String   @db.ObjectId
   readAt    DateTime @default(now())
   message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
@@ -276,8 +276,8 @@ model MessageRead {
 }
 
 model Notification {
-  id        String           @id @default(uuid()) @db.Uuid
-  userId    String           @db.Uuid
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String           @db.ObjectId
   type      NotificationType
   title     String
   message   String
@@ -298,8 +298,8 @@ model Notification {
 }
 
 model UserSettings {
-  id     String @id @default(uuid()) @db.Uuid
-  userId String @unique @db.Uuid
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @unique @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Privacy Settings
@@ -331,9 +331,9 @@ model UserSettings {
 }
 
 model Follow {
-  id          String   @id @default(uuid()) @db.Uuid
-  followerId  String   @db.Uuid
-  followingId String   @db.Uuid
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  followerId  String   @db.ObjectId
+  followingId String   @db.ObjectId
   createdAt   DateTime @default(now())
 
   follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
@@ -345,9 +345,9 @@ model Follow {
 }
 
 model Review {
-  id        String   @id @default(uuid()) @db.Uuid
-  authorId  String   @db.Uuid
-  userId    String   @db.Uuid
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  authorId  String   @db.ObjectId
+  userId    String   @db.ObjectId
   rating    Int // 1-5 stars
   comment   String?
   createdAt DateTime @default(now())
@@ -362,15 +362,15 @@ model Review {
 }
 
 model Report {
-  id                String       @id @default(uuid()) @db.Uuid
-  reporterId        String       @db.Uuid
+  id                String       @id @default(auto()) @map("_id") @db.ObjectId
+  reporterId        String       @db.ObjectId
   reason            String
   description       String
-  reportedUserId    String?      @db.Uuid
-  reportedPostId    String?      @db.Uuid
-  reportedMessageId String?      @db.Uuid
+  reportedUserId    String?      @db.ObjectId
+  reportedPostId    String?      @db.ObjectId
+  reportedMessageId String?      @db.ObjectId
   status            ReportStatus @default(pending)
-  resolvedBy        String?      @db.Uuid
+  resolvedBy        String?      @db.ObjectId
   resolutionNote    String?
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
@@ -389,10 +389,10 @@ model Report {
 }
 
 model AuditLog {
-  id         String      @id @default(uuid()) @db.Uuid
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
   action     AuditAction
-  actorId    String      @db.Uuid
-  targetId   String?     @db.Uuid
+  actorId    String      @db.ObjectId
+  targetId   String?     @db.ObjectId
   targetType String?
   details    String?
   createdAt  DateTime    @default(now())
@@ -405,9 +405,9 @@ model AuditLog {
 }
 
 model BlockedUser {
-  id        String   @id @default(uuid()) @db.Uuid
-  blockerId String   @db.Uuid
-  blockedId String   @db.Uuid
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  blockerId String   @db.ObjectId
+  blockedId String   @db.ObjectId
   createdAt DateTime @default(now())
 
   @@unique([blockerId, blockedId])
@@ -416,9 +416,9 @@ model BlockedUser {
 }
 
 model Bookmark {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  postId    String   @db.Uuid
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  postId    String   @db.ObjectId
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -431,9 +431,9 @@ model Bookmark {
 // New models for missing features
 
 model Favorite {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @db.Uuid
-  favoriteUserId String   @db.Uuid
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @db.ObjectId
+  favoriteUserId String   @db.ObjectId
   createdAt      DateTime @default(now())
 
   user         User @relation("FavoritesGiven", fields: [userId], references: [id], onDelete: Cascade)
@@ -445,9 +445,9 @@ model Favorite {
 }
 
 model ProfileView {
-  id       String   @id @default(uuid()) @db.Uuid
-  userId   String   @db.Uuid
-  viewerId String   @db.Uuid
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String   @db.ObjectId
+  viewerId String   @db.ObjectId
   viewedAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -458,9 +458,9 @@ model ProfileView {
 }
 
 model SkillEndorsement {
-  id         String   @id @default(uuid()) @db.Uuid
-  skillId    String   @db.Uuid
-  endorserId String   @db.Uuid
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  skillId    String   @db.ObjectId
+  endorserId String   @db.ObjectId
   createdAt  DateTime @default(now())
 
   skill    Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
@@ -472,8 +472,8 @@ model SkillEndorsement {
 }
 
 model SkillCertification {
-  id             String    @id @default(uuid()) @db.Uuid
-  skillId        String    @db.Uuid
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  skillId        String    @db.ObjectId
   name           String
   issuer         String
   issueDate      DateTime?
@@ -487,8 +487,8 @@ model SkillCertification {
 }
 
 model RequestTemplate {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
   title     String
   message   String
   createdAt DateTime @default(now())
@@ -498,9 +498,9 @@ model RequestTemplate {
 }
 
 model ModNote {
-  id          String   @id @default(uuid()) @db.Uuid
-  reportId    String   @db.Uuid
-  moderatorId String   @db.Uuid
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  reportId    String   @db.ObjectId
+  moderatorId String   @db.ObjectId
   note        String
   createdAt   DateTime @default(now())
 
@@ -512,8 +512,8 @@ model ModNote {
 }
 
 model DeviceSession {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
   deviceId     String
   deviceName   String?
   ipAddress    String?
@@ -528,8 +528,8 @@ model DeviceSession {
 }
 
 model UserPhoto {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
   url       String
   caption   String?
   order     Int      @default(0)
@@ -542,8 +542,8 @@ model UserPhoto {
 }
 
 model Achievement {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
   type        String // "top_skill", "most_followers", etc
   title       String
   description String?
@@ -557,13 +557,13 @@ model Achievement {
   @@index([type])
 }
 model Activity {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
   type        String   // "login", "post_created", "follow", "skill_endorsed", etc
   description String?
-  postId      String?  @db.Uuid
+  postId      String?  @db.ObjectId
   post        Post?    @relation("PostActivity", fields: [postId], references: [id], onDelete: SetNull)
-  targetUserId String? @db.Uuid
+  targetUserId String? @db.ObjectId
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -573,8 +573,8 @@ model Activity {
 }
 
 model SkillRecommendation {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
   skillName String
   reason    String   // "based_on_endorsements", "trending_in_course", etc
   score     Float    // Relevance score 0-1
