@@ -98,7 +98,7 @@ app.get("/health", async (req, res) => {
   const prisma = require("./config/prismaClient");
   try {
     // Check database connection
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.user.count(); // MongoDB health check
     res.json({
       status: "ok",
       service: "xavlink-backend",
