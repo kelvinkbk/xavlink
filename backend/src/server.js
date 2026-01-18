@@ -35,21 +35,27 @@ console.log("🔧 Allowed Socket.io origins:", allowedOrigins);
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      console.log("🔍 Socket.io connection attempt from origin:", origin);
       // Allow requests with no origin (mobile apps, etc.)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        console.log("✅ Origin allowed:", origin);
-        callback(null, true);
-      } else {
-        console.log("❌ Origin rejected:", origin);
-        // In production, be strict. In dev, be permissive.
-        if (process.env.NODE_ENV === "production") {
-          callback(new Error("Not allowed by CORS"));
-        } else {
-          callback(null, true);
-        }
+      if (!origin) {
+        return callback(null, true);
       }
+      
+      if (allowedOrigins.includes(origin)) {
+        console.log("✅ Socket.IO origin allowed:", origin);
+        return callback(null, true);
+      }
+      
+      // Log rejections but still allow in non-production for debugging
+      console.warn("⚠️  Socket.IO origin not in allowlist:", origin);
+      
+      // In production, be strict. Otherwise allow for easier debugging
+      if (process.env.NODE_ENV === "production") {
+        return callback(new Error("CORS policy: Origin not allowed"));
+      }
+      
+      // Development: log warning but allow
+      console.log("   (Allowed in development mode - set NODE_ENV=production to enforce)");
+      callback(null, true);
     },
     credentials: true,
     methods: ["GET", "POST"],
