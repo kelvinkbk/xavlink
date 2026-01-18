@@ -97,51 +97,30 @@ exports.getAllPosts = async (req, res, next) => {
   try {
     console.log("📌 getAllPosts called");
 
-    // Use raw SQL to avoid Prisma schema issues - exclude scheduled posts
-    const posts = await prisma.$queryRaw`
-      SELECT 
-        "id", 
-        "userId", 
-        "content", 
-        "image",
-        "createdAt"
-      FROM "Post" 
-      WHERE "isScheduled" = false OR "isScheduled" IS NULL
-      ORDER BY "createdAt" DESC 
-      LIMIT 20
-    `;
-
-    console.log("✅ Retrieved", posts?.length, "posts from raw SQL");
-
-    // Get user info for each post
-    const postsWithUsers = await Promise.all(
-      (posts || []).map(async (post) => {
-        try {
-          const user = await prisma.user.findUnique({
-            where: { id: post.userId },
-            select: { id: true, name: true, profilePic: true, course: true },
-          });
-          return {
-            ...post,
-            user,
-            likesCount: 0,
-            commentsCount: 0,
-            isLiked: false,
-            isBookmarked: false,
-          };
-        } catch (err) {
-          console.error("Error getting user:", err.message);
-          return {
-            ...post,
-            user: null,
-            likesCount: 0,
-            commentsCount: 0,
-            isLiked: false,
-            isBookmarked: false,
-          };
+    // MongoDB query - replace raw SQL with Prisma query
+    const posts = await prisma.post.findMany({
+      where: {
+        isScheduled: { $ne: true }
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, profilePic: true, course: true }
         }
-      })
-    );
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20
+    });
+
+    console.log("✅ Retrieved", posts?.length, "posts from MongoDB");
+
+    // Enrich posts with like/comment counts
+    const postsWithUsers = posts.map((post) => ({
+      ...post,
+      likesCount: likeStore[post.id]?.length || 0,
+      commentsCount: commentStore[post.id]?.length || 0,
+      isLiked: false,
+      isBookmarked: false,
+    }));
 
     res.json({
       posts: postsWithUsers,
