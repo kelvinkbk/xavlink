@@ -100,15 +100,15 @@ exports.getAllPosts = async (req, res, next) => {
     // MongoDB query - replace raw SQL with Prisma query
     const posts = await prisma.post.findMany({
       where: {
-        isScheduled: { $ne: true }
+        isScheduled: { not: true },
       },
       include: {
         user: {
-          select: { id: true, name: true, profilePic: true, course: true }
-        }
+          select: { id: true, name: true, profilePic: true, course: true },
+        },
       },
       orderBy: { createdAt: "desc" },
-      take: 20
+      take: 20,
     });
 
     console.log("✅ Retrieved", posts?.length, "posts from MongoDB");
