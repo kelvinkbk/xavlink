@@ -39,22 +39,24 @@ const io = new Server(server, {
       if (!origin) {
         return callback(null, true);
       }
-      
+
       if (allowedOrigins.includes(origin)) {
         console.log("✅ Socket.IO origin allowed:", origin);
         return callback(null, true);
       }
-      
+
       // Log rejections but still allow in non-production for debugging
       console.warn("⚠️  Socket.IO origin not in allowlist:", origin);
-      
+
       // In production, be strict. Otherwise allow for easier debugging
       if (process.env.NODE_ENV === "production") {
         return callback(new Error("CORS policy: Origin not allowed"));
       }
-      
+
       // Development: log warning but allow
-      console.log("   (Allowed in development mode - set NODE_ENV=production to enforce)");
+      console.log(
+        "   (Allowed in development mode - set NODE_ENV=production to enforce)"
+      );
       callback(null, true);
     },
     credentials: true,
