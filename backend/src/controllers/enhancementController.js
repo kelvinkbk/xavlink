@@ -1277,22 +1277,20 @@ exports.getSystemHealth = async (req, res, next) => {
 
     // Test database connection
     const dbStart = Date.now();
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.user.count(); // MongoDB health check
     const dbLatency = Date.now() - dbStart;
 
-    // Get database stats
-    const dbStats = await prisma.$queryRaw`
-      SELECT 
-        pg_database_size(current_database()) as size,
-        (SELECT count(*) FROM "User") as users,
-        (SELECT count(*) FROM "Post") as posts
-    `;
+    // Get database stats from MongoDB
+    const [userCount, postCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.post.count(),
+    ]);
 
     res.json({
       database: {
         status: "connected",
         latency: `${dbLatency}ms`,
-        size: dbStats[0]?.size || 0,
+        size: "N/A", // MongoDB doesn't expose size via Prisma ORM
       },
       api: {
         status: "operational",
