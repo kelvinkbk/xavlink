@@ -226,15 +226,37 @@ io.on("connection", (socket) => {
 /* -------------------------------
    START SERVER
 -------------------------------- */
-server.listen(PORT, () => {
-  console.log(`🚀 XavLink backend running on port ${PORT}`);
+async function startServer() {
+  try {
+    // Test database connection before starting server
+    console.log("🔍 Testing database connection...");
+    await prisma.$connect();
+    const userCount = await prisma.user.count();
+    console.log(`✅ Database connected successfully (${userCount} users)`);
 
-  // Start background job for publishing scheduled posts
-  startScheduledPostsPublisher(10000); // Run every 10 seconds
+    server.listen(PORT, () => {
+      console.log(`🚀 XavLink backend running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`🔒 CORS origins: ${allowedOrigins.length} configured`);
 
-  // Clean up old notifications daily
-  setInterval(cleanupOldNotifications, 24 * 60 * 60 * 1000);
-});
+      // Start background job for publishing scheduled posts
+      startScheduledPostsPublisher(10000); // Run every 10 seconds
+
+      // Clean up old notifications daily
+      setInterval(cleanupOldNotifications, 24 * 60 * 60 * 1000);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error.message);
+    console.error("💡 Possible causes:");
+    console.error("   - DATABASE_URL not set or invalid");
+    console.error("   - Database server unreachable");
+    console.error("   - Prisma schema out of sync (run: npx prisma db push)");
+    console.error("\nFull error:", error);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 /* -------------------------------
    CLEAN SHUTDOWN

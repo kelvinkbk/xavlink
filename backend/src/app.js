@@ -62,12 +62,19 @@ app.use(
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
+        console.log("✅ CORS origin allowed:", origin);
         callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS"));
+        console.warn("⚠️  CORS origin rejected:", origin);
+        // Return false instead of error to send proper CORS headers
+        callback(null, false);
       }
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ["Content-Range", "X-Content-Range"],
+    maxAge: 600, // Cache preflight requests for 10 minutes
   })
 );
 app.use(express.json({ limit: "1mb" }));
