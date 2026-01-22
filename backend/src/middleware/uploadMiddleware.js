@@ -56,6 +56,14 @@ const profileUpload = multer({
   fileFilter: imageFileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
 });
+// Add error handler
+const handleUploadError = (err, req, res, next) => {
+  console.error("❌ Multer upload error:", err);
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ message: err.message, code: err.code });
+  }
+  next(err);
+};
 
 // Post image upload (using Cloudinary)
 const postUpload = multer({
