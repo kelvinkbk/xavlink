@@ -30,6 +30,8 @@ Save findings to `{@artifacts_path}/investigation.md` with:
 Read `{@artifacts_path}/investigation.md`
 Implement the bug fix.
 
+**Fixed:** Changed `multer-storage-cloudinary` from `^4.0.0` to `^2.2.1` in `backend/package.json` to resolve dependency conflict with `cloudinary@^2.8.0`.
+
 1. Add/adjust regression test(s) that fail before the fix and pass after
 2. Implement the fix
 3. Run relevant tests
