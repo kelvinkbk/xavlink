@@ -24,8 +24,8 @@ const InboxScreen = () => {
   const loadNotifications = async () => {
     if (!user?.id) return;
     try {
-      const { data } = await notificationService.getAll(user.id);
-      setNotifications(data);
+      const { data } = await notificationService.getAll();
+      setNotifications(data.notifications || []);
     } catch (_) {}
   };
 

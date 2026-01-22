@@ -60,8 +60,12 @@ export const AuthProvider = ({ children }) => {
     const { data } = await authService.login(credentials);
     setUser(data.user);
     setToken(data.token);
-    await AsyncStorage.setItem("token", data.token);
-    await AsyncStorage.setItem("user", JSON.stringify(data.user));
+    if (data.token) {
+      await AsyncStorage.setItem("token", data.token);
+    }
+    if (data.user) {
+      await AsyncStorage.setItem("user", JSON.stringify(data.user));
+    }
     return data.user;
   };
 
@@ -69,8 +73,12 @@ export const AuthProvider = ({ children }) => {
     const { data } = await authService.register(payload);
     setUser(data.user);
     setToken(data.token);
-    await AsyncStorage.setItem("token", data.token);
-    await AsyncStorage.setItem("user", JSON.stringify(data.user));
+    if (data.token) {
+      await AsyncStorage.setItem("token", data.token);
+    }
+    if (data.user) {
+      await AsyncStorage.setItem("user", JSON.stringify(data.user));
+    }
     return data.user;
   };
 

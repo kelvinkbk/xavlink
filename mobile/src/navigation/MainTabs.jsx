@@ -17,6 +17,8 @@ import SettingsScreen from "../screens/SettingsScreen";
 import InboxScreen from "../screens/InboxScreen";
 import AdminDashboardScreen from "../screens/AdminDashboardScreen";
 import DiscoverScreen from "../screens/DiscoverScreen";
+import ModerationScreen from "../screens/ModerationScreen";
+import EnhancementsScreen from "../screens/EnhancementsScreen";
 import { useAuth } from "../context/AuthContext";
 import { notificationService, requestService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
@@ -118,7 +120,7 @@ const MainTabs = () => {
       if (!user?.id) return;
       try {
         const [{ data: notif }, { data: reqs }] = await Promise.all([
-          notificationService.getUnreadCount(user.id),
+          notificationService.getUnreadCount(),
           requestService.getReceived(user.id),
         ]);
         const pending = Array.isArray(reqs)
@@ -136,8 +138,10 @@ const MainTabs = () => {
     };
   }, [user?.id]);
 
-  // Show admin tab for admin/moderator
-  const isAdminOrMod = user?.role === "admin" || user?.role === "moderator";
+  // Show admin tab for admin, moderation tab for moderator
+  const isAdmin = user?.role === "admin";
+  const isModerator = user?.role === "moderator";
+  const isAdminOrMod = isAdmin || isModerator;
   return (
     <View style={{ flex: 1 }}>
       <Tab.Navigator
@@ -150,7 +154,7 @@ const MainTabs = () => {
           tabBarLabelStyle: { fontSize: 12 },
         }}
       >
-        {isAdminOrMod && (
+        {isAdmin && (
           <Tab.Screen
             name="AdminDashboard"
             component={AdminDashboardScreen}
@@ -158,6 +162,18 @@ const MainTabs = () => {
               tabBarLabel: "Admin",
               tabBarIcon: ({ color, focused }) => (
                 <AnimatedTabIcon icon="🛡️" color={color} isFocused={focused} />
+              ),
+            }}
+          />
+        )}
+        {isModerator && (
+          <Tab.Screen
+            name="Moderation"
+            component={ModerationScreen}
+            options={{
+              tabBarLabel: "Mod",
+              tabBarIcon: ({ color, focused }) => (
+                <AnimatedTabIcon icon="⚖️" color={color} isFocused={focused} />
               ),
             }}
           />
@@ -220,6 +236,16 @@ const MainTabs = () => {
             tabBarLabel: "Profile",
             tabBarIcon: ({ color, focused }) => (
               <AnimatedTabIcon icon="👤" color={color} isFocused={focused} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Enhancements"
+          component={EnhancementsScreen}
+          options={{
+            tabBarLabel: "More",
+            tabBarIcon: ({ color, focused }) => (
+              <AnimatedTabIcon icon="✨" color={color} isFocused={focused} />
             ),
           }}
         />

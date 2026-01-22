@@ -32,6 +32,8 @@ const ChatListScreen = () => {
       if (error?.response?.status === 401) {
         setChats([]);
         setError("Sign in to view chats.");
+      } else if (error?.code === "ECONNABORTED" || error?.message?.includes("timeout")) {
+        setError("Connection timeout. Please check your network and try again.");
       } else {
         setError(error?.response?.data?.message || "Failed to load chats");
       }
