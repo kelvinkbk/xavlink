@@ -1,17 +1,25 @@
-# Deployment Guide for CORS & Connectivity Fixes
+# Deployment Guide for Backend Fixes
 
 ## Overview
-This guide covers deploying the backend fixes to resolve the CORS and connectivity issues affecting the XavLink application.
+This guide covers deploying the backend fixes to resolve the CORS, connectivity, and Cloudinary upload issues affecting the XavLink application.
 
 ## Changes Summary
 
-### 1. CORS Configuration Fix (`backend/src/app.js`)
+### 1. **CRITICAL FIX**: Cloudinary Package Version Update
+- **File**: `backend/package.json`
+- **Change**: Upgraded `multer-storage-cloudinary` from `^2.2.1` to `^4.0.0`
+- **File**: `backend/src/config/cloudinary.js`
+- **Change**: Updated import to use named export: `const { CloudinaryStorage } = require("multer-storage-cloudinary");`
+- **Why**: Fixes TypeError that prevented server from starting (cannot read property 'uploader' of undefined)
+- **Impact**: File uploads will now work correctly
+
+### 2. CORS Configuration Fix (`backend/src/app.js`)
 - Fixed CORS middleware to properly reject unauthorized origins
 - Added explicit allowed methods and headers
 - Added preflight request caching
 - Added debugging logs for origin validation
 
-### 2. Enhanced Startup Diagnostics (`backend/src/server.js`)
+### 3. Enhanced Startup Diagnostics (`backend/src/server.js`)
 - Added database connection test on startup
 - Added detailed error logging for startup failures
 - Added configuration logging for debugging
@@ -38,8 +46,8 @@ CLOUDINARY_API_SECRET=<Your Cloudinary API secret>
 
 1. Commit the changes:
    ```bash
-   git add backend/src/app.js backend/src/server.js
-   git commit -m "Fix CORS configuration and add startup diagnostics"
+   git add backend/package.json backend/src/config/cloudinary.js backend/src/app.js backend/src/server.js
+   git commit -m "Fix Cloudinary package incompatibility, CORS configuration, and add startup diagnostics"
    ```
 
 2. Push to your repository:
@@ -93,6 +101,21 @@ CLOUDINARY_API_SECRET=<Your Cloudinary API secret>
    - API calls work correctly
 
 ## Troubleshooting
+
+### Issue: Server Crashes with Cloudinary Error
+
+**Symptoms**:
+- Server crashes immediately after startup
+- Error: `TypeError: Cannot read properties of undefined (reading 'uploader')`
+- Error mentions `multer-storage-cloudinary/lib/index.js`
+
+**Root Cause**: Package version incompatibility between cloudinary v2.x and multer-storage-cloudinary v2.x
+
+**Solution**: 
+1. Ensure `package.json` has `multer-storage-cloudinary": "^4.0.0"`
+2. Ensure `cloudinary.js` uses: `const { CloudinaryStorage } = require("multer-storage-cloudinary");`
+3. Run `npm install` to update dependencies
+4. Redeploy to Render.com
 
 ### Issue: Database Connection Fails
 

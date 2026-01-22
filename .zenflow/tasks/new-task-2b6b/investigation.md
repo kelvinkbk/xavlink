@@ -159,3 +159,63 @@ To fix the production deployment on Render.com:
 2. **Retry Logic**: Implement exponential backoff for failed requests
 3. **Monitoring**: Set up uptime monitoring (e.g., UptimeRobot)
 4. **Health Check**: Frontend can poll `/health` endpoint before connecting
+
+## Critical Backend Crash Issue (2026-01-23)
+
+### New Error Discovered
+
+From the latest backend logs, a **critical error** was found that prevents the server from starting:
+
+```
+TypeError: Cannot read properties of undefined (reading 'uploader')
+    at /opt/render/project/src/backend/node_modules/multer-storage-cloudinary/lib/index.js:67:42
+```
+
+### Root Cause
+
+**Package Version Incompatibility**: The project was using `multer-storage-cloudinary@2.2.1` which is incompatible with `cloudinary@2.8.0`. 
+
+The old v2.x API of multer-storage-cloudinary:
+- Expected a different import syntax (default export vs named export)
+- Had compatibility issues with cloudinary v2.x
+- Caused the cloudinary instance to be undefined during initialization
+
+### Fix Applied
+
+**1. Upgraded Package Version** (`backend/package.json`):
+```json
+"multer-storage-cloudinary": "^4.0.0"
+```
+
+**2. Updated Import Syntax** (`backend/src/config/cloudinary.js`):
+```javascript
+// Before (incorrect for v4.x):
+const CloudinaryStorage = require("multer-storage-cloudinary");
+
+// After (correct for v4.x):
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+```
+
+### Why This Fixes the Issue
+
+- `multer-storage-cloudinary` v4.x is designed for cloudinary v2.x compatibility
+- Uses named exports which properly handle the cloudinary instance
+- Has better error handling and type definitions
+- Fixes the undefined cloudinary.v2.uploader error
+
+### Testing Requirements
+
+After deploying this fix:
+
+1. **Install Dependencies**: Run `npm install` to update to v4.x
+2. **Verify Startup**: Check that server starts without Cloudinary errors
+3. **Test Upload**: Try uploading a profile picture or file
+4. **Monitor Logs**: Ensure no multer-storage-cloudinary errors appear
+
+### Deployment Note
+
+This fix requires a fresh `npm install` on Render.com. The deploy should:
+1. Update package-lock.json
+2. Install multer-storage-cloudinary@4.x
+3. Server should start successfully
+4. File uploads should work without errors
