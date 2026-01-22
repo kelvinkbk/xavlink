@@ -191,20 +191,28 @@ npm error   node_modules/multer-storage-cloudinary
 "multer-storage-cloudinary": "^2.2.1"
 ```
 
-**2. Fixed Import Syntax** in `backend/src/config/cloudinary.js`:
+**2. Fixed Import and Usage** in `backend/src/config/cloudinary.js`:
 ```javascript
-// Before (v4.x syntax - named export):
+// Before (incorrect - passing only v2 object):
+const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
+cloudinary.config({...});
+new CloudinaryStorage({ cloudinary: cloudinary, ... });
 
-// After (v2.x syntax - default export):
+// After (correct - passing full cloudinary object):
+const cloudinary = require("cloudinary");
 const CloudinaryStorage = require("multer-storage-cloudinary");
+cloudinary.v2.config({...});
+new CloudinaryStorage({ cloudinary: cloudinary, ... });
+module.exports = { cloudinary: cloudinary.v2, ... };
 ```
 
 ### Why This Fixes the Issue
 
-- `multer-storage-cloudinary` v2.2.1 is compatible with cloudinary v2.x
-- The package-lock.json already had v2.2.1 installed, confirming compatibility
-- This resolves the dependency conflict preventing deployment
+1. **Dependency Compatibility**: `multer-storage-cloudinary` v2.2.1 is compatible with cloudinary v2.x
+2. **Correct Object Passing**: v2.2.1 expects the full cloudinary object (with `.v2` property), not just the v2 sub-object
+3. **Library Internal Access**: The library internally accesses `cloudinary.v2.uploader`, which fails if you pass `cloudinary.v2` directly
+4. **Export Consistency**: We export `cloudinary.v2` for other modules while passing the full object to CloudinaryStorage
 
 ### Version Compatibility Matrix
 

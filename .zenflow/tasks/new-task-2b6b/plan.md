@@ -30,7 +30,13 @@ Save findings to `{@artifacts_path}/investigation.md` with:
 Read `{@artifacts_path}/investigation.md`
 Implement the bug fix.
 
-**Fixed:** Changed `multer-storage-cloudinary` from `^4.0.0` to `^2.2.1` in `backend/package.json` to resolve dependency conflict with `cloudinary@^2.8.0`.
+**Fixed:** 
+1. Changed `multer-storage-cloudinary` from `^4.0.0` to `^2.2.1` in `backend/package.json`
+2. Updated `backend/src/config/cloudinary.js`:
+   - Import full cloudinary object instead of just `.v2`
+   - Configure using `cloudinary.v2.config()`
+   - Pass full cloudinary object to CloudinaryStorage
+   - Export `cloudinary.v2` for backward compatibility
 
 1. Add/adjust regression test(s) that fail before the fix and pass after
 2. Implement the fix
