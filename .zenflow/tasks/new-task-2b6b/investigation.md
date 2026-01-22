@@ -232,7 +232,7 @@ After deploying this fix:
 3. **Test Upload**: Try uploading a profile picture or file
 4. **Monitor Logs**: Ensure no dependency errors appear
 
-## File Upload Issue (2026-01-23 - Second Fix)
+## File Upload Issue (2026-01-23 - FINAL FIX)
 
 ### Additional Issue Found
 
@@ -280,9 +280,48 @@ const profileStorage = new CloudinaryStorage({
 });
 ```
 
-### Why This Fixes Upload Issue
+### Why Simplifying Params Didn't Work
 
-- v2.2.1 has limited params support compared to v4.x
-- `allowed_formats` doesn't exist in v2.x API (use multer fileFilter instead)
-- `transformation` in v2.x requires different syntax or should be applied post-upload
-- Keeping params minimal ensures compatibility
+- v2.2.1 is from 2016 (8 years old!) and poorly maintained
+- Even with minimal params, uploads were still failing silently
+- The library has compatibility issues with modern Node.js
+
+### FINAL FIX: Downgrade Cloudinary to v1.x
+
+**Changed approach entirely** - use the well-supported version combination:
+
+**1. Updated `backend/package.json`:**
+```json
+// Before (incompatible):
+"cloudinary": "^2.8.0",
+"multer-storage-cloudinary": "^2.2.1"
+
+// After (compatible, modern versions):
+"cloudinary": "^1.41.3",
+"multer-storage-cloudinary": "^4.0.0"
+```
+
+**2. Updated `backend/src/config/cloudinary.js`:**
+```javascript
+// Use v4.x syntax with named export and cloudinary.v2
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+
+cloudinary.config({...});
+
+const profileStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "xavlink/profile",
+    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
+  },
+});
+```
+
+### Why This Solution Works
+
+1. **Cloudinary v1.41.3**: Latest v1.x, mature and stable
+2. **multer-storage-cloudinary v4.0.0**: Modern version (2020), actively maintained
+3. **Proper compatibility**: v4.x is designed for cloudinary v1.x
+4. **Full feature support**: `allowed_formats` and other params work properly
+5. **Better error handling**: Modern codebase with proper error reporting

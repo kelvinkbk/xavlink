@@ -1,8 +1,8 @@
-const cloudinary = require("cloudinary");
-const CloudinaryStorage = require("multer-storage-cloudinary");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
-// Configure Cloudinary v2
-cloudinary.v2.config({
+// Configure Cloudinary
+cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
@@ -20,6 +20,7 @@ const profileStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "xavlink/profile",
+    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
   },
 });
 
@@ -37,11 +38,12 @@ const postStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "xavlink/posts",
+    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
   },
 });
 
 module.exports = {
-  cloudinary: cloudinary.v2,
+  cloudinary,
   profileStorage,
   chatStorage,
   postStorage,

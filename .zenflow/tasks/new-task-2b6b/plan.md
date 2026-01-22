@@ -30,17 +30,20 @@ Save findings to `{@artifacts_path}/investigation.md` with:
 Read `{@artifacts_path}/investigation.md`
 Implement the bug fix.
 
-**Fixed:** 
-1. Changed `multer-storage-cloudinary` from `^4.0.0` to `^2.2.1` in `backend/package.json`
-2. Updated `backend/src/config/cloudinary.js`:
-   - Import full cloudinary object instead of just `.v2`
-   - Configure using `cloudinary.v2.config()`
-   - Pass full cloudinary object to CloudinaryStorage
-   - Export `cloudinary.v2` for backward compatibility
-3. Simplified CloudinaryStorage params to remove unsupported v2.x options:
-   - Removed `allowed_formats` (not supported in v2.x)
-   - Removed `transformation` array (different syntax in v2.x)
-   - Kept only `folder` and `resource_type` params
+**Fixed (FINAL SOLUTION):** 
+1. Downgraded `cloudinary` from `^2.8.0` to `^1.41.3` in `backend/package.json`
+2. Upgraded `multer-storage-cloudinary` to `^4.0.0` in `backend/package.json`
+3. Updated `backend/src/config/cloudinary.js`:
+   - Import `cloudinary.v2` directly: `require("cloudinary").v2`
+   - Use named export: `{ CloudinaryStorage }`
+   - Pass cloudinary instance to CloudinaryStorage
+   - Use v4.x params syntax with `allowed_formats`
+4. Added error logging to `backend/src/routes/uploadRoutes.js` for debugging
+
+**Why this works**: 
+- `cloudinary@^1.41.3` + `multer-storage-cloudinary@^4.0.0` are the compatible, well-maintained versions
+- v2.2.1 of multer-storage-cloudinary is from 2016 and doesn't work with modern Node.js
+- v4.0.0 is from 2020 and has proper error handling and feature support
 
 1. Add/adjust regression test(s) that fail before the fix and pass after
 2. Implement the fix
