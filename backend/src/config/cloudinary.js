@@ -20,8 +20,6 @@ const profileStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "xavlink/profile",
-    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
-    transformation: [{ width: 500, height: 500, crop: "limit" }],
   },
 });
 
@@ -30,17 +28,7 @@ const chatStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "xavlink/chats",
-    allowed_formats: [
-      "jpg",
-      "jpeg",
-      "png",
-      "gif",
-      "webp",
-      "pdf",
-      "doc",
-      "docx",
-    ],
-    resource_type: "auto", // Automatically detect file type
+    resource_type: "auto",
   },
 });
 
@@ -49,7 +37,6 @@ const postStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "xavlink/posts",
-    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
   },
 });
 

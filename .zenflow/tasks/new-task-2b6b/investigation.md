@@ -231,3 +231,58 @@ After deploying this fix:
 2. **Verify Startup**: Check that server starts without errors
 3. **Test Upload**: Try uploading a profile picture or file
 4. **Monitor Logs**: Ensure no dependency errors appear
+
+## File Upload Issue (2026-01-23 - Second Fix)
+
+### Additional Issue Found
+
+After fixing the dependency conflict, server started successfully but file uploads still failed:
+```
+profile upload {
+  ❌ Cloudinary upload failed - no URL returned
+  userId: '696c9bbeb98b6dbb37b7b119',
+  originalname: 'Gemini_Generated_Image_x5d2mix5d2mix5d2.png',
+  size: undefined,
+  path: undefined,
+  cloudinaryId: undefined
+}
+```
+
+### Root Cause
+
+`multer-storage-cloudinary` v2.2.1 API doesn't support:
+- `allowed_formats` parameter (not a valid option in v2.x)
+- `transformation` parameter in simple object form
+- Complex params structures
+
+The library was silently failing when it encountered unsupported params.
+
+### Additional Fix Applied
+
+**3. Simplified CloudinaryStorage params** in `backend/src/config/cloudinary.js`:
+```javascript
+// Before (using unsupported params):
+const profileStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "xavlink/profile",
+    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
+    transformation: [{ width: 500, height: 500, crop: "limit" }],
+  },
+});
+
+// After (minimal supported params):
+const profileStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "xavlink/profile",
+  },
+});
+```
+
+### Why This Fixes Upload Issue
+
+- v2.2.1 has limited params support compared to v4.x
+- `allowed_formats` doesn't exist in v2.x API (use multer fileFilter instead)
+- `transformation` in v2.x requires different syntax or should be applied post-upload
+- Keeping params minimal ensures compatibility

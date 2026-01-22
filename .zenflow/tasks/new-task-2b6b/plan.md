@@ -37,6 +37,10 @@ Implement the bug fix.
    - Configure using `cloudinary.v2.config()`
    - Pass full cloudinary object to CloudinaryStorage
    - Export `cloudinary.v2` for backward compatibility
+3. Simplified CloudinaryStorage params to remove unsupported v2.x options:
+   - Removed `allowed_formats` (not supported in v2.x)
+   - Removed `transformation` array (different syntax in v2.x)
+   - Kept only `folder` and `resource_type` params
 
 1. Add/adjust regression test(s) that fail before the fix and pass after
 2. Implement the fix
