@@ -25,9 +25,13 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import * as ImagePicker from "expo-image-picker";
-import { userService, uploadService, postService, skillService, enhancementService } from "../services/api";
+import { userService, uploadService, postService } from "../services/api";
 import { ReviewSection } from "../components/ReviewSection";
 import ReportModal from "../components/ReportModal";
+import PhotoGallery from "../components/PhotoGallery";
+import ActivityTimeline from "../components/ActivityTimeline";
+import SocialLinks from "../components/SocialLinks";
+import Achievements from "../components/Achievements";
 
 const ProfileScreen = ({ route, navigation }) => {
   // Save profile changes
@@ -38,8 +42,6 @@ const ProfileScreen = ({ route, navigation }) => {
       const { data } = await userService.updateProfile(user.id, {
         name: name.trim(),
         bio: bio.trim(),
-        course: course.trim(),
-        year: year.trim(),
         profilePic: avatar.trim(),
       });
       await updateUser(data);
@@ -66,17 +68,13 @@ const ProfileScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(!isOwnProfile);
   const [name, setName] = useState(user?.name || "");
   const [bio, setBio] = useState(user?.bio || "");
-  const [course, setCourse] = useState(user?.course || "");
-  const [year, setYear] = useState(user?.year || "");
   const [avatar, setAvatar] = useState(user?.profilePic || "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [followStatus, setFollowStatus] = useState({
     isFollowing: false,
-    followsYou: false,
   });
-  const [skills, setSkills] = useState([]);
   const [activeTab, setActiveTab] = useState("Posts");
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -101,26 +99,7 @@ const ProfileScreen = ({ route, navigation }) => {
         setFollowStatus({
           isFollowing:
             followRes.data?.isFollowing || followRes?.isFollowing || false,
-          followsYou:
-            followRes.data?.followsYou || followRes?.followsYou || false,
         });
-        
-        // Track profile view
-        if (user?.id && user.id !== viewedUserId) {
-          try {
-            await enhancementService.trackProfileView(viewedUserId);
-          } catch (err) {
-            console.error("Failed to track profile view:", err);
-          }
-        }
-        
-        // Fetch user's skills
-        try {
-          const { data: skillsData } = await skillService.getSkillsByUser(viewedUserId);
-          setSkills(skillsData || []);
-        } catch (err) {
-          console.error("Failed to fetch skills:", err);
-        }
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
         Alert.alert("Error", "Failed to load user profile");
@@ -133,42 +112,23 @@ const ProfileScreen = ({ route, navigation }) => {
   }, [viewedUserId, isOwnProfile]);
 
   // Fetch posts for the profile
-  const fetchUserPosts = async () => {
-    if (!displayUser?.id) return;
-    try {
-      setPostsLoading(true);
-      setPostsError("");
-      const { data } = await postService.getAllPosts("all");
-      // Handle both array and object with posts property
-      const postsList = Array.isArray(data) ? data : (data?.posts || []);
-      const mine = postsList.filter((p) => p?.user?.id === displayUser.id);
-      setPosts(mine);
-    } catch (e) {
-      console.error("Failed to fetch posts:", e);
-      setPostsError(e?.response?.data?.message || "Failed to load posts");
-    } finally {
-      setPostsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchUserPosts();
-  }, [displayUser?.id]);
-
-  // Fetch skills for own profile
-  useEffect(() => {
-    const fetchSkills = async () => {
-      if (isOwnProfile && user?.id) {
-        try {
-          const { data: skillsData } = await skillService.getSkillsByUser(user.id);
-          setSkills(skillsData || []);
-        } catch (err) {
-          console.error("Failed to fetch skills:", err);
-        }
+    const fetchPosts = async () => {
+      if (!displayUser?.id) return;
+      try {
+        setPostsLoading(true);
+        setPostsError("");
+        const { data } = await postService.getAllPosts("all");
+        const mine = (data || []).filter((p) => p?.user?.id === displayUser.id);
+        setPosts(mine);
+      } catch (e) {
+        setPostsError(e?.response?.data?.message || "Failed to load posts");
+      } finally {
+        setPostsLoading(false);
       }
     };
-    fetchSkills();
-  }, [isOwnProfile, user?.id]);
+    fetchPosts();
+  }, [displayUser?.id]);
 
   const handleFollowToggle = useCallback(async () => {
     if (isOwnProfile) return;
@@ -199,7 +159,7 @@ const ProfileScreen = ({ route, navigation }) => {
       }));
       Alert.alert(
         "Error",
-        e?.response?.data?.message || "Failed to update follow status"
+        e?.response?.data?.message || "Failed to update follow status",
       );
     } finally {
       setUpdating(false);
@@ -283,65 +243,10 @@ const ProfileScreen = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
         )}
-        {/* Email and verification */}
-        {displayUser?.email && (
-          <Text style={[styles.email, { color: colors.textMuted }]}>
-            {displayUser.email}
-          </Text>
-        )}
-        {displayUser?.emailVerified && (
-          <View style={styles.verifiedBadge}>
-            <Text style={styles.verifiedText}>✓ Verified Account</Text>
-          </View>
-        )}
-        {/* Course and Year */}
-        {(displayUser?.course || displayUser?.year) && (
-          <View style={{ width: "100%", marginTop: 4 }}>
-            {displayUser?.course && (
-              <Text style={{ color: colors.textSecondary }}>
-                {displayUser.course}
-              </Text>
-            )}
-            {displayUser?.year && (
-              <Text style={{ color: colors.textSecondary }}>
-                Year {displayUser.year}
-              </Text>
-            )}
-          </View>
-        )}
-        {/* Follows you indicator */}
-        {!isOwnProfile && followStatus.followsYou && (
-          <View style={styles.followsYouBadge}>
-            <Text style={styles.followsYouText}>Follows you</Text>
-          </View>
-        )}
         {/* Bio */}
-        {!!(bio || displayUser?.bio) && (
-          <View style={{ width: "100%", marginTop: 8 }}>
-            <Text style={{ color: colors.textPrimary }}>
-              {bio || displayUser?.bio}
-            </Text>
-          </View>
-        )}
-        {/* Skills Section */}
-        {skills.length > 0 && (
-          <View style={styles.skillsContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              💼 Skills
-            </Text>
-            <View style={styles.skillsList}>
-              {skills.map((skill) => (
-                <View
-                  key={skill.id}
-                  style={[
-                    styles.skillTag,
-                    { backgroundColor: colors.surface, borderColor: colors.border },
-                  ]}
-                >
-                  <Text style={{ color: colors.textPrimary }}>{skill.title}</Text>
-                </View>
-              ))}
-            </View>
+        {!!bio && (
+          <View style={{ width: "100%", marginTop: 4 }}>
+            <Text style={{ color: colors.textPrimary }}>{bio}</Text>
           </View>
         )}
         {/* Tabs */}
@@ -397,8 +302,8 @@ const ProfileScreen = ({ route, navigation }) => {
                 {updating
                   ? "Updating..."
                   : followStatus.isFollowing
-                  ? "Following"
-                  : "Follow"}
+                    ? "Following"
+                    : "Follow"}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -428,10 +333,9 @@ const ProfileScreen = ({ route, navigation }) => {
       updating,
       isOwnProfile,
       posts.length,
-      skills,
       navigation,
       handleFollowToggle,
-    ]
+    ],
   );
 
   // Footer for FlatList: About tab content and reviews
@@ -484,46 +388,6 @@ const ProfileScreen = ({ route, navigation }) => {
           </View>
           <View style={styles.formGroup}>
             <Text style={[styles.label, { color: colors.textPrimary }]}>
-              Course
-            </Text>
-            <TextInput
-              value={course}
-              onChangeText={setCourse}
-              placeholder="Your course"
-              style={[
-                styles.input,
-                {
-                  borderColor: colors.border,
-                  backgroundColor: colors.surface,
-                  color: colors.textPrimary,
-                },
-              ]}
-              placeholderTextColor={colors.textMuted}
-              editable={isOwnProfile}
-            />
-          </View>
-          <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: colors.textPrimary }]}>
-              Year
-            </Text>
-            <TextInput
-              value={year}
-              onChangeText={setYear}
-              placeholder="Your year"
-              style={[
-                styles.input,
-                {
-                  borderColor: colors.border,
-                  backgroundColor: colors.surface,
-                  color: colors.textPrimary,
-                },
-              ]}
-              placeholderTextColor={colors.textMuted}
-              editable={isOwnProfile}
-            />
-          </View>
-          <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: colors.textPrimary }]}>
               Avatar URL
             </Text>
             <TextInput
@@ -567,11 +431,23 @@ const ProfileScreen = ({ route, navigation }) => {
             </>
           )}
           {displayUser && (
-            <ReviewSection
-              userId={displayUser.id}
-              currentUserId={user?.id}
-              canReview={!!user?.id && user.id !== displayUser.id}
-            />
+            <>
+              <PhotoGallery
+                userId={displayUser.id}
+                isOwnProfile={isOwnProfile}
+              />
+              <SocialLinks
+                userId={displayUser.id}
+                isOwnProfile={isOwnProfile}
+              />
+              <Achievements userId={displayUser.id} />
+              <ActivityTimeline activities={[]} />
+              <ReviewSection
+                userId={displayUser.id}
+                currentUserId={user?.id}
+                canReview={!!user?.id && user.id !== displayUser.id}
+              />
+            </>
           )}
         </>
       ) : null,
@@ -579,8 +455,6 @@ const ProfileScreen = ({ route, navigation }) => {
       activeTab,
       name,
       bio,
-      course,
-      year,
       avatar,
       isOwnProfile,
       saving,
@@ -588,7 +462,7 @@ const ProfileScreen = ({ route, navigation }) => {
       colors,
       displayUser,
       user,
-    ]
+    ],
   );
 
   // FlatList data: posts for Posts tab, empty for About tab
@@ -604,26 +478,9 @@ const ProfileScreen = ({ route, navigation }) => {
         setFollowStatus({
           isFollowing:
             followRes.data?.isFollowing || followRes?.isFollowing || false,
-          followsYou:
-            followRes.data?.followsYou || followRes?.followsYou || false,
         });
-        // Refresh skills
-        try {
-          const { data: skillsData } = await skillService.getSkillsByUser(viewedUserId);
-          setSkills(skillsData || []);
-        } catch (err) {
-          console.error("Failed to refresh skills:", err);
-        }
       } catch (error) {
         console.error("Failed to refresh profile:", error);
-      }
-    } else if (isOwnProfile && user?.id) {
-      // Refresh own skills
-      try {
-        const { data: skillsData } = await skillService.getSkillsByUser(user.id);
-        setSkills(skillsData || []);
-      } catch (err) {
-        console.error("Failed to refresh skills:", err);
       }
     }
     if (activeTab === "Posts") {
@@ -838,59 +695,6 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   buttonText: { color: "#fff", fontWeight: "700" },
-  email: {
-    fontSize: 14,
-    color: "#94a3b8",
-    marginTop: 4,
-  },
-  verifiedBadge: {
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "#dcfce7",
-    borderRadius: 12,
-    alignSelf: "flex-start",
-  },
-  verifiedText: {
-    color: "#166534",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  followsYouBadge: {
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "#e5e7eb",
-    borderRadius: 12,
-    alignSelf: "flex-start",
-  },
-  followsYouText: {
-    color: "#374151",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  skillsContainer: {
-    width: "100%",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  skillsList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  skillTag: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    backgroundColor: "#e0e7ff",
-  },
 });
 
 export default ProfileScreen;

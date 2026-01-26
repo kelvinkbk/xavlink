@@ -7,6 +7,7 @@ import HomeScreen from "../screens/HomeScreen";
 import FloatingActionButton from "../components/FloatingActionButton";
 import CreatePostModal from "../components/CreatePostModal";
 import AddSkillModal from "../components/AddSkillModal";
+import SchedulePostModal from "../components/SchedulePostModal";
 import ChatListScreen from "../screens/ChatListScreen";
 import ChatScreen from "../screens/ChatScreen";
 import ProfileScreen from "../screens/ProfileScreen";
@@ -18,7 +19,6 @@ import InboxScreen from "../screens/InboxScreen";
 import AdminDashboardScreen from "../screens/AdminDashboardScreen";
 import DiscoverScreen from "../screens/DiscoverScreen";
 import ModerationScreen from "../screens/ModerationScreen";
-import EnhancementsScreen from "../screens/EnhancementsScreen";
 import { useAuth } from "../context/AuthContext";
 import { notificationService, requestService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
@@ -112,6 +112,7 @@ const MainTabs = () => {
   const [badge, setBadge] = useState(0);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [showAddSkillModal, setShowAddSkillModal] = useState(false);
+  const [showSchedulePostModal, setShowSchedulePostModal] = useState(false);
   const navigationRef = useRef(null);
 
   useEffect(() => {
@@ -120,7 +121,7 @@ const MainTabs = () => {
       if (!user?.id) return;
       try {
         const [{ data: notif }, { data: reqs }] = await Promise.all([
-          notificationService.getUnreadCount(),
+          notificationService.getUnreadCount(user.id),
           requestService.getReceived(user.id),
         ]);
         const pending = Array.isArray(reqs)
@@ -138,10 +139,8 @@ const MainTabs = () => {
     };
   }, [user?.id]);
 
-  // Show admin tab for admin, moderation tab for moderator
-  const isAdmin = user?.role === "admin";
-  const isModerator = user?.role === "moderator";
-  const isAdminOrMod = isAdmin || isModerator;
+  // Show admin tab for admin/moderator
+  const isAdminOrMod = user?.role === "admin" || user?.role === "moderator";
   return (
     <View style={{ flex: 1 }}>
       <Tab.Navigator
@@ -154,26 +153,26 @@ const MainTabs = () => {
           tabBarLabelStyle: { fontSize: 12 },
         }}
       >
-        {isAdmin && (
+        {isAdminOrMod && (
           <Tab.Screen
-            name="AdminDashboard"
-            component={AdminDashboardScreen}
+            name="Moderation"
+            component={ModerationScreen}
             options={{
-              tabBarLabel: "Admin",
+              tabBarLabel: "Moderation",
               tabBarIcon: ({ color, focused }) => (
                 <AnimatedTabIcon icon="🛡️" color={color} isFocused={focused} />
               ),
             }}
           />
         )}
-        {isModerator && (
+        {isAdminOrMod && (
           <Tab.Screen
-            name="Moderation"
-            component={ModerationScreen}
+            name="AdminDashboard"
+            component={AdminDashboardScreen}
             options={{
-              tabBarLabel: "Mod",
+              tabBarLabel: "Admin",
               tabBarIcon: ({ color, focused }) => (
-                <AnimatedTabIcon icon="⚖️" color={color} isFocused={focused} />
+                <AnimatedTabIcon icon="⚙️" color={color} isFocused={focused} />
               ),
             }}
           />
@@ -240,22 +239,12 @@ const MainTabs = () => {
           }}
         />
         <Tab.Screen
-          name="Enhancements"
-          component={EnhancementsScreen}
-          options={{
-            tabBarLabel: "More",
-            tabBarIcon: ({ color, focused }) => (
-              <AnimatedTabIcon icon="✨" color={color} isFocused={focused} />
-            ),
-          }}
-        />
-        <Tab.Screen
           name="Settings"
           component={SettingsScreen}
           options={{
             tabBarLabel: "Settings",
             tabBarIcon: ({ color, focused }) => (
-              <AnimatedTabIcon icon="⚙️" color={color} isFocused={focused} />
+              <AnimatedTabIcon icon="🔧" color={color} isFocused={focused} />
             ),
           }}
         />
@@ -263,6 +252,7 @@ const MainTabs = () => {
       <FloatingActionButton
         bottomOffset={64}
         onCreatePost={() => setShowCreatePostModal(true)}
+        onSchedulePost={() => setShowSchedulePostModal(true)}
         onAddSkill={() => setShowAddSkillModal(true)}
       />
 
@@ -270,8 +260,15 @@ const MainTabs = () => {
         visible={showCreatePostModal}
         onClose={() => setShowCreatePostModal(false)}
         onSuccess={() => {
-          // Refresh home screen if needed
           console.log("Post created successfully");
+        }}
+      />
+
+      <SchedulePostModal
+        visible={showSchedulePostModal}
+        onClose={() => setShowSchedulePostModal(false)}
+        onSuccess={() => {
+          console.log("Post scheduled successfully");
         }}
       />
 
@@ -279,7 +276,6 @@ const MainTabs = () => {
         visible={showAddSkillModal}
         onClose={() => setShowAddSkillModal(false)}
         onSuccess={() => {
-          // Refresh skills screen if needed
           console.log("Skill added successfully");
         }}
       />

@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const FloatingActionButton = ({
   onCreatePost,
   onAddSkill,
+  onSchedulePost,
   bottomOffset = 0,
   rightOffset = -32,
 }) => {
@@ -23,8 +24,10 @@ const FloatingActionButton = ({
   const rotation = useRef(new Animated.Value(0)).current;
   const scaleOption1 = useRef(new Animated.Value(0)).current;
   const scaleOption2 = useRef(new Animated.Value(0)).current;
+  const scaleOption3 = useRef(new Animated.Value(0)).current;
   const opacityOption1 = useRef(new Animated.Value(0)).current;
   const opacityOption2 = useRef(new Animated.Value(0)).current;
+  const opacityOption3 = useRef(new Animated.Value(0)).current;
 
   const toggleMenu = () => {
     const toValue = isExpanded ? 0 : 1;
@@ -53,7 +56,7 @@ const FloatingActionButton = ({
           }),
         ]),
       ]),
-      // Animate second option (Add Skill)
+      // Animate second option (Schedule Post)
       Animated.sequence([
         Animated.delay(isExpanded ? 0 : 100),
         Animated.parallel([
@@ -70,6 +73,23 @@ const FloatingActionButton = ({
           }),
         ]),
       ]),
+      // Animate third option (Add Skill)
+      Animated.sequence([
+        Animated.delay(isExpanded ? 0 : 150),
+        Animated.parallel([
+          Animated.spring(scaleOption3, {
+            toValue,
+            tension: 40,
+            friction: 7,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityOption3, {
+            toValue,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
     ]).start();
 
     setIsExpanded(!isExpanded);
@@ -80,6 +100,14 @@ const FloatingActionButton = ({
     toggleMenu();
     if (onCreatePost) {
       onCreatePost();
+    }
+  };
+
+  const handleSchedulePost = () => {
+    console.log("Schedule Post button tapped");
+    toggleMenu();
+    if (onSchedulePost) {
+      onSchedulePost();
     }
   };
 
@@ -132,13 +160,37 @@ const FloatingActionButton = ({
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Add Skill Option */}
+      {/* Schedule Post Option */}
       <Animated.View
         style={[
           styles.optionContainer,
           {
             transform: [{ scale: scaleOption2 }],
             opacity: opacityOption2,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={[
+            styles.optionLabel,
+            { color: colors.text, backgroundColor: colors.primary },
+          ]}
+          onPress={handleSchedulePost}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
+            Schedule Post
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Add Skill Option */}
+      <Animated.View
+        style={[
+          styles.optionContainer,
+          {
+            transform: [{ scale: scaleOption3 }],
+            opacity: opacityOption3,
           },
         ]}
       >

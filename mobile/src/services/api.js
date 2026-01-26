@@ -36,7 +36,7 @@ export { API_BASE };
 const api = axios.create({
   baseURL: API_BASE,
   headers: { "Content-Type": "application/json" },
-  timeout: 20000, // 20 seconds - increased for slower network connections
+  timeout: 10000, // fail fast instead of hanging forever
 });
 
 // Surface base URL once for debugging connectivity issues
@@ -53,22 +53,15 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Don't log 403 errors for admin endpoints (expected for non-admin users)
-    const isAdminEndpoint = error?.config?.url?.includes("/admin/") || 
-                           error?.config?.url?.includes("/enhancements/admin/");
-    const is403 = error?.response?.status === 403;
-    
-    if (!(is403 && isAdminEndpoint)) {
-      console.warn("[API] Error", {
-        url: error?.config?.url,
-        method: error?.config?.method,
-        status: error?.response?.status,
-        data: error?.response?.data,
-        message: error?.message,
-      });
-    }
+    console.warn("[API] Error", {
+      url: error?.config?.url,
+      method: error?.config?.method,
+      status: error?.response?.status,
+      data: error?.response?.data,
+      message: error?.message,
+    });
     return Promise.reject(error);
-  }
+  },
 );
 
 export const authService = {
@@ -154,8 +147,6 @@ export const requestService = {
 export const skillService = {
   addSkill: (data) => api.post("/skills/add", data),
   searchSkills: (search = "") => api.get(`/skills/all?search=${search}`),
-  getSkillsByUser: (userId) => api.get(`/skills?userId=${userId}`),
-  deleteSkill: (id) => api.delete(`/skills/${id}`),
   requestSkill: (skillId, toUserId) =>
     api.post("/requests/send", { skillId, toUserId }),
 };
@@ -171,10 +162,10 @@ export const chatService = {
 };
 
 export const notificationService = {
-  getAll: () => api.get(`/notifications`),
-  getUnreadCount: () => api.get(`/notifications/unread-count`),
+  getAll: (userId) => api.get(`/notifications/${userId}`),
+  getUnreadCount: (userId) => api.get(`/notifications/${userId}/unread-count`),
   markRead: (id) => api.put(`/notifications/${id}/read`),
-  markAllRead: () => api.put(`/notifications/read-all`),
+  markAllRead: (userId) => api.put(`/notifications/${userId}/read-all`),
   remove: (id) => api.delete(`/notifications/${id}`),
 };
 
@@ -215,7 +206,12 @@ export const reportService = {
   createReport: (data) => api.post("/reports", data).then((res) => res.data),
   listReports: (params = {}) =>
     api.get("/reports", { params }).then((res) => res.data),
+  getAll: () => api.get("/reports").then((res) => res.data),
   getReport: (id) => api.get(`/reports/${id}`).then((res) => res.data),
+  updateStatus: (id, status, resolutionNote = "") =>
+    api
+      .patch(`/reports/${id}/status`, { status, resolutionNote })
+      .then((res) => res.data),
   updateReportStatus: (id, status, resolutionNote = "") =>
     api
       .patch(`/reports/${id}/status`, { status, resolutionNote })
@@ -289,149 +285,7 @@ export const moderationService = {
     api.delete(`/mod/reviews/post/${id}`).then((res) => res.data),
 };
 
-// Enhancement services for advanced features
 export const enhancementService = {
-  // Discover
-  filterUsers: (params = {}) =>
-    api
-      .get("/enhancements/discover/filter", { params })
-      .then((res) => res.data),
-  getTrendingSkills: (params = {}) =>
-    api
-      .get("/enhancements/discover/trending-skills", { params })
-      .then((res) => res.data),
-  addToFavorites: (favoriteUserId) =>
-    api
-      .post("/enhancements/discover/favorites", { favoriteUserId })
-      .then((res) => res.data),
-  removeFromFavorites: (favoriteUserId) =>
-    api
-      .delete(`/enhancements/discover/favorites/${favoriteUserId}`)
-      .then((res) => res.data),
-  getFavorites: () =>
-    api.get("/enhancements/discover/favorites").then((res) => res.data),
-
-  // Profile
-  trackProfileView: (userId) =>
-    api.post(`/enhancements/profile/${userId}/view`).then((res) => res.data),
-  getProfileStats: (userId) =>
-    api.get(`/enhancements/profile/${userId}/stats`).then((res) => res.data),
-  updateSocialLinks: (data) =>
-    api.put("/enhancements/profile/social-links", data).then((res) => res.data),
-  verifySocialLink: (platform) =>
-    api
-      .post(`/enhancements/profile/social-links/${platform}/verify`)
-      .then((res) => res.data),
-  addUserPhoto: (data) =>
-    api.post("/enhancements/profile/photos", data).then((res) => res.data),
-  getUserPhotos: (userId) =>
-    api.get(`/enhancements/profile/${userId}/photos`).then((res) => res.data),
-  deleteUserPhoto: (photoId) =>
-    api
-      .delete(`/enhancements/profile/photos/${photoId}`)
-      .then((res) => res.data),
-  getAchievements: (userId) =>
-    api
-      .get(`/enhancements/profile/${userId}/achievements`)
-      .then((res) => res.data),
-
-  // Skills
-  endorseSkill: (skillId) =>
-    api.post(`/enhancements/skills/${skillId}/endorse`).then((res) => res.data),
-  removeEndorsement: (skillId) =>
-    api
-      .delete(`/enhancements/skills/${skillId}/endorse`)
-      .then((res) => res.data),
-  getMostEndorsedSkills: (params = {}) =>
-    api
-      .get("/enhancements/skills/trending/endorsed", { params })
-      .then((res) => res.data),
-  addCertification: (skillId, data) =>
-    api
-      .post(`/enhancements/skills/${skillId}/certifications`, data)
-      .then((res) => res.data),
-  getSkillCertifications: (skillId) =>
-    api
-      .get(`/enhancements/skills/${skillId}/certifications`)
-      .then((res) => res.data),
-  getSkillRecommendations: () =>
-    api.get("/enhancements/skills/recommendations").then((res) => res.data),
-  generateSkillRecommendations: () =>
-    api
-      .post("/enhancements/skills/recommendations/generate")
-      .then((res) => res.data),
-
-  // Requests
-  createRequestTemplate: (data) =>
-    api.post("/enhancements/requests/templates", data).then((res) => res.data),
-  getRequestTemplates: () =>
-    api.get("/enhancements/requests/templates").then((res) => res.data),
-  deleteRequestTemplate: (templateId) =>
-    api
-      .delete(`/enhancements/requests/templates/${templateId}`)
-      .then((res) => res.data),
-  getRequestHistory: (type = "sent") =>
-    api
-      .get("/enhancements/requests/history", { params: { type } })
-      .then((res) => res.data),
-  sendCounterOffer: (requestId, data) =>
-    api
-      .post(`/enhancements/requests/${requestId}/counter-offer`, data)
-      .then((res) => res.data),
-  completeRequest: (requestId) =>
-    api
-      .post(`/enhancements/requests/${requestId}/complete`)
-      .then((res) => res.data),
-
-  // Notifications
-  getGroupedNotifications: (timeFilter = "all") =>
-    api
-      .get("/enhancements/notifications/grouped", { params: { timeFilter } })
-      .then((res) => res.data),
-  pinNotification: (notificationId) =>
-    api
-      .post(`/enhancements/notifications/${notificationId}/pin`)
-      .then((res) => res.data),
-  archiveNotification: (notificationId) =>
-    api
-      .post(`/enhancements/notifications/${notificationId}/archive`)
-      .then((res) => res.data),
-  getArchivedNotifications: () =>
-    api.get("/enhancements/notifications/archived").then((res) => res.data),
-
-  // Moderation
-  addModNote: (reportId, note) =>
-    api
-      .post(`/enhancements/moderation/reports/${reportId}/notes`, { note })
-      .then((res) => res.data),
-  getModNotes: (reportId) =>
-    api
-      .get(`/enhancements/moderation/reports/${reportId}/notes`)
-      .then((res) => res.data),
-  getModerationDashboard: () =>
-    api.get("/enhancements/moderation/dashboard").then((res) => res.data),
-
-  // Admin
-  getAnalyticsDashboard: () =>
-    api.get("/enhancements/admin/analytics").then((res) => res.data),
-  getSystemHealth: () =>
-    api.get("/enhancements/admin/health").then((res) => res.data),
-  getSystemHealthMetrics: () =>
-    api.get("/enhancements/admin/health/metrics").then((res) => res.data),
-
-  // Device Management
-  getDeviceSessions: () =>
-    api.get("/enhancements/devices/sessions").then((res) => res.data),
-  revokeDeviceSession: (sessionId) =>
-    api
-      .delete(`/enhancements/devices/sessions/${sessionId}`)
-      .then((res) => res.data),
-  revokeAllOtherSessions: (currentDeviceId) =>
-    api
-      .post("/enhancements/devices/sessions/revoke-all", { currentDeviceId })
-      .then((res) => res.data),
-
-  // Scheduled Posts
   schedulePost: (data) =>
     api
       .post("/enhancements/posts/schedule", data, {
@@ -440,15 +294,37 @@ export const enhancementService = {
       .then((res) => res.data),
   getScheduledPosts: () =>
     api.get("/enhancements/posts/scheduled").then((res) => res.data),
-  cancelScheduledPost: (postId) =>
+  deleteScheduledPost: (id) =>
+    api.delete(`/enhancements/posts/scheduled/${id}`).then((res) => res.data),
+  trackProfileView: (userId) =>
+    api.post(`/enhancements/profile/${userId}/view`).then((res) => res.data),
+  getProfileStats: (userId) =>
+    api.get(`/enhancements/profile/${userId}/stats`).then((res) => res.data),
+  getUserPhotos: (userId) =>
+    api.get(`/enhancements/profile/${userId}/photos`).then((res) => res.data),
+  addUserPhoto: (formData) =>
     api
-      .delete(`/enhancements/posts/scheduled/${postId}`)
+      .post("/enhancements/profile/photos", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
       .then((res) => res.data),
-
-  // Activity Timeline
-  getActivityTimeline: (limit = 20, offset = 0) =>
+  deleteUserPhoto: (photoId) =>
     api
-      .get("/enhancements/activity/timeline", { params: { limit, offset } })
+      .delete(`/enhancements/profile/photos/${photoId}`)
+      .then((res) => res.data),
+  getAchievements: (userId) =>
+    api
+      .get(`/enhancements/profile/${userId}/achievements`)
+      .then((res) => res.data),
+  updateSocialLinks: (data) =>
+    api.put("/enhancements/profile/social-links", data).then((res) => res.data),
+  getSkillRecommendations: () =>
+    api.get("/enhancements/skills/recommendations").then((res) => res.data),
+  endorseSkill: (skillId) =>
+    api.post(`/enhancements/skills/${skillId}/endorse`).then((res) => res.data),
+  removeEndorsement: (skillId) =>
+    api
+      .delete(`/enhancements/skills/${skillId}/endorse`)
       .then((res) => res.data),
 };
 
