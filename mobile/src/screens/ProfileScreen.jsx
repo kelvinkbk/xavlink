@@ -28,6 +28,10 @@ import * as ImagePicker from "expo-image-picker";
 import { userService, uploadService, postService } from "../services/api";
 import { ReviewSection } from "../components/ReviewSection";
 import ReportModal from "../components/ReportModal";
+import PhotoGallery from "../components/PhotoGallery";
+import ActivityTimeline from "../components/ActivityTimeline";
+import SocialLinks from "../components/SocialLinks";
+import Achievements from "../components/Achievements";
 
 const ProfileScreen = ({ route, navigation }) => {
   // Save profile changes
@@ -427,11 +431,23 @@ const ProfileScreen = ({ route, navigation }) => {
             </>
           )}
           {displayUser && (
-            <ReviewSection
-              userId={displayUser.id}
-              currentUserId={user?.id}
-              canReview={!!user?.id && user.id !== displayUser.id}
-            />
+            <>
+              <PhotoGallery 
+                userId={displayUser.id} 
+                isOwnProfile={isOwnProfile} 
+              />
+              <SocialLinks 
+                userId={displayUser.id} 
+                isOwnProfile={isOwnProfile} 
+              />
+              <Achievements userId={displayUser.id} />
+              <ActivityTimeline activities={[]} />
+              <ReviewSection
+                userId={displayUser.id}
+                currentUserId={user?.id}
+                canReview={!!user?.id && user.id !== displayUser.id}
+              />
+            </>
           )}
         </>
       ) : null,

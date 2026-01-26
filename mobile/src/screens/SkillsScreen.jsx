@@ -16,6 +16,7 @@ import {
   useFadeInAnimation,
   useScalePressAnimation,
 } from "../utils/animations";
+import SkillRecommendations from "../components/SkillRecommendations";
 
 const SkillsScreen = () => {
   const { colors } = useTheme();

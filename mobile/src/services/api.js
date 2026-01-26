@@ -206,7 +206,12 @@ export const reportService = {
   createReport: (data) => api.post("/reports", data).then((res) => res.data),
   listReports: (params = {}) =>
     api.get("/reports", { params }).then((res) => res.data),
+  getAll: () => api.get("/reports").then((res) => res.data),
   getReport: (id) => api.get(`/reports/${id}`).then((res) => res.data),
+  updateStatus: (id, status, resolutionNote = "") =>
+    api
+      .patch(`/reports/${id}/status`, { status, resolutionNote })
+      .then((res) => res.data),
   updateReportStatus: (id, status, resolutionNote = "") =>
     api
       .patch(`/reports/${id}/status`, { status, resolutionNote })
@@ -278,6 +283,49 @@ export const moderationService = {
     api.delete(`/mod/reviews/user/${id}`).then((res) => res.data),
   deletePostReview: (id) =>
     api.delete(`/mod/reviews/post/${id}`).then((res) => res.data),
+};
+
+export const enhancementService = {
+  schedulePost: (data) =>
+    api
+      .post("/enhancements/posts/schedule", data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data),
+  getScheduledPosts: () =>
+    api.get("/enhancements/posts/scheduled").then((res) => res.data),
+  deleteScheduledPost: (id) =>
+    api.delete(`/enhancements/posts/scheduled/${id}`).then((res) => res.data),
+  trackProfileView: (userId) =>
+    api.post(`/enhancements/profile/${userId}/view`).then((res) => res.data),
+  getProfileStats: (userId) =>
+    api.get(`/enhancements/profile/${userId}/stats`).then((res) => res.data),
+  getUserPhotos: (userId) =>
+    api.get(`/enhancements/profile/${userId}/photos`).then((res) => res.data),
+  addUserPhoto: (formData) =>
+    api
+      .post("/enhancements/profile/photos", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data),
+  deleteUserPhoto: (photoId) =>
+    api
+      .delete(`/enhancements/profile/photos/${photoId}`)
+      .then((res) => res.data),
+  getAchievements: (userId) =>
+    api
+      .get(`/enhancements/profile/${userId}/achievements`)
+      .then((res) => res.data),
+  updateSocialLinks: (data) =>
+    api.put("/enhancements/profile/social-links", data).then((res) => res.data),
+  getSkillRecommendations: () =>
+    api.get("/enhancements/skills/recommendations").then((res) => res.data),
+  endorseSkill: (skillId) =>
+    api.post(`/enhancements/skills/${skillId}/endorse`).then((res) => res.data),
+  removeEndorsement: (skillId) =>
+    api
+      .delete(`/enhancements/skills/${skillId}/endorse`)
+      .then((res) => res.data),
 };
 
 export default api;
