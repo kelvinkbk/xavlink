@@ -640,11 +640,13 @@ const AdminDashboardScreen = () => {
               </Text>
             ) : (
               <>
-                {users.map((item) => {
+                {users.map((item, index) => {
                   const isEditing = editingId === item.id;
+                  const itemKey = item.id || String(index);
+
                   return (
                     <View
-                      key={item.id}
+                      key={itemKey}
                       style={[
                         styles.userRow,
                         selectedIds.includes(item.id) && styles.userRowSelected,
@@ -674,7 +676,7 @@ const AdminDashboardScreen = () => {
                                 padding: 4,
                                 borderRadius: 4,
                               }}
-                              value={editForm.name}
+                              value={String(editForm.name || "")}
                               onChangeText={(v) =>
                                 setEditForm((f) => ({ ...f, name: v }))
                               }
@@ -688,14 +690,14 @@ const AdminDashboardScreen = () => {
                                 padding: 4,
                                 borderRadius: 4,
                               }}
-                              value={editForm.email}
+                              value={String(editForm.email || "")}
                               onChangeText={(v) =>
                                 setEditForm((f) => ({ ...f, email: v }))
                               }
                               placeholder="Email"
                             />
                             <Picker
-                              selectedValue={editForm.role}
+                              selectedValue={String(editForm.role || "user")}
                               onValueChange={(v) =>
                                 setEditForm((f) => ({ ...f, role: v }))
                               }
@@ -952,7 +954,9 @@ const AdminDashboardScreen = () => {
                       </>
                     ) : (
                       <>
-                        <Text style={{ marginBottom: 8 }}>{item.content}</Text>
+                        <Text style={{ marginBottom: 8 }}>
+                          {String(item.content || "")}
+                        </Text>
                         <View style={{ flexDirection: "row", gap: 8 }}>
                           <TouchableOpacity
                             style={[
@@ -1061,7 +1065,9 @@ const AdminDashboardScreen = () => {
                       </>
                     ) : (
                       <>
-                        <Text style={{ marginBottom: 8 }}>{item.content}</Text>
+                        <Text style={{ marginBottom: 8 }}>
+                          {String(item.content || "")}
+                        </Text>
                         <View style={{ flexDirection: "row", gap: 8 }}>
                           <TouchableOpacity
                             style={[
@@ -1184,7 +1190,7 @@ const AdminDashboardScreen = () => {
                     ) : (
                       <>
                         <Text style={{ marginBottom: 8 }}>
-                          {item.review || item.content}
+                          {String(item.review || item.content || "")}
                         </Text>
                         <View style={{ flexDirection: "row", gap: 8 }}>
                           <TouchableOpacity
@@ -1266,11 +1272,11 @@ const AdminDashboardScreen = () => {
                 >
                   <View style={{ marginBottom: 8 }}>
                     <Text style={{ fontWeight: "bold" }}>
-                      Reason: {item.reason}
+                      Reason: {String(item.reason || "")}
                     </Text>
                     <Text style={{ fontSize: 12, color: "#64748b" }}>
                       Reported by:{" "}
-                      {displayUser(item.reporter || item.reportedBy)}
+                      {String(displayUser(item.reporter || item.reportedBy))}
                     </Text>
                     <Text style={{ fontSize: 12, color: "#64748b" }}>
                       Status:{" "}
@@ -1339,7 +1345,7 @@ const AdminDashboardScreen = () => {
                   }}
                 >
                   <Text style={{ fontWeight: "bold", marginBottom: 4 }}>
-                    {item.action || "Unknown Action"}
+                    {String(item.action || "Unknown Action")}
                   </Text>
                   <Text
                     style={{
@@ -1348,12 +1354,13 @@ const AdminDashboardScreen = () => {
                       marginBottom: 4,
                     }}
                   >
-                    {item.description || item.details}
+                    {String(item.description || item.details || "")}
                   </Text>
                   <Text
                     style={{ fontSize: 11, color: "#94a3b8", marginBottom: 2 }}
                   >
-                    By: {item.admin ? displayUser(item.admin) : "System"}
+                    By:{" "}
+                    {item.admin ? String(displayUser(item.admin)) : "System"}
                   </Text>
                   <Text style={{ fontSize: 11, color: "#94a3b8" }}>
                     {new Date(
