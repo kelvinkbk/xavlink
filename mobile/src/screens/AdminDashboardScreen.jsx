@@ -84,9 +84,9 @@ const AdminDashboardScreen = () => {
       u?.id,
     ];
     const found = candidates.find(
-      (val) => typeof val === "string" && val.trim().length > 0
+      (val) => typeof val === "string" && val.trim().length > 0,
     );
-    return found || "—";
+    return String(found || "—");
   };
 
   const displayTitle = (p, fallbackContent) =>
@@ -137,7 +137,7 @@ const AdminDashboardScreen = () => {
     } catch (e) {
       console.error("Error fetching users:", e);
       setError(
-        e?.response?.data?.message || e?.message || "Failed to load users"
+        e?.response?.data?.message || e?.message || "Failed to load users",
       );
     } finally {
       setLoading(false);
@@ -303,7 +303,7 @@ const AdminDashboardScreen = () => {
   };
   const toggleSelect = (id) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
 
@@ -520,19 +520,27 @@ const AdminDashboardScreen = () => {
         {activeSection === "users" && stats && (
           <View style={styles.statsRow}>
             <View style={[styles.statCard, { backgroundColor: "#e0e7ff" }]}>
-              <Text style={styles.statValue}>{stats.totalUsers}</Text>
+              <Text style={styles.statValue}>
+                {String(stats.totalUsers || 0)}
+              </Text>
               <Text style={styles.statLabel}>Total Users</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: "#bbf7d0" }]}>
-              <Text style={styles.statValue}>{stats.verifiedUsers}</Text>
+              <Text style={styles.statValue}>
+                {String(stats.verifiedUsers || 0)}
+              </Text>
               <Text style={styles.statLabel}>Verified</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: "#fee2e2" }]}>
-              <Text style={styles.statValue}>{stats.suspendedUsers}</Text>
+              <Text style={styles.statValue}>
+                {String(stats.suspendedUsers || 0)}
+              </Text>
               <Text style={styles.statLabel}>Suspended</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: "#fef3c7" }]}>
-              <Text style={styles.statValue}>{stats.totalPosts}</Text>
+              <Text style={styles.statValue}>
+                {String(stats.totalPosts || 0)}
+              </Text>
               <Text style={styles.statLabel}>Total Posts</Text>
             </View>
           </View>
@@ -632,11 +640,13 @@ const AdminDashboardScreen = () => {
               </Text>
             ) : (
               <>
-                {users.map((item) => {
+                {users.map((item, index) => {
                   const isEditing = editingId === item.id;
+                  const itemKey = item.id || String(index);
+
                   return (
                     <View
-                      key={item.id}
+                      key={itemKey}
                       style={[
                         styles.userRow,
                         selectedIds.includes(item.id) && styles.userRowSelected,
@@ -666,7 +676,7 @@ const AdminDashboardScreen = () => {
                                 padding: 4,
                                 borderRadius: 4,
                               }}
-                              value={editForm.name}
+                              value={String(editForm.name || "")}
                               onChangeText={(v) =>
                                 setEditForm((f) => ({ ...f, name: v }))
                               }
@@ -680,14 +690,14 @@ const AdminDashboardScreen = () => {
                                 padding: 4,
                                 borderRadius: 4,
                               }}
-                              value={editForm.email}
+                              value={String(editForm.email || "")}
                               onChangeText={(v) =>
                                 setEditForm((f) => ({ ...f, email: v }))
                               }
                               placeholder="Email"
                             />
                             <Picker
-                              selectedValue={editForm.role}
+                              selectedValue={String(editForm.role || "user")}
                               onValueChange={(v) =>
                                 setEditForm((f) => ({ ...f, role: v }))
                               }
@@ -729,13 +739,13 @@ const AdminDashboardScreen = () => {
                         ) : (
                           <>
                             <Text style={{ fontWeight: "bold" }}>
-                              {displayUser(item)}
+                              {String(displayUser(item))}
                             </Text>
                             <Text style={{ fontSize: 12, color: "#64748b" }}>
-                              {item.email}
+                              {String(item.email || "")}
                             </Text>
                             <Text style={{ fontSize: 12 }}>
-                              Role: {item.role}
+                              Role: {String(item.role || "user")}
                             </Text>
                             <Text
                               style={{
@@ -944,7 +954,9 @@ const AdminDashboardScreen = () => {
                       </>
                     ) : (
                       <>
-                        <Text style={{ marginBottom: 8 }}>{item.content}</Text>
+                        <Text style={{ marginBottom: 8 }}>
+                          {String(item.content || "")}
+                        </Text>
                         <View style={{ flexDirection: "row", gap: 8 }}>
                           <TouchableOpacity
                             style={[
@@ -1053,7 +1065,9 @@ const AdminDashboardScreen = () => {
                       </>
                     ) : (
                       <>
-                        <Text style={{ marginBottom: 8 }}>{item.content}</Text>
+                        <Text style={{ marginBottom: 8 }}>
+                          {String(item.content || "")}
+                        </Text>
                         <View style={{ flexDirection: "row", gap: 8 }}>
                           <TouchableOpacity
                             style={[
@@ -1176,7 +1190,7 @@ const AdminDashboardScreen = () => {
                     ) : (
                       <>
                         <Text style={{ marginBottom: 8 }}>
-                          {item.review || item.content}
+                          {String(item.review || item.content || "")}
                         </Text>
                         <View style={{ flexDirection: "row", gap: 8 }}>
                           <TouchableOpacity
@@ -1258,11 +1272,11 @@ const AdminDashboardScreen = () => {
                 >
                   <View style={{ marginBottom: 8 }}>
                     <Text style={{ fontWeight: "bold" }}>
-                      Reason: {item.reason}
+                      Reason: {String(item.reason || "")}
                     </Text>
                     <Text style={{ fontSize: 12, color: "#64748b" }}>
                       Reported by:{" "}
-                      {displayUser(item.reporter || item.reportedBy)}
+                      {String(displayUser(item.reporter || item.reportedBy))}
                     </Text>
                     <Text style={{ fontSize: 12, color: "#64748b" }}>
                       Status:{" "}
@@ -1331,7 +1345,7 @@ const AdminDashboardScreen = () => {
                   }}
                 >
                   <Text style={{ fontWeight: "bold", marginBottom: 4 }}>
-                    {item.action || "Unknown Action"}
+                    {String(item.action || "Unknown Action")}
                   </Text>
                   <Text
                     style={{
@@ -1340,16 +1354,17 @@ const AdminDashboardScreen = () => {
                       marginBottom: 4,
                     }}
                   >
-                    {item.description || item.details}
+                    {String(item.description || item.details || "")}
                   </Text>
                   <Text
                     style={{ fontSize: 11, color: "#94a3b8", marginBottom: 2 }}
                   >
-                    By: {item.admin ? displayUser(item.admin) : "System"}
+                    By:{" "}
+                    {item.admin ? String(displayUser(item.admin)) : "System"}
                   </Text>
                   <Text style={{ fontSize: 11, color: "#94a3b8" }}>
                     {new Date(
-                      item.timestamp || item.createdAt
+                      item.timestamp || item.createdAt,
                     ).toLocaleString()}
                   </Text>
                 </View>

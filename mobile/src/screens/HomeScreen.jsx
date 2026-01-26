@@ -73,7 +73,7 @@ const PostCard = ({ post, onLike, onComment, onReport, onReportComment }) => {
           if (buttonIndex === 1) {
             onReport(post);
           }
-        }
+        },
       );
     } else {
       Alert.alert("Post Options", "What would you like to do?", [
@@ -97,10 +97,10 @@ const PostCard = ({ post, onLike, onComment, onReport, onReportComment }) => {
       <View style={styles.cardHeader}>
         <View>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-            {post.user?.name || "Student"}
+            {String(post.user?.name || "Student")}
           </Text>
           <Text style={[styles.cardSub, { color: colors.textSecondary }]}>
-            {post.user?.course}
+            {String(post.user?.course || "")}
           </Text>
         </View>
         <TouchableOpacity onPress={handlePostMenu}>
@@ -110,7 +110,7 @@ const PostCard = ({ post, onLike, onComment, onReport, onReportComment }) => {
         </TouchableOpacity>
       </View>
       <Text style={[styles.cardBody, { color: colors.textPrimary }]}>
-        {post.content}
+        {String(post.content || "")}
       </Text>
       {post.image && (
         <Image
@@ -165,7 +165,7 @@ const PostCard = ({ post, onLike, onComment, onReport, onReportComment }) => {
                         { color: colors.textPrimary },
                       ]}
                     >
-                      {comment.user?.name}
+                      {String(comment.user?.name || "User")}
                     </Text>
                     <Text
                       style={[
@@ -173,7 +173,7 @@ const PostCard = ({ post, onLike, onComment, onReport, onReportComment }) => {
                         { color: colors.textSecondary },
                       ]}
                     >
-                      {comment.text}
+                      {String(comment.text || "")}
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -259,8 +259,8 @@ const HomeScreen = () => {
               isLiked: !wasLiked,
               likesCount: p.likesCount + (wasLiked ? -1 : 1),
             }
-          : p
-      )
+          : p,
+      ),
     );
 
     try {
@@ -278,8 +278,8 @@ const HomeScreen = () => {
                 isLiked: wasLiked,
                 likesCount: p.likesCount + (wasLiked ? 1 : -1),
               }
-            : p
-        )
+            : p,
+        ),
       );
     }
   };
@@ -287,8 +287,8 @@ const HomeScreen = () => {
   const handleComment = (postId) => {
     setPosts(
       posts.map((p) =>
-        p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
-      )
+        p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p,
+      ),
     );
   };
 

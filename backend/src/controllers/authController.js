@@ -357,8 +357,7 @@ exports.forgotPassword = async (req, res, next) => {
       },
     });
 
-    // TODO: Send email with reset link
-    // For now, just log it (in production, use nodemailer or similar)
+    // Send email with reset link
     const resetLink = `${
       process.env.FRONTEND_URL || "http://localhost:5173"
     }/reset-password?token=${resetToken}`;
