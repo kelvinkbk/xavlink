@@ -61,7 +61,7 @@ api.interceptors.response.use(
       message: error?.message,
     });
     return Promise.reject(error);
-  },
+  }
 );
 
 export const authService = {

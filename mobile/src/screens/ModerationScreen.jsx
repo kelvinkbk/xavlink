@@ -11,16 +11,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
-import {
-  moderationService,
-  adminService,
-  reportService,
-} from "../services/api";
+import { moderationService, adminService, reportService } from "../services/api";
+
 const ModerationScreen = () => {
   const { colors } = useTheme();
   const [tab, setTab] = useState("users");
   const [stats, setStats] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+
   const loadStats = async () => {
     try {
       const data = await adminService.getStats();
@@ -29,14 +27,17 @@ const ModerationScreen = () => {
       console.error("Failed to load stats:", e);
     }
   };
+
   useEffect(() => {
     loadStats();
   }, []);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadStats();
     setRefreshing(false);
   };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -52,11 +53,10 @@ const ModerationScreen = () => {
             Manage users, content, and reports
           </Text>
         </View>
+
         {stats && (
           <View style={styles.statsGrid}>
-            <View
-              style={[styles.statCard, { backgroundColor: colors.surface }]}
-            >
+            <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
               <Text style={[styles.statValue, { color: colors.textPrimary }]}>
                 {stats.totalUsers}
               </Text>
@@ -64,9 +64,7 @@ const ModerationScreen = () => {
                 Total Users
               </Text>
             </View>
-            <View
-              style={[styles.statCard, { backgroundColor: colors.surface }]}
-            >
+            <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
               <Text style={[styles.statValue, { color: colors.primary }]}>
                 {stats.verifiedUsers}
               </Text>
@@ -74,9 +72,7 @@ const ModerationScreen = () => {
                 Verified
               </Text>
             </View>
-            <View
-              style={[styles.statCard, { backgroundColor: colors.surface }]}
-            >
+            <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
               <Text style={[styles.statValue, { color: "#ef4444" }]}>
                 {stats.suspendedUsers}
               </Text>
@@ -84,9 +80,7 @@ const ModerationScreen = () => {
                 Suspended
               </Text>
             </View>
-            <View
-              style={[styles.statCard, { backgroundColor: colors.surface }]}
-            >
+            <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
               <Text style={[styles.statValue, { color: colors.textPrimary }]}>
                 {stats.totalPosts}
               </Text>
@@ -96,6 +90,7 @@ const ModerationScreen = () => {
             </View>
           </View>
         )}
+
         <View style={styles.tabs}>
           {["users", "reports"].map((t) => (
             <TouchableOpacity
@@ -123,18 +118,21 @@ const ModerationScreen = () => {
             </TouchableOpacity>
           ))}
         </View>
+
         {tab === "users" && <UsersSection colors={colors} />}
         {tab === "reports" && <ReportsSection colors={colors} />}
       </ScrollView>
     </View>
   );
 };
+
 const UsersSection = ({ colors }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [suspended, setSuspended] = useState("");
   const [users, setUsers] = useState([]);
+
   const load = async () => {
     try {
       setLoading(true);
@@ -150,9 +148,11 @@ const UsersSection = ({ colors }) => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     load();
   }, [suspended]);
+
   const toggleSuspend = async (id, isSuspended, userName) => {
     Alert.alert(
       isSuspended ? "Unsuspend User" : "Suspend User",
@@ -171,14 +171,15 @@ const UsersSection = ({ colors }) => {
             } catch (e) {
               Alert.alert(
                 "Error",
-                e?.response?.data?.message || "Failed to update suspension",
+                e?.response?.data?.message || "Failed to update suspension"
               );
             }
           },
         },
-      ],
+      ]
     );
   };
+
   return (
     <View style={styles.section}>
       <View style={styles.filters}>
@@ -266,9 +267,11 @@ const UsersSection = ({ colors }) => {
           <Text style={styles.refreshBtnText}>Refresh</Text>
         </TouchableOpacity>
       </View>
+
       {error ? (
         <Text style={[styles.errorText, { color: "#ef4444" }]}>{error}</Text>
       ) : null}
+
       {loading ? (
         <ActivityIndicator size="large" color={colors.primary} />
       ) : users.length === 0 ? (
@@ -333,10 +336,12 @@ const UsersSection = ({ colors }) => {
     </View>
   );
 };
+
 const ReportsSection = ({ colors }) => {
   const [loading, setLoading] = useState(true);
   const [reports, setReports] = useState([]);
   const [filter, setFilter] = useState("pending");
+
   const load = async () => {
     try {
       setLoading(true);
@@ -354,9 +359,11 @@ const ReportsSection = ({ colors }) => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     load();
   }, [filter]);
+
   const updateReport = async (id, status) => {
     try {
       await reportService.updateStatus(id, status);
@@ -365,6 +372,7 @@ const ReportsSection = ({ colors }) => {
       Alert.alert("Error", "Failed to update report");
     }
   };
+
   return (
     <View style={styles.section}>
       <View style={styles.filterRow}>
@@ -373,8 +381,7 @@ const ReportsSection = ({ colors }) => {
           style={[
             styles.filterBtn,
             {
-              backgroundColor:
-                filter === "all" ? colors.primary : colors.surface,
+              backgroundColor: filter === "all" ? colors.primary : colors.surface,
               borderColor: colors.border,
             },
           ]}
@@ -429,6 +436,7 @@ const ReportsSection = ({ colors }) => {
           </Text>
         </TouchableOpacity>
       </View>
+
       {loading ? (
         <ActivityIndicator size="large" color={colors.primary} />
       ) : reports.length === 0 ? (
@@ -451,9 +459,7 @@ const ReportsSection = ({ colors }) => {
               <Text style={[styles.reportType, { color: colors.primary }]}>
                 {r.type}
               </Text>
-              <Text
-                style={[styles.reportReason, { color: colors.textPrimary }]}
-              >
+              <Text style={[styles.reportReason, { color: colors.textPrimary }]}>
                 {r.reason}
               </Text>
               <Text
@@ -466,11 +472,15 @@ const ReportsSection = ({ colors }) => {
               >
                 Status: {r.status}
               </Text>
+
               {r.status === "pending" && (
                 <View style={styles.reportActions}>
                   <TouchableOpacity
                     onPress={() => updateReport(r.id, "resolved")}
-                    style={[styles.reportBtn, { backgroundColor: "#10b981" }]}
+                    style={[
+                      styles.reportBtn,
+                      { backgroundColor: "#10b981" },
+                    ]}
                   >
                     <Text style={styles.reportBtnText}>Resolve</Text>
                   </TouchableOpacity>
@@ -492,6 +502,7 @@ const ReportsSection = ({ colors }) => {
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -669,4 +680,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+
 export default ModerationScreen;

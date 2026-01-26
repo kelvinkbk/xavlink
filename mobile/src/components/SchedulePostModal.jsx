@@ -90,7 +90,7 @@ const SchedulePostModal = ({ visible, onClose, onSuccess }) => {
     } catch (err) {
       Alert.alert(
         "Error",
-        err.response?.data?.message || "Failed to schedule post",
+        err.response?.data?.message || "Failed to schedule post"
       );
     } finally {
       setIsLoading(false);
@@ -135,7 +135,9 @@ const SchedulePostModal = ({ visible, onClose, onSuccess }) => {
         <View
           style={[styles.modalContent, { backgroundColor: colors.surface }]}
         >
-          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <View
+            style={[styles.header, { borderBottomColor: colors.border }]}
+          >
             <Text style={[styles.title, { color: colors.textPrimary }]}>
               Schedule Post
             </Text>
@@ -218,9 +220,7 @@ const SchedulePostModal = ({ visible, onClose, onSuccess }) => {
                     },
                   ]}
                 >
-                  <Text
-                    style={[styles.btnLabel, { color: colors.textSecondary }]}
-                  >
+                  <Text style={[styles.btnLabel, { color: colors.textSecondary }]}>
                     📅
                   </Text>
                   <Text style={[styles.btnText, { color: colors.textPrimary }]}>
@@ -238,9 +238,7 @@ const SchedulePostModal = ({ visible, onClose, onSuccess }) => {
                     },
                   ]}
                 >
-                  <Text
-                    style={[styles.btnLabel, { color: colors.textSecondary }]}
-                  >
+                  <Text style={[styles.btnLabel, { color: colors.textSecondary }]}>
                     🕐
                   </Text>
                   <Text style={[styles.btnText, { color: colors.textPrimary }]}>

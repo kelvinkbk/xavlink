@@ -23,9 +23,9 @@ router.post(
     profileUpload.single("image")(req, res, (err) => {
       if (err) {
         console.error("❌ Multer/Cloudinary upload error:", err);
-        return res.status(400).json({
-          message: "File upload failed",
-          error: err.message,
+        return res.status(400).json({ 
+          message: "File upload failed", 
+          error: err.message 
         });
       }
       console.log("📤 Multer completed. File details:", {

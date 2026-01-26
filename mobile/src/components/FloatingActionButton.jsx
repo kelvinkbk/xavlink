@@ -147,7 +147,10 @@ const FloatingActionButton = ({
         ]}
       >
         <TouchableOpacity
-          style={[styles.optionLabel, { backgroundColor: colors.primary }]}
+          style={[
+            styles.optionLabel,
+            { backgroundColor: colors.primary },
+          ]}
           onPress={handleCreatePost}
           activeOpacity={0.8}
         >
@@ -168,7 +171,10 @@ const FloatingActionButton = ({
         ]}
       >
         <TouchableOpacity
-          style={[styles.optionLabel, { backgroundColor: colors.primary }]}
+          style={[
+            styles.optionLabel,
+            { backgroundColor: colors.primary },
+          ]}
           onPress={handleSchedulePost}
           activeOpacity={0.8}
         >
@@ -189,7 +195,10 @@ const FloatingActionButton = ({
         ]}
       >
         <TouchableOpacity
-          style={[styles.optionLabel, { backgroundColor: colors.primary }]}
+          style={[
+            styles.optionLabel,
+            { backgroundColor: colors.primary },
+          ]}
           onPress={handleAddSkill}
           activeOpacity={0.8}
         >

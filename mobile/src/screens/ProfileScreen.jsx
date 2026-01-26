@@ -161,7 +161,7 @@ const ProfileScreen = ({ route, navigation }) => {
       }));
       Alert.alert(
         "Error",
-        e?.response?.data?.message || "Failed to update follow status",
+        e?.response?.data?.message || "Failed to update follow status"
       );
     } finally {
       setUpdating(false);
@@ -304,8 +304,8 @@ const ProfileScreen = ({ route, navigation }) => {
                 {updating
                   ? "Updating..."
                   : followStatus.isFollowing
-                    ? "Following"
-                    : "Follow"}
+                  ? "Following"
+                  : "Follow"}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -337,7 +337,7 @@ const ProfileScreen = ({ route, navigation }) => {
       posts.length,
       navigation,
       handleFollowToggle,
-    ],
+    ]
   );
 
   // Footer for FlatList: About tab content and reviews
@@ -434,13 +434,13 @@ const ProfileScreen = ({ route, navigation }) => {
           )}
           {displayUser && (
             <>
-              <PhotoGallery
-                userId={displayUser.id}
-                isOwnProfile={isOwnProfile}
+              <PhotoGallery 
+                userId={displayUser.id} 
+                isOwnProfile={isOwnProfile} 
               />
-              <SocialLinks
-                userId={displayUser.id}
-                isOwnProfile={isOwnProfile}
+              <SocialLinks 
+                userId={displayUser.id} 
+                isOwnProfile={isOwnProfile} 
               />
               <Achievements userId={displayUser.id} />
               <ActivityTimeline activities={[]} />
@@ -464,7 +464,7 @@ const ProfileScreen = ({ route, navigation }) => {
       colors,
       displayUser,
       user,
-    ],
+    ]
   );
 
   // FlatList data: posts for Posts tab, empty for About tab
