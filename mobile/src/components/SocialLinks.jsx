@@ -147,11 +147,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   linksContainer: {
-    gap: 16,
   },
   linkItem: {
     flexDirection: "row",
     alignItems: "flex-start",
+    marginBottom: 16,
   },
   icon: {
     fontSize: 20,
