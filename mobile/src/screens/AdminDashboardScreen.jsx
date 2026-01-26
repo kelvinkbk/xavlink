@@ -25,6 +25,7 @@ const SECTIONS = [
 
 const AdminDashboardScreen = () => {
   const { user } = useAuth();
+  const { colors } = useTheme();
 
   const [activeSection, setActiveSection] = useState("users");
   const [users, setUsers] = useState([]);
@@ -489,6 +490,8 @@ const AdminDashboardScreen = () => {
   /* =========================
      RENDER
   ========================== */
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -520,25 +523,30 @@ const AdminDashboardScreen = () => {
         {/* Dashboard Stats - Only show on Users tab */}
         {activeSection === "users" && stats && (
           <View style={styles.statsRow}>
-            <View style={[styles.statCard, { backgroundColor: "#e0e7ff" }]}>
+            <View style={styles.statCard}>
               <Text style={styles.statValue}>
                 {String(stats.totalUsers || 0)}
               </Text>
               <Text style={styles.statLabel}>Total Users</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: "#bbf7d0" }]}>
+            <View style={styles.statCard}>
               <Text style={styles.statValue}>
                 {String(stats.verifiedUsers || 0)}
               </Text>
               <Text style={styles.statLabel}>Verified</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: "#fee2e2" }]}>
+            <View
+              style={[
+                styles.statCard,
+                { backgroundColor: colors.errorBackground },
+              ]}
+            >
               <Text style={styles.statValue}>
                 {String(stats.suspendedUsers || 0)}
               </Text>
               <Text style={styles.statLabel}>Suspended</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: "#fef3c7" }]}>
+            <View style={styles.statCard}>
               <Text style={styles.statValue}>
                 {String(stats.totalPosts || 0)}
               </Text>
@@ -556,10 +564,12 @@ const AdminDashboardScreen = () => {
             {/* Filters */}
             <View
               style={{
-                backgroundColor: "#f8fafc",
+                backgroundColor: colors.surface,
                 padding: 8,
                 borderRadius: 8,
                 marginBottom: 8,
+                borderWidth: 1,
+                borderColor: colors.border,
               }}
             >
               <Text style={styles.filterLabel}>Search</Text>
@@ -659,7 +669,10 @@ const AdminDashboardScreen = () => {
                       >
                         {selectedIds.includes(item.id) && (
                           <Text
-                            style={{ color: "#3b82f6", fontWeight: "bold" }}
+                            style={{
+                              color: colors.primary,
+                              fontWeight: "bold",
+                            }}
                           >
                             ✓
                           </Text>
@@ -673,9 +686,11 @@ const AdminDashboardScreen = () => {
                                 fontWeight: "bold",
                                 marginBottom: 2,
                                 borderWidth: 1,
-                                borderColor: "#e5e7eb",
+                                borderColor: colors.border,
                                 padding: 4,
                                 borderRadius: 4,
+                                backgroundColor: colors.surface,
+                                color: colors.textPrimary,
                               }}
                               value={String(editForm.name || "")}
                               onChangeText={(v) =>
@@ -687,9 +702,11 @@ const AdminDashboardScreen = () => {
                               style={{
                                 marginBottom: 2,
                                 borderWidth: 1,
-                                borderColor: "#e5e7eb",
+                                borderColor: colors.border,
                                 padding: 4,
                                 borderRadius: 4,
+                                backgroundColor: colors.surface,
+                                color: colors.textPrimary,
                               }}
                               value={String(editForm.email || "")}
                               onChangeText={(v) =>
@@ -856,7 +873,7 @@ const AdminDashboardScreen = () => {
                 <TouchableOpacity
                   style={[
                     styles.actionBtn,
-                    { backgroundColor: "#16a34a", flex: 1 },
+                    { backgroundColor: colors.success, flex: 1 },
                   ]}
                   onPress={handleBulkUnsuspend}
                 >
@@ -865,7 +882,7 @@ const AdminDashboardScreen = () => {
                 <TouchableOpacity
                   style={[
                     styles.actionBtn,
-                    { backgroundColor: "#dc2626", flex: 1 },
+                    { backgroundColor: colors.danger, flex: 1 },
                   ]}
                   onPress={handleBulkDelete}
                 >
@@ -883,7 +900,13 @@ const AdminDashboardScreen = () => {
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             {postsLoading ? (
-              <Text style={{ padding: 20, textAlign: "center" }}>
+              <Text
+                style={{
+                  padding: 20,
+                  textAlign: "center",
+                  color: colors.textSecondary,
+                }}
+              >
                 Loading posts...
               </Text>
             ) : posts.length === 0 ? (
@@ -1380,129 +1403,143 @@ const AdminDashboardScreen = () => {
 
 const { width } = Dimensions.get("window");
 
-const styles = StyleSheet.create({
-  scrollContainer: { flex: 1, backgroundColor: "#fff" },
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  header: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 12,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
+const createStyles = (colors) =>
+  StyleSheet.create({
+    scrollContainer: { flex: 1, backgroundColor: colors.background },
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      fontSize: 22,
+      fontWeight: "bold",
+      marginBottom: 12,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      color: colors.textPrimary,
+    },
 
-  statsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 12,
-    gap: 8,
-    paddingHorizontal: 16,
-  },
-  statCard: {
-    flexBasis: width > 500 ? "18%" : "48%",
-    minWidth: 100,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 2,
-  },
-  statValue: { fontSize: 18, fontWeight: "bold" },
-  statLabel: { fontSize: 11, color: "#334155" },
+    statsRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      marginBottom: 12,
+      gap: 8,
+      paddingHorizontal: 16,
+    },
+    statCard: {
+      flexBasis: width > 500 ? "18%" : "48%",
+      minWidth: 100,
+      borderRadius: 12,
+      padding: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      elevation: 2,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    statValue: { fontSize: 18, fontWeight: "bold", color: colors.primary },
+    statLabel: { fontSize: 11, color: colors.textMuted },
 
-  tabRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 12,
-    justifyContent: "flex-start",
-    gap: 4,
-    paddingHorizontal: 16,
-  },
-  tabButton: {
-    flexGrow: 1,
-    minWidth: 80,
-    paddingVertical: 10,
-    backgroundColor: "#f1f5f9",
-    borderRadius: 6,
-    marginHorizontal: 2,
-    marginBottom: 4,
-    alignItems: "center",
-  },
-  activeTab: { backgroundColor: "#3b82f6" },
-  tabText: { fontWeight: "600", fontSize: 12 },
-  activeTabText: { color: "#fff" },
+    tabRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginBottom: 12,
+      justifyContent: "flex-start",
+      gap: 4,
+      paddingHorizontal: 16,
+    },
+    tabButton: {
+      flexGrow: 1,
+      minWidth: 80,
+      paddingVertical: 10,
+      backgroundColor: colors.surface,
+      borderRadius: 6,
+      marginHorizontal: 2,
+      marginBottom: 4,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    activeTab: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    tabText: { fontWeight: "600", fontSize: 12, color: colors.textSecondary },
+    activeTabText: { color: "#fff" },
 
-  sectionContainer: { flex: 1 },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 8,
-    paddingHorizontal: 16,
-  },
+    sectionContainer: { flex: 1 },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginBottom: 8,
+      paddingHorizontal: 16,
+      color: colors.textPrimary,
+    },
 
-  filterRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 8,
-    flexWrap: "wrap",
-  },
-  filterLabel: { fontSize: 12 },
-  inputBox: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    backgroundColor: "#fff",
-  },
-  filterBtn: {
-    backgroundColor: "#3b82f6",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginTop: 8,
-    alignItems: "center",
-  },
+    filterRow: {
+      flexDirection: "row",
+      gap: 8,
+      marginBottom: 8,
+      flexWrap: "wrap",
+    },
+    filterLabel: { fontSize: 12, color: colors.textSecondary },
+    inputBox: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      backgroundColor: colors.surface,
+      color: colors.textPrimary,
+    },
+    filterBtn: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 6,
+      marginTop: 8,
+      alignItems: "center",
+    },
 
-  userRow: {
-    flexDirection: "row",
-    padding: 12,
-    borderBottomWidth: 1,
-    borderColor: "#e5e7eb",
-    marginHorizontal: 16,
-  },
-  userRowSelected: { backgroundColor: "#dbeafe" },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    marginRight: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 4,
-  },
+    userRow: {
+      flexDirection: "row",
+      padding: 12,
+      borderBottomWidth: 1,
+      borderColor: colors.border,
+      marginHorizontal: 16,
+      backgroundColor: colors.surface,
+    },
+    userRowSelected: { backgroundColor: colors.primary + "20" },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginRight: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 4,
+      backgroundColor: colors.surface,
+    },
 
-  bulkRow: { flexDirection: "row", marginTop: 8 },
-  actionBtn: {
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginHorizontal: 4,
-    marginBottom: 4,
-  },
-  actionText: { color: "#fff", fontWeight: "bold", fontSize: 12 },
+    bulkRow: { flexDirection: "row", marginTop: 8 },
+    actionBtn: {
+      padding: 12,
+      borderRadius: 8,
+      alignItems: "center",
+      marginHorizontal: 4,
+      marginBottom: 4,
+    },
+    actionText: { color: "#fff", fontWeight: "bold", fontSize: 12 },
 
-  centered: { flex: 1, alignItems: "center", justifyContent: "center" },
-  error: {
-    color: "#dc2626",
-    fontWeight: "bold",
-    marginBottom: 8,
-    paddingHorizontal: 16,
-  },
-});
+    centered: { flex: 1, alignItems: "center", justifyContent: "center" },
+    error: {
+      color: colors.danger,
+      fontWeight: "bold",
+      marginBottom: 8,
+      paddingHorizontal: 16,
+    },
+  });
 
 export default AdminDashboardScreen;
