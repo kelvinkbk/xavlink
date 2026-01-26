@@ -23,6 +23,7 @@ import EnhancementsScreen from "../screens/EnhancementsScreen";
 import { useAuth } from "../context/AuthContext";
 import { notificationService, requestService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
+import { useFABVisibility } from "../context/FABVisibilityContext";
 
 // Menu Screen
 import MenuScreen from "../screens/MenuScreen";
@@ -144,6 +145,7 @@ const AnimatedTabIcon = ({ icon, color, isFocused }) => {
 const MainTabs = () => {
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { isVisible: isFABVisible } = useFABVisibility();
   const [badge, setBadge] = useState(0);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [showAddSkillModal, setShowAddSkillModal] = useState(false);
@@ -247,12 +249,15 @@ const MainTabs = () => {
           }}
         />
       </Tab.Navigator>
-      <FloatingActionButton
-        bottomOffset={70}
-        onCreatePost={() => setShowCreatePostModal(true)}
-        onSchedulePost={() => setShowSchedulePostModal(true)}
-        onAddSkill={() => setShowAddSkillModal(true)}
-      />
+      {/* FAB visibility controlled by context */}
+      {isFABVisible && (
+        <FloatingActionButton
+          bottomOffset={70}
+          onCreatePost={() => setShowCreatePostModal(true)}
+          onSchedulePost={() => setShowSchedulePostModal(true)}
+          onAddSkill={() => setShowAddSkillModal(true)}
+        />
+      )}
 
       <CreatePostModal
         visible={showCreatePostModal}

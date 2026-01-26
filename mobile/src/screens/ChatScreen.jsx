@@ -24,6 +24,7 @@ import {
   onMessage,
 } from "../services/socket";
 import { chatService, uploadService, API_BASE } from "../services/api";
+import { useFABVisibility } from "../context/FABVisibilityContext";
 
 const toAbsoluteUrl = (url) => {
   if (!url) return url;
@@ -37,6 +38,7 @@ const ChatScreen = ({ route }) => {
   const { chatId } = route.params || {};
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { setIsVisible } = useFABVisibility();
   const {
     scaleAnim: sendScale,
     onPressIn: onSendPressIn,
@@ -49,6 +51,14 @@ const ChatScreen = ({ route }) => {
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [attachmentUrl, setAttachmentUrl] = useState("");
   const listRef = useRef(null);
+
+  // Hide FAB when this screen is active
+  useEffect(() => {
+    setIsVisible(false);
+    return () => {
+      setIsVisible(true);
+    };
+  }, [setIsVisible]);
 
   useEffect(() => {
     if (!chatId) {
@@ -68,7 +78,7 @@ const ChatScreen = ({ route }) => {
         setError(
           error?.response?.data?.message ||
             error?.message ||
-            "Failed to load messages"
+            "Failed to load messages",
         );
       } finally {
         setLoading(false);
@@ -88,7 +98,7 @@ const ChatScreen = ({ route }) => {
         return [...prev, msg];
       });
       requestAnimationFrame(() =>
-        listRef.current?.scrollToEnd({ animated: true })
+        listRef.current?.scrollToEnd({ animated: true }),
       );
     });
 
@@ -105,7 +115,7 @@ const ChatScreen = ({ route }) => {
       if (status !== "granted") {
         Alert.alert(
           "Permission needed",
-          "Please grant media library access to upload images"
+          "Please grant media library access to upload images",
         );
         return;
       }
@@ -142,7 +152,7 @@ const ChatScreen = ({ route }) => {
           console.error("pickAttachment: Upload error:", error);
           Alert.alert(
             "Upload failed",
-            error.message || "Could not upload the attachment"
+            error.message || "Could not upload the attachment",
           );
         } finally {
           setUploadingAttachment(false);

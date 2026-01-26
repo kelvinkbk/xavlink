@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { postService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
+import { useSyncContext } from "../context/SyncContext";
 import {
   useFadeInAnimation,
   useScalePressAnimation,
@@ -219,6 +220,7 @@ const PostCard = ({ post, onLike, onComment, onReport, onReportComment }) => {
 
 const HomeScreen = () => {
   const { colors } = useTheme();
+  const { syncEvents } = useSyncContext();
   const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [feedFilter, setFeedFilter] = useState("all");
@@ -233,10 +235,24 @@ const HomeScreen = () => {
   const load = async () => {
     setRefreshing(true);
     try {
-      const { data } = await postService.getAllPosts(feedFilter);
-      setPosts(data);
+      const response = await postService.getAllPosts(feedFilter);
+      console.log("Posts API response:", response.data);
+
+      // Handle different response formats
+      let postsData = [];
+      if (Array.isArray(response.data)) {
+        postsData = response.data;
+      } else if (response.data?.posts && Array.isArray(response.data.posts)) {
+        postsData = response.data.posts;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        postsData = response.data.data;
+      }
+
+      console.log("Extracted posts:", postsData.length);
+      setPosts(postsData);
     } catch (e) {
       console.warn("Failed to load posts", e);
+      setPosts([]);
     } finally {
       setRefreshing(false);
     }
@@ -245,6 +261,78 @@ const HomeScreen = () => {
   useEffect(() => {
     load();
   }, [feedFilter]);
+
+  // Real-time sync: New post
+  useEffect(() => {
+    if (syncEvents.newPost) {
+      setPosts((prev) => [syncEvents.newPost.post, ...prev]);
+    }
+  }, [syncEvents.newPost]);
+
+  // Real-time sync: Post liked
+  useEffect(() => {
+    if (syncEvents.postLiked) {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === syncEvents.postLiked.postId
+            ? { ...p, likesCount: syncEvents.postLiked.likesCount }
+            : p,
+        ),
+      );
+    }
+  }, [syncEvents.postLiked]);
+
+  // Real-time sync: Post unliked
+  useEffect(() => {
+    if (syncEvents.postUnliked) {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === syncEvents.postUnliked.postId
+            ? { ...p, likesCount: syncEvents.postUnliked.likesCount }
+            : p,
+        ),
+      );
+    }
+  }, [syncEvents.postUnliked]);
+
+  // Real-time sync: New comment
+  useEffect(() => {
+    if (syncEvents.newComment) {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === syncEvents.newComment.postId
+            ? { ...p, commentsCount: (p.commentsCount || 0) + 1 }
+            : p,
+        ),
+      );
+    }
+  }, [syncEvents.newComment]);
+
+  // Real-time sync: Post deleted
+  useEffect(() => {
+    if (syncEvents.postDeleted) {
+      setPosts((prev) =>
+        prev.filter((p) => p.id !== syncEvents.postDeleted.postId),
+      );
+    }
+  }, [syncEvents.postDeleted]);
+
+  // Real-time sync: Post updated
+  useEffect(() => {
+    if (syncEvents.postUpdated) {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === syncEvents.postUpdated.postId
+            ? {
+                ...p,
+                content: syncEvents.postUpdated.content,
+                image: syncEvents.postUpdated.image,
+              }
+            : p,
+        ),
+      );
+    }
+  }, [syncEvents.postUpdated]);
 
   const handleLike = async (postId) => {
     const post = posts.find((p) => p.id === postId);

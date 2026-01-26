@@ -5,6 +5,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { AuthProvider } from "./src/context/AuthContext";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
+import { FABVisibilityProvider } from "./src/context/FABVisibilityContext";
+import { SyncProvider } from "./src/context/SyncContext";
 
 function AppInner() {
   const { isDark } = useTheme();
@@ -21,7 +23,11 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <AppInner />
+          <FABVisibilityProvider>
+            <SyncProvider>
+              <AppInner />
+            </SyncProvider>
+          </FABVisibilityProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
