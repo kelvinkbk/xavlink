@@ -7,6 +7,7 @@ import HomeScreen from "../screens/HomeScreen";
 import FloatingActionButton from "../components/FloatingActionButton";
 import CreatePostModal from "../components/CreatePostModal";
 import AddSkillModal from "../components/AddSkillModal";
+import SchedulePostModal from "../components/SchedulePostModal";
 import ChatListScreen from "../screens/ChatListScreen";
 import ChatScreen from "../screens/ChatScreen";
 import ProfileScreen from "../screens/ProfileScreen";
@@ -22,6 +23,9 @@ import EnhancementsScreen from "../screens/EnhancementsScreen";
 import { useAuth } from "../context/AuthContext";
 import { notificationService, requestService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
+
+// Menu Screen
+import MenuScreen from "../screens/MenuScreen";
 
 const Tab = createBottomTabNavigator();
 const ChatStack = createNativeStackNavigator();
@@ -52,7 +56,7 @@ const ChatStackNavigator = () => {
   );
 };
 
-// Profile Stack Navigator
+// Profile Stack Navigator (Now includes Menu and Secondary Screens)
 const ProfileStackNavigator = () => {
   const { colors } = useTheme();
   return (
@@ -69,6 +73,11 @@ const ProfileStackNavigator = () => {
         options={{ headerShown: false }}
       />
       <ProfileStack.Screen
+        name="Menu"
+        component={MenuScreen}
+        options={{ title: "Menu", presentation: "modal" }}
+      />
+      <ProfileStack.Screen
         name="Followers"
         component={FollowersScreen}
         options={({ route }) => ({
@@ -81,6 +90,32 @@ const ProfileStackNavigator = () => {
         options={({ route }) => ({
           title: `${route.params?.userName || "User"} is Following`,
         })}
+      />
+      {/* Secondary Screens moved here */}
+      <ProfileStack.Screen
+        name="Skills"
+        component={SkillsScreen}
+        options={{ title: "Skills" }}
+      />
+      <ProfileStack.Screen
+        name="Enhancements"
+        component={EnhancementsScreen}
+        options={{ title: "Enhancements" }}
+      />
+      <ProfileStack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ title: "Settings" }}
+      />
+      <ProfileStack.Screen
+        name="AdminDashboard"
+        component={AdminDashboardScreen}
+        options={{ title: "Admin Dashboard" }}
+      />
+      <ProfileStack.Screen
+        name="Moderation"
+        component={ModerationScreen}
+        options={{ title: "Moderation" }}
       />
     </ProfileStack.Navigator>
   );
@@ -108,11 +143,11 @@ const AnimatedTabIcon = ({ icon, color, isFocused }) => {
 
 const MainTabs = () => {
   const { user } = useAuth();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [badge, setBadge] = useState(0);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [showAddSkillModal, setShowAddSkillModal] = useState(false);
-  const navigationRef = useRef(null);
+  const [showSchedulePostModal, setShowSchedulePostModal] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -138,46 +173,28 @@ const MainTabs = () => {
     };
   }, [user?.id]);
 
-  // Show admin tab for admin, moderation tab for moderator
-  const isAdmin = user?.role === "admin";
-  const isModerator = user?.role === "moderator";
-  const isAdminOrMod = isAdmin || isModerator;
   return (
     <View style={{ flex: 1 }}>
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
-          tabBarStyle: { backgroundColor: colors.surface },
+          tabBarStyle: {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            height: 60,
+            paddingBottom: 8,
+            paddingTop: 8,
+          },
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textSecondary,
-          tabBarBadgeStyle: { backgroundColor: colors.primary, color: "#fff" },
-          tabBarLabelStyle: { fontSize: 12 },
+          tabBarBadgeStyle: {
+            backgroundColor: colors.primary,
+            color: "#fff",
+            fontSize: 10,
+          },
+          tabBarLabelStyle: { fontSize: 11, fontWeight: "500", marginTop: -2 },
         }}
       >
-        {isAdmin && (
-          <Tab.Screen
-            name="AdminDashboard"
-            component={AdminDashboardScreen}
-            options={{
-              tabBarLabel: "Admin",
-              tabBarIcon: ({ color, focused }) => (
-                <AnimatedTabIcon icon="🛡️" color={color} isFocused={focused} />
-              ),
-            }}
-          />
-        )}
-        {isModerator && (
-          <Tab.Screen
-            name="Moderation"
-            component={ModerationScreen}
-            options={{
-              tabBarLabel: "Mod",
-              tabBarIcon: ({ color, focused }) => (
-                <AnimatedTabIcon icon="⚖️" color={color} isFocused={focused} />
-              ),
-            }}
-          />
-        )}
         <Tab.Screen
           name="Home"
           component={HomeScreen}
@@ -185,16 +202,6 @@ const MainTabs = () => {
             tabBarLabel: "Home",
             tabBarIcon: ({ color, focused }) => (
               <AnimatedTabIcon icon="🏠" color={color} isFocused={focused} />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Skills"
-          component={SkillsScreen}
-          options={{
-            tabBarLabel: "Skills",
-            tabBarIcon: ({ color, focused }) => (
-              <AnimatedTabIcon icon="🧰" color={color} isFocused={focused} />
             ),
           }}
         />
@@ -239,30 +246,11 @@ const MainTabs = () => {
             ),
           }}
         />
-        <Tab.Screen
-          name="Enhancements"
-          component={EnhancementsScreen}
-          options={{
-            tabBarLabel: "More",
-            tabBarIcon: ({ color, focused }) => (
-              <AnimatedTabIcon icon="✨" color={color} isFocused={focused} />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Settings"
-          component={SettingsScreen}
-          options={{
-            tabBarLabel: "Settings",
-            tabBarIcon: ({ color, focused }) => (
-              <AnimatedTabIcon icon="⚙️" color={color} isFocused={focused} />
-            ),
-          }}
-        />
       </Tab.Navigator>
       <FloatingActionButton
-        bottomOffset={64}
+        bottomOffset={70}
         onCreatePost={() => setShowCreatePostModal(true)}
+        onSchedulePost={() => setShowSchedulePostModal(true)}
         onAddSkill={() => setShowAddSkillModal(true)}
       />
 
@@ -270,8 +258,15 @@ const MainTabs = () => {
         visible={showCreatePostModal}
         onClose={() => setShowCreatePostModal(false)}
         onSuccess={() => {
-          // Refresh home screen if needed
           console.log("Post created successfully");
+        }}
+      />
+
+      <SchedulePostModal
+        visible={showSchedulePostModal}
+        onClose={() => setShowSchedulePostModal(false)}
+        onSuccess={() => {
+          console.log("Post scheduled successfully");
         }}
       />
 
@@ -279,7 +274,6 @@ const MainTabs = () => {
         visible={showAddSkillModal}
         onClose={() => setShowAddSkillModal(false)}
         onSuccess={() => {
-          // Refresh skills screen if needed
           console.log("Skill added successfully");
         }}
       />

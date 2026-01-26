@@ -54,10 +54,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // Don't log 403 errors for admin endpoints (expected for non-admin users)
-    const isAdminEndpoint = error?.config?.url?.includes("/admin/") || 
-                           error?.config?.url?.includes("/enhancements/admin/");
+    const isAdminEndpoint =
+      error?.config?.url?.includes("/admin/") ||
+      error?.config?.url?.includes("/enhancements/admin/");
     const is403 = error?.response?.status === 403;
-    
+
     if (!(is403 && isAdminEndpoint)) {
       console.warn("[API] Error", {
         url: error?.config?.url,
@@ -68,7 +69,7 @@ api.interceptors.response.use(
       });
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export const authService = {
@@ -215,7 +216,12 @@ export const reportService = {
   createReport: (data) => api.post("/reports", data).then((res) => res.data),
   listReports: (params = {}) =>
     api.get("/reports", { params }).then((res) => res.data),
+  getAll: () => api.get("/reports").then((res) => res.data),
   getReport: (id) => api.get(`/reports/${id}`).then((res) => res.data),
+  updateStatus: (id, status, resolutionNote = "") =>
+    api
+      .patch(`/reports/${id}/status`, { status, resolutionNote })
+      .then((res) => res.data),
   updateReportStatus: (id, status, resolutionNote = "") =>
     api
       .patch(`/reports/${id}/status`, { status, resolutionNote })
@@ -432,6 +438,7 @@ export const enhancementService = {
       .then((res) => res.data),
 
   // Scheduled Posts
+
   schedulePost: (data) =>
     api
       .post("/enhancements/posts/schedule", data, {

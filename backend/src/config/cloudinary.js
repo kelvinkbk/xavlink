@@ -1,5 +1,5 @@
 const cloudinary = require("cloudinary").v2;
-const CloudinaryStorage = require("multer-storage-cloudinary");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 // Configure Cloudinary
 cloudinary.config({
@@ -21,7 +21,6 @@ const profileStorage = new CloudinaryStorage({
   params: {
     folder: "xavlink/profile",
     allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
-    transformation: [{ width: 500, height: 500, crop: "limit" }],
   },
 });
 
@@ -30,17 +29,7 @@ const chatStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "xavlink/chats",
-    allowed_formats: [
-      "jpg",
-      "jpeg",
-      "png",
-      "gif",
-      "webp",
-      "pdf",
-      "doc",
-      "docx",
-    ],
-    resource_type: "auto", // Automatically detect file type
+    resource_type: "auto",
   },
 });
 

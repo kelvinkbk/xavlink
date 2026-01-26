@@ -1,14 +1,3 @@
-// Render a single post in the grid
-const renderPostItem = ({ item }) => {
-  const source = item.image
-    ? { uri: item.image }
-    : { uri: "https://placehold.co/300x300?text=Post" };
-  return (
-    <TouchableOpacity style={styles.gridItem} activeOpacity={0.8}>
-      <Image source={source} style={styles.gridImage} />
-    </TouchableOpacity>
-  );
-};
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   View,
@@ -25,31 +14,36 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import * as ImagePicker from "expo-image-picker";
-import { userService, uploadService, postService, skillService, enhancementService } from "../services/api";
+import {
+  userService,
+  uploadService,
+  postService,
+  skillService,
+  enhancementService,
+} from "../services/api";
 import { ReviewSection } from "../components/ReviewSection";
 import ReportModal from "../components/ReportModal";
+import PhotoGallery from "../components/PhotoGallery";
+import ActivityTimeline from "../components/ActivityTimeline";
+import SocialLinks from "../components/SocialLinks";
+import Achievements from "../components/Achievements";
+
+const renderPostItem = ({ item }) => {
+  const source = item.image
+    ? { uri: item.image }
+    : { uri: "https://placehold.co/300x300?text=Post" };
+  return (
+    <TouchableOpacity style={styles.gridItem} activeOpacity={0.8}>
+      <Image source={source} style={styles.gridImage} />
+    </TouchableOpacity>
+  );
+};
 
 const ProfileScreen = ({ route, navigation }) => {
-  // Save profile changes
-  const handleSave = async () => {
-    if (!isOwnProfile) return;
-    try {
-      setSaving(true);
-      const { data } = await userService.updateProfile(user.id, {
-        name: name.trim(),
-        bio: bio.trim(),
-        course: course.trim(),
-        year: year.trim(),
-        profilePic: avatar.trim(),
-      });
-      await updateUser(data);
-      Alert.alert("Saved", "Profile updated");
-    } catch (e) {
-      Alert.alert("Error", "Failed to update profile");
-    } finally {
-      setSaving(false);
-    }
-  };
+  const { user, logout, updateUser } = useAuth();
+  const { colors } = useTheme();
+  const viewedUserId = route?.params?.userId;
+  const isOwnProfile = !viewedUserId || viewedUserId === user?.id;
   // State for report modal
   const [reportModal, setReportModal] = useState({
     visible: false,
@@ -57,10 +51,6 @@ const ProfileScreen = ({ route, navigation }) => {
     targetId: null,
     targetName: "",
   });
-  const { user, logout, updateUser } = useAuth();
-  const { colors } = useTheme();
-  const viewedUserId = route?.params?.userId;
-  const isOwnProfile = !viewedUserId || viewedUserId === user?.id;
 
   const [viewedUser, setViewedUser] = useState(null);
   const [loading, setLoading] = useState(!isOwnProfile);
@@ -104,7 +94,7 @@ const ProfileScreen = ({ route, navigation }) => {
           followsYou:
             followRes.data?.followsYou || followRes?.followsYou || false,
         });
-        
+
         // Track profile view
         if (user?.id && user.id !== viewedUserId) {
           try {
@@ -113,10 +103,11 @@ const ProfileScreen = ({ route, navigation }) => {
             console.error("Failed to track profile view:", err);
           }
         }
-        
+
         // Fetch user's skills
         try {
-          const { data: skillsData } = await skillService.getSkillsByUser(viewedUserId);
+          const { data: skillsData } =
+            await skillService.getSkillsByUser(viewedUserId);
           setSkills(skillsData || []);
         } catch (err) {
           console.error("Failed to fetch skills:", err);
@@ -140,7 +131,7 @@ const ProfileScreen = ({ route, navigation }) => {
       setPostsError("");
       const { data } = await postService.getAllPosts("all");
       // Handle both array and object with posts property
-      const postsList = Array.isArray(data) ? data : (data?.posts || []);
+      const postsList = Array.isArray(data) ? data : data?.posts || [];
       const mine = postsList.filter((p) => p?.user?.id === displayUser.id);
       setPosts(mine);
     } catch (e) {
@@ -160,7 +151,9 @@ const ProfileScreen = ({ route, navigation }) => {
     const fetchSkills = async () => {
       if (isOwnProfile && user?.id) {
         try {
-          const { data: skillsData } = await skillService.getSkillsByUser(user.id);
+          const { data: skillsData } = await skillService.getSkillsByUser(
+            user.id,
+          );
           setSkills(skillsData || []);
         } catch (err) {
           console.error("Failed to fetch skills:", err);
@@ -169,6 +162,25 @@ const ProfileScreen = ({ route, navigation }) => {
     };
     fetchSkills();
   }, [isOwnProfile, user?.id]);
+
+  // Save profile changes
+  const handleSave = async () => {
+    if (!isOwnProfile) return;
+    try {
+      setSaving(true);
+      const { data } = await userService.updateProfile(user.id, {
+        name: name.trim(),
+        bio: bio.trim(),
+        profilePic: avatar.trim(),
+      });
+      await updateUser(data);
+      Alert.alert("Saved", "Profile updated");
+    } catch (e) {
+      Alert.alert("Error", "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleFollowToggle = useCallback(async () => {
     if (isOwnProfile) return;
@@ -199,7 +211,7 @@ const ProfileScreen = ({ route, navigation }) => {
       }));
       Alert.alert(
         "Error",
-        e?.response?.data?.message || "Failed to update follow status"
+        e?.response?.data?.message || "Failed to update follow status",
       );
     } finally {
       setUpdating(false);
@@ -217,10 +229,10 @@ const ProfileScreen = ({ route, navigation }) => {
               {displayUser?.name || "Profile"}
             </Text>
             <View style={{ flexDirection: "row", gap: 12 }}>
-              <TouchableOpacity
-                onPress={() => navigation.getParent()?.navigate("Settings")}
-              >
-                <Text style={{ color: colors.textPrimary }}>☰</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Menu")}>
+                <Text style={{ color: colors.textPrimary, fontSize: 20 }}>
+                  ☰
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -335,10 +347,15 @@ const ProfileScreen = ({ route, navigation }) => {
                   key={skill.id}
                   style={[
                     styles.skillTag,
-                    { backgroundColor: colors.surface, borderColor: colors.border },
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
                   ]}
                 >
-                  <Text style={{ color: colors.textPrimary }}>{skill.title}</Text>
+                  <Text style={{ color: colors.textPrimary }}>
+                    {skill.title}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -397,8 +414,8 @@ const ProfileScreen = ({ route, navigation }) => {
                 {updating
                   ? "Updating..."
                   : followStatus.isFollowing
-                  ? "Following"
-                  : "Follow"}
+                    ? "Following"
+                    : "Follow"}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -431,7 +448,7 @@ const ProfileScreen = ({ route, navigation }) => {
       skills,
       navigation,
       handleFollowToggle,
-    ]
+    ],
   );
 
   // Footer for FlatList: About tab content and reviews
@@ -567,11 +584,23 @@ const ProfileScreen = ({ route, navigation }) => {
             </>
           )}
           {displayUser && (
-            <ReviewSection
-              userId={displayUser.id}
-              currentUserId={user?.id}
-              canReview={!!user?.id && user.id !== displayUser.id}
-            />
+            <>
+              <PhotoGallery
+                userId={displayUser.id}
+                isOwnProfile={isOwnProfile}
+              />
+              <SocialLinks
+                userId={displayUser.id}
+                isOwnProfile={isOwnProfile}
+              />
+              <Achievements userId={displayUser.id} />
+              <ActivityTimeline activities={[]} />
+              <ReviewSection
+                userId={displayUser.id}
+                currentUserId={user?.id}
+                canReview={!!user?.id && user.id !== displayUser.id}
+              />
+            </>
           )}
         </>
       ) : null,
@@ -588,7 +617,7 @@ const ProfileScreen = ({ route, navigation }) => {
       colors,
       displayUser,
       user,
-    ]
+    ],
   );
 
   // FlatList data: posts for Posts tab, empty for About tab
@@ -609,7 +638,8 @@ const ProfileScreen = ({ route, navigation }) => {
         });
         // Refresh skills
         try {
-          const { data: skillsData } = await skillService.getSkillsByUser(viewedUserId);
+          const { data: skillsData } =
+            await skillService.getSkillsByUser(viewedUserId);
           setSkills(skillsData || []);
         } catch (err) {
           console.error("Failed to refresh skills:", err);
@@ -620,7 +650,9 @@ const ProfileScreen = ({ route, navigation }) => {
     } else if (isOwnProfile && user?.id) {
       // Refresh own skills
       try {
-        const { data: skillsData } = await skillService.getSkillsByUser(user.id);
+        const { data: skillsData } = await skillService.getSkillsByUser(
+          user.id,
+        );
         setSkills(skillsData || []);
       } catch (err) {
         console.error("Failed to refresh skills:", err);
@@ -649,6 +681,46 @@ const ProfileScreen = ({ route, navigation }) => {
           >
             Loading...
           </Text>
+        </View>
+      ) : isOwnProfile && !user ? (
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+          }}
+        >
+          <Text
+            style={[
+              styles.title,
+              {
+                color: colors.textPrimary,
+                textAlign: "center",
+                marginBottom: 12,
+              },
+            ]}
+          >
+            Session Expired or Corrupted
+          </Text>
+          <Text
+            style={{
+              color: colors.textSecondary,
+              textAlign: "center",
+              marginBottom: 24,
+            }}
+          >
+            We couldn't load your profile data. Please login again.
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              { backgroundColor: colors.danger, width: "100%" },
+            ]}
+            onPress={logout}
+          >
+            <Text style={[styles.buttonText, { color: "#fff" }]}>Logout</Text>
+          </TouchableOpacity>
         </View>
       ) : postsLoading && activeTab === "Posts" ? (
         <View style={{ padding: 24 }}>

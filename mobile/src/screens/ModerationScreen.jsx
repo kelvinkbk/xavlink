@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+
 import {
   View,
   Text,
@@ -12,7 +13,11 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useTheme } from "../context/ThemeContext";
-import { moderationService, adminService, reportService } from "../services/api";
+import {
+  moderationService,
+  adminService,
+  reportService,
+} from "../services/api";
 
 const TABS = [
   { key: "users", label: "Users" },
@@ -98,10 +103,7 @@ const ModerationScreen = () => {
         {TABS.map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            style={[
-              styles.tab,
-              activeTab === tab.key && styles.tabActive,
-            ]}
+            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
             onPress={() => setActiveTab(tab.key)}
           >
             <Text
@@ -154,6 +156,7 @@ const UsersSection = ({ colors, onRefresh }) => {
   const loadUsers = async () => {
     try {
       setLoading(true);
+
       const data = await moderationService.listUsers({
         search: search || undefined,
         suspended: suspended || undefined,
@@ -183,7 +186,7 @@ const UsersSection = ({ colors, onRefresh }) => {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -559,13 +562,19 @@ const ReportsSection = ({ colors, onRefresh }) => {
               {item.status === "pending" && (
                 <View style={styles.actionRow}>
                   <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: colors.success }]}
+                    style={[
+                      styles.actionBtn,
+                      { backgroundColor: colors.success },
+                    ]}
                     onPress={() => handleUpdateStatus(item.id, "resolved")}
                   >
                     <Text style={styles.actionBtnText}>Resolve</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: colors.danger }]}
+                    style={[
+                      styles.actionBtn,
+                      { backgroundColor: colors.danger },
+                    ]}
                     onPress={() => handleUpdateStatus(item.id, "dismissed")}
                   >
                     <Text style={styles.actionBtnText}>Dismiss</Text>
