@@ -107,15 +107,6 @@ exports.getAllPosts = async (req, res, next) => {
         user: {
           select: { id: true, name: true, profilePic: true, course: true },
         },
-        _count: {
-          select: { likes: true },
-        },
-        likes: userId
-          ? {
-              where: { userId },
-              select: { id: true },
-            }
-          : false,
       },
       orderBy: { createdAt: "desc" },
       take: 20,
@@ -124,19 +115,40 @@ exports.getAllPosts = async (req, res, next) => {
     console.log("✅ Retrieved", posts?.length, "posts from MongoDB");
 
     // Enrich posts with like/comment counts from database
-    const postsWithUsers = posts.map((post) => {
-      const { _count, likes, ...rest } = post;
-      return {
-        ...rest,
-        likesCount: _count.likes || 0,
-        commentsCount: commentStore[post.id]?.length || 0,
-        isLiked: likes && likes.length > 0,
-        isBookmarked: false,
-      };
-    });
+    const postsWithCounts = await Promise.all(
+      posts.map(async (post) => {
+        try {
+          const likesCount = await prisma.like.count({
+            where: { postId: post.id },
+          });
+          const isLiked = userId
+            ? await prisma.like.findUnique({
+                where: { userId_postId: { userId, postId: post.id } },
+              })
+            : null;
+
+          return {
+            ...post,
+            likesCount: likesCount || 0,
+            commentsCount: commentStore[post.id]?.length || 0,
+            isLiked: !!isLiked,
+            isBookmarked: false,
+          };
+        } catch (err) {
+          console.error(`Error enriching post ${post.id}:`, err.message);
+          return {
+            ...post,
+            likesCount: 0,
+            commentsCount: commentStore[post.id]?.length || 0,
+            isLiked: false,
+            isBookmarked: false,
+          };
+        }
+      }),
+    );
 
     res.json({
-      posts: postsWithUsers,
+      posts: postsWithCounts,
       pagination: {
         currentPage: 1,
         totalPages: 1,
