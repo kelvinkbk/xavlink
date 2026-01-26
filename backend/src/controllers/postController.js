@@ -114,38 +114,17 @@ exports.getAllPosts = async (req, res, next) => {
 
     console.log("✅ Retrieved", posts?.length, "posts from MongoDB");
 
-    // Enrich posts with like/comment counts from database
-    const postsWithCounts = await Promise.all(
-      posts.map(async (post) => {
-        try {
-          const likesCount = await prisma.like.count({
-            where: { postId: post.id },
-          });
-          const isLiked = userId
-            ? await prisma.like.findUnique({
-                where: { userId_postId: { userId, postId: post.id } },
-              })
-            : null;
-
-          return {
-            ...post,
-            likesCount: likesCount || 0,
-            commentsCount: commentStore[post.id]?.length || 0,
-            isLiked: !!isLiked,
-            isBookmarked: false,
-          };
-        } catch (err) {
-          console.error(`Error enriching post ${post.id}:`, err.message);
-          return {
-            ...post,
-            likesCount: 0,
-            commentsCount: commentStore[post.id]?.length || 0,
-            isLiked: false,
-            isBookmarked: false,
-          };
-        }
-      }),
-    );
+    // Enrich posts with like/comment counts from in-memory store
+    const postsWithCounts = posts.map((post) => {
+      const likes = likeStore[post.id] || [];
+      return {
+        ...post,
+        likesCount: likes.length,
+        commentsCount: commentStore[post.id]?.length || 0,
+        isLiked: userId ? likes.includes(userId) : false,
+        isBookmarked: false,
+      };
+    });
 
     res.json({
       posts: postsWithCounts,
