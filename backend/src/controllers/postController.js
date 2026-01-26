@@ -173,24 +173,31 @@ exports.likePost = async (req, res, next) => {
       return res.status(400).json({ message: "Missing postId or userId" });
     }
 
-    // Initialize post likes if not exists
-    if (!likeStore[id]) {
-      likeStore[id] = [];
-    }
+    // Check if already liked in database
+    const existingLike = await prisma.like.findUnique({
+      where: {
+        userId_postId: { userId, postId: id },
+      },
+    });
 
-    // Check if already liked - return success for sync
-    if (likeStore[id].includes(userId)) {
-      console.log(`ℹ️ Post ${id} already liked by user ${userId}`);
+    if (existingLike) {
+      // Already liked - just return success with current count
+      const likesCount = await prisma.like.count({ where: { postId: id } });
       return res.status(200).json({
         message: "Post already liked",
-        likesCount: likeStore[id].length,
+        likesCount,
       });
     }
 
-    // Add like
-    likeStore[id].push(userId);
+    // Add like to database
+    await prisma.like.create({
+      data: { postId: id, userId },
+    });
+
+    // Get updated like count
+    const likesCount = await prisma.like.count({ where: { postId: id } });
     console.log(
-      `❤️ Like added: post ${id} by user ${userId} - total: ${likeStore[id].length}`,
+      `❤️ Like added: post ${id} by user ${userId} - total: ${likesCount}`,
     );
 
     // Create notification
@@ -209,18 +216,18 @@ exports.likePost = async (req, res, next) => {
       global.io.emit("post_liked", {
         postId: id,
         userId,
-        likesCount: likeStore[id].length,
+        likesCount,
       });
       console.log(`📡 Broadcasted like for post ${id}`);
     }
 
     return res.status(200).json({
       message: "Post liked",
-      likesCount: likeStore[id].length,
+      likesCount,
     });
   } catch (err) {
     console.error("Error in likePost:", err.message);
-    res.status(500).json({ message: "Failed to like post" });
+    res.status(500).json({ message: "Failed to like post: " + err.message });
   }
 };
 
@@ -233,25 +240,33 @@ exports.unlikePost = async (req, res, next) => {
       return res.status(400).json({ message: "Missing postId or userId" });
     }
 
-    // Initialize post likes if not exists
-    if (!likeStore[id]) {
-      likeStore[id] = [];
-    }
+    // Check if liked in database
+    const existingLike = await prisma.like.findUnique({
+      where: {
+        userId_postId: { userId, postId: id },
+      },
+    });
 
-    // Check if not liked - return success for sync
-    const index = likeStore[id].indexOf(userId);
-    if (index === -1) {
-      console.log(`ℹ️ Post ${id} not liked by user ${userId}`);
+    if (!existingLike) {
+      // Not liked - just return success with current count
+      const likesCount = await prisma.like.count({ where: { postId: id } });
       return res.status(200).json({
         message: "Post not liked yet",
-        likesCount: likeStore[id].length,
+        likesCount,
       });
     }
 
-    // Remove like
-    likeStore[id].splice(index, 1);
+    // Remove like from database
+    await prisma.like.delete({
+      where: {
+        userId_postId: { userId, postId: id },
+      },
+    });
+
+    // Get updated like count
+    const likesCount = await prisma.like.count({ where: { postId: id } });
     console.log(
-      `💔 Unlike removed: post ${id} by user ${userId} - total: ${likeStore[id].length}`,
+      `💔 Unlike removed: post ${id} by user ${userId} - total: ${likesCount}`,
     );
 
     // Emit real-time event
@@ -259,18 +274,18 @@ exports.unlikePost = async (req, res, next) => {
       global.io.emit("post_unliked", {
         postId: id,
         userId,
-        likesCount: likeStore[id].length,
+        likesCount,
       });
       console.log(`📡 Broadcasted unlike for post ${id}`);
     }
 
     return res.status(200).json({
       message: "Post unliked",
-      likesCount: likeStore[id].length,
+      likesCount,
     });
   } catch (err) {
     console.error("Error in unlikePost:", err.message);
-    res.status(500).json({ message: "Failed to unlike post" });
+    res.status(500).json({ message: "Failed to unlike post: " + err.message });
   }
 };
 
