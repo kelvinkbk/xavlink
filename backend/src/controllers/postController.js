@@ -151,31 +151,24 @@ exports.likePost = async (req, res, next) => {
       return res.status(400).json({ message: "Missing postId or userId" });
     }
 
-    // Check if already liked in database
-    const existingLike = await prisma.like.findUnique({
-      where: {
-        userId_postId: { userId, postId: id },
-      },
-    });
+    // Initialize post likes if not exists
+    if (!likeStore[id]) {
+      likeStore[id] = [];
+    }
 
-    if (existingLike) {
-      // Already liked - just return success with current count
-      const likesCount = await prisma.like.count({ where: { postId: id } });
+    // Check if already liked - return success for sync
+    if (likeStore[id].includes(userId)) {
+      console.log(`ℹ️ Post ${id} already liked by user ${userId}`);
       return res.status(200).json({
         message: "Post already liked",
-        likesCount,
+        likesCount: likeStore[id].length,
       });
     }
 
-    // Add like to database
-    await prisma.like.create({
-      data: { postId: id, userId },
-    });
-
-    // Get updated like count
-    const likesCount = await prisma.like.count({ where: { postId: id } });
+    // Add like
+    likeStore[id].push(userId);
     console.log(
-      `❤️ Like added: post ${id} by user ${userId} - total: ${likesCount}`,
+      `❤️ Like added: post ${id} by user ${userId} - total: ${likeStore[id].length}`,
     );
 
     // Create notification
@@ -194,14 +187,14 @@ exports.likePost = async (req, res, next) => {
       global.io.emit("post_liked", {
         postId: id,
         userId,
-        likesCount,
+        likesCount: likeStore[id].length,
       });
       console.log(`📡 Broadcasted like for post ${id}`);
     }
 
     return res.status(200).json({
       message: "Post liked",
-      likesCount,
+      likesCount: likeStore[id].length,
     });
   } catch (err) {
     console.error("Error in likePost:", err.message);
@@ -218,33 +211,25 @@ exports.unlikePost = async (req, res, next) => {
       return res.status(400).json({ message: "Missing postId or userId" });
     }
 
-    // Check if liked in database
-    const existingLike = await prisma.like.findUnique({
-      where: {
-        userId_postId: { userId, postId: id },
-      },
-    });
+    // Initialize post likes if not exists
+    if (!likeStore[id]) {
+      likeStore[id] = [];
+    }
 
-    if (!existingLike) {
-      // Not liked - just return success with current count
-      const likesCount = await prisma.like.count({ where: { postId: id } });
+    // Check if not liked - return success for sync
+    const index = likeStore[id].indexOf(userId);
+    if (index === -1) {
+      console.log(`ℹ️ Post ${id} not liked by user ${userId}`);
       return res.status(200).json({
         message: "Post not liked yet",
-        likesCount,
+        likesCount: likeStore[id].length,
       });
     }
 
-    // Remove like from database
-    await prisma.like.delete({
-      where: {
-        userId_postId: { userId, postId: id },
-      },
-    });
-
-    // Get updated like count
-    const likesCount = await prisma.like.count({ where: { postId: id } });
+    // Remove like
+    likeStore[id].splice(index, 1);
     console.log(
-      `💔 Unlike removed: post ${id} by user ${userId} - total: ${likesCount}`,
+      `💔 Unlike removed: post ${id} by user ${userId} - total: ${likeStore[id].length}`,
     );
 
     // Emit real-time event
@@ -252,14 +237,14 @@ exports.unlikePost = async (req, res, next) => {
       global.io.emit("post_unliked", {
         postId: id,
         userId,
-        likesCount,
+        likesCount: likeStore[id].length,
       });
       console.log(`📡 Broadcasted unlike for post ${id}`);
     }
 
     return res.status(200).json({
       message: "Post unliked",
-      likesCount,
+      likesCount: likeStore[id].length,
     });
   } catch (err) {
     console.error("Error in unlikePost:", err.message);
