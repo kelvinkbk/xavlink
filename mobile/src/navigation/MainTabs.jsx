@@ -91,7 +91,7 @@ const ProfileStackNavigator = () => {
           title: `${route.params?.userName || "User"} is Following`,
         })}
       />
-      {/* Secondary Screens moved here */}
+
       <ProfileStack.Screen
         name="Skills"
         component={SkillsScreen}

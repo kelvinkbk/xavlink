@@ -17,14 +17,14 @@ const EnhancementsScreen = () => {
   const { colors } = useTheme();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  
+
   const TABS = [
     { id: "scheduled", label: "Scheduled Posts" },
     { id: "activity", label: "Activity Timeline" },
     { id: "skills", label: "Skill Recommendations" },
     ...(isAdmin ? [{ id: "health", label: "System Health" }] : []),
   ];
-  
+
   const [activeTab, setActiveTab] = useState("scheduled");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -125,16 +125,20 @@ const ScheduledPostsSection = ({ colors, onRefresh }) => {
             }
           },
         },
-      ]
+      ],
     );
   };
 
   const formatScheduledTime = (date) => {
     const d = new Date(date);
-    return d.toLocaleDateString() + " at " + d.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return (
+      d.toLocaleDateString() +
+      " at " +
+      d.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    );
   };
 
   const styles = createStyles(colors);
@@ -166,9 +170,7 @@ const ScheduledPostsSection = ({ colors, onRefresh }) => {
               <Text style={styles.cardTitle} numberOfLines={3}>
                 {item.content || "No content"}
               </Text>
-              {item.image && (
-                <Text style={styles.cardSub}>📷 Has image</Text>
-              )}
+              {item.image && <Text style={styles.cardSub}>📷 Has image</Text>}
               <Text style={styles.cardSub}>
                 Scheduled for: {formatScheduledTime(item.scheduledAt)}
               </Text>
@@ -453,13 +455,15 @@ const SystemHealthSection = ({ colors, onRefresh }) => {
                   : { color: colors.danger },
               ]}
             >
-              {health.database || "Unknown"}
+              {String(health.database || "Unknown")}
             </Text>
           </View>
 
           <View style={styles.healthCard}>
             <Text style={styles.healthLabel}>Environment</Text>
-            <Text style={styles.healthValue}>{health.environment || "Unknown"}</Text>
+            <Text style={styles.healthValue}>
+              {String(health.environment || "Unknown")}
+            </Text>
           </View>
 
           {health.uptime && (
