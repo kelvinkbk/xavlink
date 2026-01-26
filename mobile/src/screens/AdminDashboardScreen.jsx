@@ -84,9 +84,9 @@ const AdminDashboardScreen = () => {
       u?.id,
     ];
     const found = candidates.find(
-      (val) => typeof val === "string" && val.trim().length > 0
+      (val) => typeof val === "string" && val.trim().length > 0,
     );
-    return found || "—";
+    return String(found || "—");
   };
 
   const displayTitle = (p, fallbackContent) =>
@@ -137,7 +137,7 @@ const AdminDashboardScreen = () => {
     } catch (e) {
       console.error("Error fetching users:", e);
       setError(
-        e?.response?.data?.message || e?.message || "Failed to load users"
+        e?.response?.data?.message || e?.message || "Failed to load users",
       );
     } finally {
       setLoading(false);
@@ -303,7 +303,7 @@ const AdminDashboardScreen = () => {
   };
   const toggleSelect = (id) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
 
@@ -1349,7 +1349,7 @@ const AdminDashboardScreen = () => {
                   </Text>
                   <Text style={{ fontSize: 11, color: "#94a3b8" }}>
                     {new Date(
-                      item.timestamp || item.createdAt
+                      item.timestamp || item.createdAt,
                     ).toLocaleString()}
                   </Text>
                 </View>
