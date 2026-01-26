@@ -520,19 +520,27 @@ const AdminDashboardScreen = () => {
         {activeSection === "users" && stats && (
           <View style={styles.statsRow}>
             <View style={[styles.statCard, { backgroundColor: "#e0e7ff" }]}>
-              <Text style={styles.statValue}>{stats.totalUsers}</Text>
+              <Text style={styles.statValue}>
+                {String(stats.totalUsers || 0)}
+              </Text>
               <Text style={styles.statLabel}>Total Users</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: "#bbf7d0" }]}>
-              <Text style={styles.statValue}>{stats.verifiedUsers}</Text>
+              <Text style={styles.statValue}>
+                {String(stats.verifiedUsers || 0)}
+              </Text>
               <Text style={styles.statLabel}>Verified</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: "#fee2e2" }]}>
-              <Text style={styles.statValue}>{stats.suspendedUsers}</Text>
+              <Text style={styles.statValue}>
+                {String(stats.suspendedUsers || 0)}
+              </Text>
               <Text style={styles.statLabel}>Suspended</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: "#fef3c7" }]}>
-              <Text style={styles.statValue}>{stats.totalPosts}</Text>
+              <Text style={styles.statValue}>
+                {String(stats.totalPosts || 0)}
+              </Text>
               <Text style={styles.statLabel}>Total Posts</Text>
             </View>
           </View>
@@ -729,7 +737,7 @@ const AdminDashboardScreen = () => {
                         ) : (
                           <>
                             <Text style={{ fontWeight: "bold" }}>
-                              {displayUser(item)}
+                              {String(displayUser(item))}
                             </Text>
                             <Text style={{ fontSize: 12, color: "#64748b" }}>
                               {String(item.email || "")}
