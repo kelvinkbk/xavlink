@@ -123,7 +123,7 @@ exports.getAllPosts = async (req, res, next) => {
             prisma.like.count({ where: { postId: post.id } }),
             userId
               ? prisma.like.findUnique({
-                  where: { userId_postId: { userId, postId: post.id } },
+                  where: { postId_userId: { userId, postId: post.id } },
                 })
               : null,
           ]);
@@ -176,7 +176,7 @@ exports.likePost = async (req, res, next) => {
     // Check if already liked in database
     const existingLike = await prisma.like.findUnique({
       where: {
-        userId_postId: { userId, postId: id },
+        postId_userId: { userId, postId: id },
       },
     });
 
@@ -243,7 +243,7 @@ exports.unlikePost = async (req, res, next) => {
     // Check if liked in database
     const existingLike = await prisma.like.findUnique({
       where: {
-        userId_postId: { userId, postId: id },
+        postId_userId: { userId, postId: id },
       },
     });
 
@@ -259,7 +259,7 @@ exports.unlikePost = async (req, res, next) => {
     // Remove like from database
     await prisma.like.delete({
       where: {
-        userId_postId: { userId, postId: id },
+        postId_userId: { userId, postId: id },
       },
     });
 
