@@ -90,8 +90,7 @@ const Achievements = ({ userId }) => {
           🏆 Achievements
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {achievements.filter((a) => a.unlocked).length} /{" "}
-          {achievements.length} Unlocked
+          {achievements.filter((a) => a.unlocked).length} / {achievements.length} Unlocked
         </Text>
       </View>
 
