@@ -100,7 +100,7 @@ exports.getSuggestedUsers = async (req, res, next) => {
       select: { followingId: true },
     });
     const followingIds = new Set(
-      currentUserFollowing.map((f) => f.followingId)
+      currentUserFollowing.map((f) => f.followingId),
     );
 
     // Exclude current user and already-followed users
@@ -241,7 +241,7 @@ exports.getMutualConnections = async (req, res, next) => {
       select: { followingId: true },
     });
     const followingIds = new Set(
-      currentUserFollowing.map((f) => f.followingId)
+      currentUserFollowing.map((f) => f.followingId),
     );
 
     // Get current user's followers list
@@ -259,7 +259,7 @@ exports.getMutualConnections = async (req, res, next) => {
 
     // 1. Mutual connections - People I follow who also follow me back
     const mutualFollowIds = Array.from(followingIds).filter((id) =>
-      followerIds.has(id)
+      followerIds.has(id),
     );
 
     const mutualFollows = await prisma.user.findMany({
@@ -411,7 +411,7 @@ exports.getSkillBasedSuggestions = async (req, res, next) => {
       select: { followingId: true },
     });
     const followingIds = new Set(
-      currentUserFollowing.map((f) => f.followingId)
+      currentUserFollowing.map((f) => f.followingId),
     );
 
     // Find users with matching skills (excluding already followed)
@@ -451,7 +451,7 @@ exports.getSkillBasedSuggestions = async (req, res, next) => {
 
     // Sort by skill match count
     const sortedUserIds = Object.keys(userSkillCount).sort(
-      (a, b) => userSkillCount[b] - userSkillCount[a]
+      (a, b) => userSkillCount[b] - userSkillCount[a],
     );
 
     const suggestedUsers = sortedUserIds
@@ -503,7 +503,7 @@ exports.getHashtagBasedSuggestions = async (req, res, next) => {
       select: { followingId: true },
     });
     const followingIds = new Set(
-      currentUserFollowing.map((f) => f.followingId)
+      currentUserFollowing.map((f) => f.followingId),
     );
 
     // Find users with posts containing matching hashtags
@@ -542,7 +542,7 @@ exports.getHashtagBasedSuggestions = async (req, res, next) => {
       if (!followingIds.has(post.userId)) {
         const postHashtags = post.content.match(hashtagRegex) || [];
         const matchingCount = postHashtags.filter((tag) =>
-          hashtagSet.has(tag.toLowerCase())
+          hashtagSet.has(tag.toLowerCase()),
         ).length;
 
         userHashtagCount[post.userId] =
@@ -555,7 +555,7 @@ exports.getHashtagBasedSuggestions = async (req, res, next) => {
 
     // Sort by hashtag match count
     const sortedUserIds = Object.keys(userHashtagCount).sort(
-      (a, b) => userHashtagCount[b] - userHashtagCount[a]
+      (a, b) => userHashtagCount[b] - userHashtagCount[a],
     );
 
     const suggestedUsers = sortedUserIds
@@ -593,6 +593,15 @@ exports.updateProfile = async (req, res, next) => {
         ...(profilePic !== undefined && { profilePic }),
       },
     });
+
+    // Emit real-time update
+    if (global.io) {
+      global.io.emit("user_updated", {
+        userId: id,
+        updates: sanitizeUser(updatedUser),
+      });
+      console.log(`📡 Broadcasted profile update for user ${id}`);
+    }
 
     res.json(sanitizeUser(updatedUser));
   } catch (err) {

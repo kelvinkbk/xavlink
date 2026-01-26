@@ -19,6 +19,11 @@ export const SyncProvider = ({ children }) => {
     newComment: null,
     postDeleted: null,
     postUpdated: null,
+    userUpdated: null,
+    userFollowed: null,
+    userUnfollowed: null,
+    newNotification: null,
+    unreadCount: null,
   });
 
   useEffect(() => {
@@ -56,6 +61,33 @@ export const SyncProvider = ({ children }) => {
       setSyncEvents((prev) => ({ ...prev, postUpdated: data }));
     };
 
+    // User/Profile events
+    const handleUserUpdated = (data) => {
+      console.log("👤 User updated:", data);
+      setSyncEvents((prev) => ({ ...prev, userUpdated: data }));
+    };
+
+    const handleUserFollowed = (data) => {
+      console.log("➕ User followed:", data);
+      setSyncEvents((prev) => ({ ...prev, userFollowed: data }));
+    };
+
+    const handleUserUnfollowed = (data) => {
+      console.log("➖ User unfollowed:", data);
+      setSyncEvents((prev) => ({ ...prev, userUnfollowed: data }));
+    };
+
+    // Notification events
+    const handleNewNotification = (data) => {
+      console.log("🔔 New notification:", data);
+      setSyncEvents((prev) => ({ ...prev, newNotification: data }));
+    };
+
+    const handleUnreadCount = (data) => {
+      console.log("🔢 Unread count:", data);
+      setSyncEvents((prev) => ({ ...prev, unreadCount: data }));
+    };
+
     // Register listeners
     socket.on("new_post", handleNewPost);
     socket.on("post_liked", handlePostLiked);
@@ -63,6 +95,11 @@ export const SyncProvider = ({ children }) => {
     socket.on("new_comment", handleNewComment);
     socket.on("post_deleted", handlePostDeleted);
     socket.on("post_updated", handlePostUpdated);
+    socket.on("user_updated", handleUserUpdated);
+    socket.on("user_followed", handleUserFollowed);
+    socket.on("user_unfollowed", handleUserUnfollowed);
+    socket.on("notification:new", handleNewNotification);
+    socket.on("notification:unread-count", handleUnreadCount);
 
     // Cleanup
     return () => {
@@ -72,6 +109,11 @@ export const SyncProvider = ({ children }) => {
       socket.off("new_comment", handleNewComment);
       socket.off("post_deleted", handlePostDeleted);
       socket.off("post_updated", handlePostUpdated);
+      socket.off("user_updated", handleUserUpdated);
+      socket.off("user_followed", handleUserFollowed);
+      socket.off("user_unfollowed", handleUserUnfollowed);
+      socket.off("notification:new", handleNewNotification);
+      socket.off("notification:unread-count", handleUnreadCount);
     };
   }, []);
 

@@ -8,17 +8,27 @@ import {
   RefreshControl,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
+import { useSyncContext } from "../context/SyncContext";
 import api from "../services/api";
 
 const NotificationsScreen = () => {
   const { user } = useAuth();
+  const { syncEvents } = useSyncContext();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Real-time new notification
+  useEffect(() => {
+    if (syncEvents.newNotification) {
+      setNotifications((prev) => [syncEvents.newNotification, ...prev]);
+    }
+  }, [syncEvents.newNotification]);
+
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000); // Refresh every 15 seconds
+    // Keep polling as backup but reduce frequency if needed
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [user?.id]);
 
