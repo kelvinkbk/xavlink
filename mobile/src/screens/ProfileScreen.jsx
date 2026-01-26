@@ -1,14 +1,3 @@
-// Render a single post in the grid
-const renderPostItem = ({ item }) => {
-  const source = item.image
-    ? { uri: item.image }
-    : { uri: "https://placehold.co/300x300?text=Post" };
-  return (
-    <TouchableOpacity style={styles.gridItem} activeOpacity={0.8}>
-      <Image source={source} style={styles.gridImage} />
-    </TouchableOpacity>
-  );
-};
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   View,
@@ -33,25 +22,23 @@ import ActivityTimeline from "../components/ActivityTimeline";
 import SocialLinks from "../components/SocialLinks";
 import Achievements from "../components/Achievements";
 
+const renderPostItem = ({ item }) => {
+  const source = item.image
+    ? { uri: item.image }
+    : { uri: "https://placehold.co/300x300?text=Post" };
+  return (
+    <TouchableOpacity style={styles.gridItem} activeOpacity={0.8}>
+      <Image source={source} style={styles.gridImage} />
+    </TouchableOpacity>
+  );
+};
+
 const ProfileScreen = ({ route, navigation }) => {
-  // Save profile changes
-  const handleSave = async () => {
-    if (!isOwnProfile) return;
-    try {
-      setSaving(true);
-      const { data } = await userService.updateProfile(user.id, {
-        name: name.trim(),
-        bio: bio.trim(),
-        profilePic: avatar.trim(),
-      });
-      await updateUser(data);
-      Alert.alert("Saved", "Profile updated");
-    } catch (e) {
-      Alert.alert("Error", "Failed to update profile");
-    } finally {
-      setSaving(false);
-    }
-  };
+  const { user, logout, updateUser } = useAuth();
+  const { colors } = useTheme();
+  const viewedUserId = route?.params?.userId;
+  const isOwnProfile = !viewedUserId || viewedUserId === user?.id;
+
   // State for report modal
   const [reportModal, setReportModal] = useState({
     visible: false,
@@ -59,10 +46,6 @@ const ProfileScreen = ({ route, navigation }) => {
     targetId: null,
     targetName: "",
   });
-  const { user, logout, updateUser } = useAuth();
-  const { colors } = useTheme();
-  const viewedUserId = route?.params?.userId;
-  const isOwnProfile = !viewedUserId || viewedUserId === user?.id;
 
   const [viewedUser, setViewedUser] = useState(null);
   const [loading, setLoading] = useState(!isOwnProfile);
@@ -129,6 +112,25 @@ const ProfileScreen = ({ route, navigation }) => {
     };
     fetchPosts();
   }, [displayUser?.id]);
+
+  // Save profile changes
+  const handleSave = async () => {
+    if (!isOwnProfile) return;
+    try {
+      setSaving(true);
+      const { data } = await userService.updateProfile(user.id, {
+        name: name.trim(),
+        bio: bio.trim(),
+        profilePic: avatar.trim(),
+      });
+      await updateUser(data);
+      Alert.alert("Saved", "Profile updated");
+    } catch (e) {
+      Alert.alert("Error", "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleFollowToggle = useCallback(async () => {
     if (isOwnProfile) return;
