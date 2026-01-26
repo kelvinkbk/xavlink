@@ -732,10 +732,10 @@ const AdminDashboardScreen = () => {
                               {displayUser(item)}
                             </Text>
                             <Text style={{ fontSize: 12, color: "#64748b" }}>
-                              {item.email}
+                              {String(item.email || "")}
                             </Text>
                             <Text style={{ fontSize: 12 }}>
-                              Role: {item.role}
+                              Role: {String(item.role || "user")}
                             </Text>
                             <Text
                               style={{
