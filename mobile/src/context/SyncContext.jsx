@@ -98,7 +98,7 @@ export const SyncProvider = ({ children }) => {
     socket.on("user_updated", handleUserUpdated);
     socket.on("user_followed", handleUserFollowed);
     socket.on("user_unfollowed", handleUserUnfollowed);
-    socket.on("notification:new", handleNewNotification);
+    socket.on("new_notification", handleNewNotification);
     socket.on("notification:unread-count", handleUnreadCount);
 
     // Cleanup
@@ -112,7 +112,7 @@ export const SyncProvider = ({ children }) => {
       socket.off("user_updated", handleUserUpdated);
       socket.off("user_followed", handleUserFollowed);
       socket.off("user_unfollowed", handleUserUnfollowed);
-      socket.off("notification:new", handleNewNotification);
+      socket.off("new_notification", handleNewNotification);
       socket.off("notification:unread-count", handleUnreadCount);
     };
   }, []);

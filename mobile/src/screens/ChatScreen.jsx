@@ -168,15 +168,47 @@ const ChatScreen = ({ route }) => {
 
   const handleSend = () => {
     if ((!text.trim() && !attachmentUrl) || !chatId) return;
+
+    const tempId = Date.now().toString();
+    const tempMessage = {
+      id: tempId,
+      chatId,
+      senderId: user?.id,
+      text: text.trim() || "(attachment)",
+      attachmentUrl: attachmentUrl || undefined,
+      createdAt: new Date().toISOString(),
+      pending: true,
+    };
+
+    // 1. Optimistic Update
+    setMessages((prev) => [...prev, tempMessage]);
+    requestAnimationFrame(() =>
+      listRef.current?.scrollToEnd({ animated: true }),
+    );
+
     const payload = {
       chatId,
       senderId: user?.id,
       text: text.trim() || "(attachment)",
       attachmentUrl: attachmentUrl || undefined,
     };
-    sendMessage(payload);
+
     setText("");
     setAttachmentUrl("");
+
+    // 2. Send with Acknowledgement
+    sendMessage(payload, (response) => {
+      if (response?.success && response?.message) {
+        // Replace temp message with real one
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? response.message : m)),
+        );
+      } else {
+        // Handle failure
+        Alert.alert("Error", "Failed to send message");
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      }
+    });
   };
 
   if (loading) {

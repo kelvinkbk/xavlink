@@ -11,6 +11,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useSyncContext } from "../context/SyncContext";
 import { chatService } from "../services/api";
 
 const ChatListScreen = () => {
@@ -32,8 +33,13 @@ const ChatListScreen = () => {
       if (error?.response?.status === 401) {
         setChats([]);
         setError("Sign in to view chats.");
-      } else if (error?.code === "ECONNABORTED" || error?.message?.includes("timeout")) {
-        setError("Connection timeout. Please check your network and try again.");
+      } else if (
+        error?.code === "ECONNABORTED" ||
+        error?.message?.includes("timeout")
+      ) {
+        setError(
+          "Connection timeout. Please check your network and try again.",
+        );
       } else {
         setError(error?.response?.data?.message || "Failed to load chats");
       }
@@ -55,21 +61,30 @@ const ChatListScreen = () => {
       return; // avoid 401 before login
     }
     loadChats();
-    const interval = setInterval(loadChats, 10000);
-    return () => clearInterval(interval);
   }, [authLoading, isAuthenticated, token]);
+
+  // Real-time updates via SyncContext
+  const { syncEvents } = useSyncContext();
+  useEffect(() => {
+    if (
+      syncEvents.newNotification &&
+      syncEvents.newNotification.type === "message_received"
+    ) {
+      loadChats();
+    }
+  }, [syncEvents.newNotification]);
 
   const getChatName = (chat) => {
     if (chat.name) return chat.name;
     const otherParticipant = chat.participants.find(
-      (p) => p.user.id !== user.id
+      (p) => p.user.id !== user.id,
     );
     return otherParticipant?.user.name || "Unknown";
   };
 
   const getChatAvatar = (chat) => {
     const otherParticipant = chat.participants.find(
-      (p) => p.user.id !== user.id
+      (p) => p.user.id !== user.id,
     );
     return otherParticipant?.user.name?.charAt(0).toUpperCase() || "?";
   };

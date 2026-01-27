@@ -28,8 +28,8 @@ const NotificationsScreen = () => {
   useEffect(() => {
     fetchNotifications();
     // Keep polling as backup but reduce frequency if needed
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(fetchNotifications, 30000);
+    // return () => clearInterval(interval);
   }, [user?.id]);
 
   const fetchNotifications = async () => {

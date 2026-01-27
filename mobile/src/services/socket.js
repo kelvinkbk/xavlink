@@ -13,6 +13,18 @@ export const getSocket = () => {
     socket = io(SOCKET_URL, {
       transports: ["websocket"],
     });
+
+    socket.on("connect", () => {
+      console.log("✅ Socket connected:", socket.id);
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("❌ Socket connection error:", err.message);
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("⚠️ Socket disconnected:", reason);
+    });
   }
   return socket;
 };
@@ -54,7 +66,11 @@ export const sendStopTyping = (chatId, userId) => {
 
 export const sendMessage = (payload, callback) => {
   const s = getSocket();
-  s.emit("send_message", payload, callback);
+  console.log("📤 Emitting send_message:", payload);
+  s.emit("send_message", payload, (response) => {
+    console.log("📥 send_message response:", response);
+    if (callback) callback(response);
+  });
 };
 
 export const onMessage = (handler) => {

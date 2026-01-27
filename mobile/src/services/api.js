@@ -5,6 +5,12 @@ import Constants from "expo-constants";
 
 // Resolve API base URL for simulator/device
 const resolveApiBase = () => {
+  // FORCE LOCALHOST DEBUGGING (Top Priority)
+  if (Platform.OS === "android") {
+    console.log("forcing android local (priority)");
+    return "http://10.0.2.2:5000/api";
+  }
+
   // 1) explicit env (ngrok URL for cross-network or LAN IP)
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
   if (Constants?.expoConfig?.extra?.apiUrl)
@@ -21,7 +27,7 @@ const resolveApiBase = () => {
   }
 
   // 3) Android emulator maps host machine to 10.0.2.2
-  if (Platform.OS === "android") return "http://10.0.2.2:5000/api";
+  // if (Platform.OS === "android") return "http://10.0.2.2:5000/api";
 
   // 4) Fallback to localhost
   return "http://localhost:5000/api";

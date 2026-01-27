@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
   // Setup socket connection when user is authenticated
   useEffect(() => {
     if (user?.id) {
-      joinUserRoom(user.id);
+      // joinUserRoom(user.id); // Backend uses user_online for this
       markUserOnline(user.id);
 
       // Listen for real-time notifications
