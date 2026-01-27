@@ -5,10 +5,15 @@ import Constants from "expo-constants";
 
 // Resolve API base URL for simulator/device
 const resolveApiBase = () => {
+  console.log(" resolveApiBase called! Platform:", Platform.OS);
+
   // FORCE LOCALHOST DEBUGGING (Top Priority)
   if (Platform.OS === "android") {
     console.log("forcing android local (priority)");
     return "http://10.0.2.2:5000/api";
+  } else if (Platform.OS === "ios") {
+    console.log("forcing ios local (priority)");
+    return "http://localhost:5000/api";
   }
 
   // 1) explicit env (ngrok URL for cross-network or LAN IP)
