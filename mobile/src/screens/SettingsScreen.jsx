@@ -1,7 +1,17 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Modal, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  FlatList,
+} from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import UpdateService from "../services/UpdateService";
 
 const paletteNames = {
   "obsidian-blue": "1️⃣ Obsidian Blue × Silver",
@@ -30,13 +40,20 @@ const SettingsScreen = () => {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <Text style={[styles.title, { color: colors.textPrimary }]}>
         Settings
       </Text>
 
       {/* Color Palette Selection */}
-      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.section,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
           Color Palette
         </Text>
@@ -44,7 +61,9 @@ const SettingsScreen = () => {
           style={[styles.paletteButton, { borderColor: colors.border }]}
           onPress={() => setShowPaletteModal(true)}
         >
-          <Text style={[styles.paletteButtonText, { color: colors.textPrimary }]}>
+          <Text
+            style={[styles.paletteButtonText, { color: colors.textPrimary }]}
+          >
             {paletteNames[colorPalette] || "Select Palette"}
           </Text>
           <Text style={[styles.chevron, { color: colors.textMuted }]}>›</Text>
@@ -55,7 +74,12 @@ const SettingsScreen = () => {
       </View>
 
       {/* Notifications */}
-      <View style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.row,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
         <View style={styles.rowContent}>
           <Text style={[styles.label, { color: colors.textPrimary }]}>
             Notifications
@@ -70,6 +94,31 @@ const SettingsScreen = () => {
           trackColor={{ false: colors.border, true: colors.primary }}
           thumbColor={notifications ? colors.accent : colors.textMuted}
         />
+      </View>
+
+      {/* App Updates */}
+      <View
+        style={[
+          styles.row,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
+        <View style={styles.rowContent}>
+          <Text style={[styles.label, { color: colors.textPrimary }]}>
+            App Updates
+          </Text>
+          <Text style={[styles.subLabel, { color: colors.textMuted }]}>
+            Check for the latest version
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={{ padding: 8 }}
+          onPress={() => UpdateService.checkForUpdate(true)}
+        >
+          <Text style={{ color: colors.primary, fontWeight: "600" }}>
+            Check
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Logout */}
@@ -88,13 +137,24 @@ const SettingsScreen = () => {
         onRequestClose={() => setShowPaletteModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <View
+              style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+            >
               <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
                 Choose Color Palette
               </Text>
               <TouchableOpacity onPress={() => setShowPaletteModal(false)}>
-                <Text style={[styles.closeButton, { color: colors.textPrimary }]}>✕</Text>
+                <Text
+                  style={[styles.closeButton, { color: colors.textPrimary }]}
+                >
+                  ✕
+                </Text>
               </TouchableOpacity>
             </View>
             <FlatList
@@ -104,21 +164,36 @@ const SettingsScreen = () => {
                 <TouchableOpacity
                   style={[
                     styles.paletteOption,
-                    { 
-                      backgroundColor: colorPalette === item ? colors.primary + "20" : "transparent",
+                    {
+                      backgroundColor:
+                        colorPalette === item
+                          ? colors.primary + "20"
+                          : "transparent",
                       borderColor: colors.border,
                     },
                   ]}
                   onPress={() => handleSelectPalette(item)}
                 >
                   <View style={styles.paletteOptionContent}>
-                    <View style={[styles.paletteColorPreview, { backgroundColor: colors.primary }]} />
-                    <Text style={[styles.paletteOptionText, { color: colors.textPrimary }]}>
+                    <View
+                      style={[
+                        styles.paletteColorPreview,
+                        { backgroundColor: colors.primary },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.paletteOptionText,
+                        { color: colors.textPrimary },
+                      ]}
+                    >
                       {paletteNames[item] || item}
                     </Text>
                   </View>
                   {colorPalette === item && (
-                    <Text style={[styles.checkmark, { color: colors.primary }]}>✓</Text>
+                    <Text style={[styles.checkmark, { color: colors.primary }]}>
+                      ✓
+                    </Text>
                   )}
                 </TouchableOpacity>
               )}
@@ -131,8 +206,8 @@ const SettingsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     padding: 16,
   },
   title: {
@@ -186,8 +261,8 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
-  label: { 
-    fontSize: 15, 
+  label: {
+    fontSize: 15,
     fontWeight: "600",
     marginBottom: 4,
   },
@@ -201,8 +276,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
   },
-  logoutText: { 
-    color: "#fff", 
+  logoutText: {
+    color: "#fff",
     fontWeight: "700",
     fontSize: 16,
   },
