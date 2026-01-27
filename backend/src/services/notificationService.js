@@ -59,7 +59,7 @@ exports.createNotification = async ({
 
     // Emit real-time Socket.io event to user
     if (io) {
-      io.to(`user:${userId}`).emit("notification:new", {
+      io.to(`user:${userId}`).emit("new_notification", {
         id: notification.id,
         type: notification.type,
         title: notification.title,
