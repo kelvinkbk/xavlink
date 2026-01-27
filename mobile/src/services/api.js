@@ -5,10 +5,14 @@ import Constants from "expo-constants";
 
 // Resolve API base URL for simulator/device
 const resolveApiBase = () => {
-  // FORCE LOCALHOST DEBUGGING (Top Priority)
+  // FORCE LOCALHOST DEBUGGING
+  // WebSocket transport is fixed, so standard loopbacks should work now.
   if (Platform.OS === "android") {
-    console.log("forcing android local (priority)");
+    console.log("forcing android local (10.0.2.2)");
     return "http://10.0.2.2:5000/api";
+  } else if (Platform.OS === "ios") {
+    console.log("forcing ios local (localhost)");
+    return "http://localhost:5000/api";
   }
 
   // 1) explicit env (ngrok URL for cross-network or LAN IP)
