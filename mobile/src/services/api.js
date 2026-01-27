@@ -5,24 +5,9 @@ import Constants from "expo-constants";
 
 // Resolve API base URL for simulator/device
 const resolveApiBase = () => {
-<<<<<<< HEAD
-  // FORCE LOCALHOST DEBUGGING
-  // WebSocket transport is fixed, so standard loopbacks should work now.
-  if (Platform.OS === "android") {
-    console.log("forcing android local (10.0.2.2)");
-    return "http://10.0.2.2:5000/api";
-  } else if (Platform.OS === "ios") {
-    console.log("forcing ios local (localhost)");
-    return "http://localhost:5000/api";
-  }
-=======
+  // Debug overrides removed to allow Production/Render connection
+  // Fallback to env variable below
   console.log(" resolveApiBase called! Platform:", Platform.OS);
-
-  // FORCE LAN IP DEBUGGING (Universal)
-  // This bypasses Android emulator loopback issues and works for iOS Simulator too
-  console.log("Using LAN IP (172.16.13.84) for connectivity");
-  return "http://172.16.13.84:5000/api";
->>>>>>> 0ef918ba30d4578990c3544473f3d2bafaf517dc
 
   // 1) explicit env (ngrok URL for cross-network or LAN IP)
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
