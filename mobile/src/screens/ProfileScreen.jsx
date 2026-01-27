@@ -14,6 +14,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import * as ImagePicker from "expo-image-picker";
+import { useSyncContext } from "../context/SyncContext";
 import {
   userService,
   uploadService,
@@ -75,6 +76,97 @@ const ProfileScreen = ({ route, navigation }) => {
 
   // Use user for own profile, viewedUser for others
   const displayUser = isOwnProfile ? user : viewedUser;
+
+  // Real-time sync
+  const { syncEvents } = useSyncContext();
+
+  useEffect(() => {
+    if (
+      syncEvents.userUpdated &&
+      syncEvents.userUpdated.userId === displayUser?.id
+    ) {
+      if (isOwnProfile) {
+        updateUser({ ...user, ...syncEvents.userUpdated.updates });
+      } else {
+        setViewedUser((prev) => ({
+          ...prev,
+          ...syncEvents.userUpdated.updates,
+        }));
+      }
+    }
+  }, [syncEvents.userUpdated]);
+
+  useEffect(() => {
+    if (!displayUser?.id) return;
+
+    if (syncEvents.userFollowed) {
+      if (syncEvents.userFollowed.followingId === displayUser.id) {
+        // Person being viewed gained a follower
+        setViewedUser((prev) =>
+          prev
+            ? { ...prev, followersCount: (prev.followersCount || 0) + 1 }
+            : prev,
+        );
+        if (isOwnProfile)
+          updateUser({
+            ...user,
+            followersCount: (user.followersCount || 0) + 1,
+          });
+      }
+      if (syncEvents.userFollowed.followerId === displayUser.id) {
+        // Person being viewed followed someone
+        setViewedUser((prev) =>
+          prev
+            ? { ...prev, followingCount: (prev.followingCount || 0) + 1 }
+            : prev,
+        );
+        if (isOwnProfile)
+          updateUser({
+            ...user,
+            followingCount: (user.followingCount || 0) + 1,
+          });
+      }
+    }
+  }, [syncEvents.userFollowed]);
+
+  useEffect(() => {
+    if (!displayUser?.id) return;
+
+    if (syncEvents.userUnfollowed) {
+      if (syncEvents.userUnfollowed.followingId === displayUser.id) {
+        // Person being viewed lost a follower
+        setViewedUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                followersCount: Math.max(0, (prev.followersCount || 0) - 1),
+              }
+            : prev,
+        );
+        if (isOwnProfile)
+          updateUser({
+            ...user,
+            followersCount: Math.max(0, (user.followersCount || 0) - 1),
+          });
+      }
+      if (syncEvents.userUnfollowed.followerId === displayUser.id) {
+        // Person being viewed unfollowed someone
+        setViewedUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                followingCount: Math.max(0, (prev.followingCount || 0) - 1),
+              }
+            : prev,
+        );
+        if (isOwnProfile)
+          updateUser({
+            ...user,
+            followingCount: Math.max(0, (user.followingCount || 0) - 1),
+          });
+      }
+    }
+  }, [syncEvents.userUnfollowed]);
 
   // Fetch viewed user profile when viewing someone else's profile
   useEffect(() => {

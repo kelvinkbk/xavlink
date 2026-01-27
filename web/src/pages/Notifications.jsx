@@ -7,6 +7,7 @@ import { enhancementService } from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../context/ToastContext";
+import { useSync } from "../hooks/useSync";
 
 const Notifications = () => {
   const { user } = useAuth();
@@ -18,6 +19,20 @@ const Notifications = () => {
   const [groupByType, setGroupByType] = useState(false);
   const [timeFilter, setTimeFilter] = useState("all"); // "today", "week", "month", "all"
   const [showArchived, setShowArchived] = useState(false);
+
+  const syncEvents = useSync();
+
+  // Handle real-time notifications
+  useEffect(() => {
+    if (syncEvents.newNotification) {
+      setNotifications((prev) => [syncEvents.newNotification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
+      showToast(
+        `New notification: ${syncEvents.newNotification.title}`,
+        "info",
+      );
+    }
+  }, [syncEvents.newNotification, showToast]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -48,7 +63,7 @@ const Notifications = () => {
               filterDate.setMonth(filterDate.getMonth() - 1);
             }
             fetchedNotifications = fetchedNotifications.filter(
-              (n) => new Date(n.createdAt) >= filterDate
+              (n) => new Date(n.createdAt) >= filterDate,
             );
           }
           setNotifications(fetchedNotifications);
@@ -96,7 +111,7 @@ const Notifications = () => {
     try {
       await api.put(`/notifications/${id}/read`);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
@@ -109,7 +124,7 @@ const Notifications = () => {
     try {
       await enhancementService.pinNotification(id);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isPinned: !n.isPinned } : n))
+        prev.map((n) => (n.id === id ? { ...n, isPinned: !n.isPinned } : n)),
       );
     } catch (error) {
       console.error("Failed to pin notification:", error);
@@ -309,7 +324,7 @@ const Notifications = () => {
                       ))}
                   </div>
                 </div>
-              )
+              ),
             )}
           </div>
         ) : (

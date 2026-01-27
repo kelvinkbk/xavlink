@@ -96,6 +96,7 @@ exports.createPost = async (req, res, next) => {
 exports.getAllPosts = async (req, res, next) => {
   try {
     console.log("📌 getAllPosts called");
+    const userId = req.user?.id;
 
     // MongoDB query - replace raw SQL with Prisma query
     const posts = await prisma.post.findMany({
@@ -113,17 +114,42 @@ exports.getAllPosts = async (req, res, next) => {
 
     console.log("✅ Retrieved", posts?.length, "posts from MongoDB");
 
-    // Enrich posts with like/comment counts
-    const postsWithUsers = posts.map((post) => ({
-      ...post,
-      likesCount: likeStore[post.id]?.length || 0,
-      commentsCount: commentStore[post.id]?.length || 0,
-      isLiked: false,
-      isBookmarked: false,
-    }));
+    // Enrich posts with like/comment counts from database
+    const postsWithCounts = await Promise.all(
+      posts.map(async (post) => {
+        try {
+          // Promise.all for parallel like/liked checks
+          const [likesCount, existingLike] = await Promise.all([
+            prisma.like.count({ where: { postId: post.id } }),
+            userId
+              ? prisma.like.findUnique({
+                  where: { postId_userId: { userId, postId: post.id } },
+                })
+              : null,
+          ]);
+
+          return {
+            ...post,
+            likesCount: likesCount || 0,
+            commentsCount: commentStore[post.id]?.length || 0,
+            isLiked: !!existingLike,
+            isBookmarked: false,
+          };
+        } catch (err) {
+          console.error(`Error enriching post ${post.id}:`, err.message);
+          return {
+            ...post,
+            likesCount: 0,
+            commentsCount: commentStore[post.id]?.length || 0,
+            isLiked: false,
+            isBookmarked: false,
+          };
+        }
+      }),
+    );
 
     res.json({
-      posts: postsWithUsers,
+      posts: postsWithCounts,
       pagination: {
         currentPage: 1,
         totalPages: 1,
@@ -147,20 +173,31 @@ exports.likePost = async (req, res, next) => {
       return res.status(400).json({ message: "Missing postId or userId" });
     }
 
-    // Initialize post likes if not exists
-    if (!likeStore[id]) {
-      likeStore[id] = [];
+    // Check if already liked in database
+    const existingLike = await prisma.like.findUnique({
+      where: {
+        postId_userId: { userId, postId: id },
+      },
+    });
+
+    if (existingLike) {
+      // Already liked - just return success with current count
+      const likesCount = await prisma.like.count({ where: { postId: id } });
+      return res.status(200).json({
+        message: "Post already liked",
+        likesCount,
+      });
     }
 
-    // Check if already liked
-    if (likeStore[id].includes(userId)) {
-      return res.status(400).json({ message: "Post already liked" });
-    }
+    // Add like to database
+    await prisma.like.create({
+      data: { postId: id, userId },
+    });
 
-    // Add like
-    likeStore[id].push(userId);
+    // Get updated like count
+    const likesCount = await prisma.like.count({ where: { postId: id } });
     console.log(
-      `❤️ Like stored: post ${id} by user ${userId} - total: ${likeStore[id].length}`
+      `❤️ Like added: post ${id} by user ${userId} - total: ${likesCount}`,
     );
 
     // Create notification
@@ -179,18 +216,18 @@ exports.likePost = async (req, res, next) => {
       global.io.emit("post_liked", {
         postId: id,
         userId,
-        likesCount: likeStore[id].length,
+        likesCount,
       });
       console.log(`📡 Broadcasted like for post ${id}`);
     }
 
     return res.status(200).json({
       message: "Post liked",
-      likesCount: likeStore[id].length,
+      likesCount,
     });
   } catch (err) {
     console.error("Error in likePost:", err.message);
-    res.status(500).json({ message: "Failed to like post" });
+    res.status(500).json({ message: "Failed to like post: " + err.message });
   }
 };
 
@@ -203,21 +240,33 @@ exports.unlikePost = async (req, res, next) => {
       return res.status(400).json({ message: "Missing postId or userId" });
     }
 
-    // Initialize post likes if not exists
-    if (!likeStore[id]) {
-      likeStore[id] = [];
+    // Check if liked in database
+    const existingLike = await prisma.like.findUnique({
+      where: {
+        postId_userId: { userId, postId: id },
+      },
+    });
+
+    if (!existingLike) {
+      // Not liked - just return success with current count
+      const likesCount = await prisma.like.count({ where: { postId: id } });
+      return res.status(200).json({
+        message: "Post not liked yet",
+        likesCount,
+      });
     }
 
-    // Check if not liked
-    const index = likeStore[id].indexOf(userId);
-    if (index === -1) {
-      return res.status(400).json({ message: "Post not liked yet" });
-    }
+    // Remove like from database
+    await prisma.like.delete({
+      where: {
+        postId_userId: { userId, postId: id },
+      },
+    });
 
-    // Remove like
-    likeStore[id].splice(index, 1);
+    // Get updated like count
+    const likesCount = await prisma.like.count({ where: { postId: id } });
     console.log(
-      `💔 Unlike stored: post ${id} by user ${userId} - total: ${likeStore[id].length}`
+      `💔 Unlike removed: post ${id} by user ${userId} - total: ${likesCount}`,
     );
 
     // Emit real-time event
@@ -225,18 +274,18 @@ exports.unlikePost = async (req, res, next) => {
       global.io.emit("post_unliked", {
         postId: id,
         userId,
-        likesCount: likeStore[id].length,
+        likesCount,
       });
       console.log(`📡 Broadcasted unlike for post ${id}`);
     }
 
     return res.status(200).json({
       message: "Post unliked",
-      likesCount: likeStore[id].length,
+      likesCount,
     });
   } catch (err) {
     console.error("Error in unlikePost:", err.message);
-    res.status(500).json({ message: "Failed to unlike post" });
+    res.status(500).json({ message: "Failed to unlike post: " + err.message });
   }
 };
 
@@ -288,7 +337,7 @@ exports.addComment = async (req, res, next) => {
 
     commentStore[id].push(newComment);
     console.log(
-      `✅ Comment stored: post ${id} - total: ${commentStore[id].length}`
+      `✅ Comment stored: post ${id} - total: ${commentStore[id].length}`,
     );
 
     // Create notification
@@ -344,7 +393,7 @@ exports.getLikeCount = async (req, res, next) => {
     const likesCount = likes.length;
 
     console.log(
-      `❤️ Like count for post ${id}: ${likesCount}, user liked: ${isLiked}`
+      `❤️ Like count for post ${id}: ${likesCount}, user liked: ${isLiked}`,
     );
 
     res.json({ likesCount, isLiked });
@@ -648,7 +697,7 @@ exports.getBookmarkedPosts = async (req, res, next) => {
       }, {});
 
       const userReaction = post.reactions.find(
-        (r) => r.userId === userId
+        (r) => r.userId === userId,
       )?.emoji;
 
       const { likes, reactions, _count, ...rest } = post;
@@ -795,8 +844,8 @@ exports.searchPosts = async (req, res, next) => {
           sort === "trending"
             ? [{ likesCount: "desc" }, { commentsCount: "desc" }]
             : sort === "most-liked"
-            ? { likesCount: "desc" }
-            : { createdAt: "desc" },
+              ? { likesCount: "desc" }
+              : { createdAt: "desc" },
         skip,
         take,
         include: {
@@ -1086,8 +1135,8 @@ exports.publishDraft = async (req, res, next) => {
           draft.tags.map((tag) =>
             tx.postTag.create({
               data: { postId: newPost.id, tag },
-            })
-          )
+            }),
+          ),
         );
       }
 

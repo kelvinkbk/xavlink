@@ -33,10 +33,32 @@ const DiscoverScreen = () => {
   const fetchSuggested = async () => {
     try {
       setSuggestedLoading(true);
-      const { data } = await userService.getSuggestedUsers(15);
-      setSuggestedUsers(data);
+      const response = await userService.getSuggestedUsers(15);
+      console.log("Suggested users response:", response.data);
+
+      // Handle nested suggestions structure: { suggestions: [{ category, users }] }
+      let users = [];
+      if (
+        response.data?.suggestions &&
+        Array.isArray(response.data.suggestions)
+      ) {
+        // Flatten all users from all categories
+        users = response.data.suggestions.flatMap(
+          (suggestion) => suggestion.users || [],
+        );
+      } else if (response.data?.users && Array.isArray(response.data.users)) {
+        // Fallback for flat structure
+        users = response.data.users;
+      } else if (Array.isArray(response.data)) {
+        // Fallback for direct array
+        users = response.data;
+      }
+
+      console.log("Extracted users:", users.length);
+      setSuggestedUsers(users);
     } catch (error) {
       console.error("Failed to fetch suggested users:", error);
+      setSuggestedUsers([]);
     } finally {
       setSuggestedLoading(false);
     }
@@ -47,10 +69,14 @@ const DiscoverScreen = () => {
 
     setLoading(true);
     try {
-      const { data } = await userService.searchUsers(searchQuery);
-      setSearchResults(data);
+      const response = await userService.searchUsers(searchQuery);
+      console.log("Search results:", response.data);
+      // Handle different response formats
+      const users = response.data?.users || response.data || [];
+      setSearchResults(Array.isArray(users) ? users : []);
     } catch (error) {
       console.error("Search failed:", error);
+      setSearchResults([]);
     } finally {
       setLoading(false);
     }
@@ -75,7 +101,7 @@ const DiscoverScreen = () => {
       alert(
         error?.response?.data?.message ||
           error?.message ||
-          "Failed to start chat"
+          "Failed to start chat",
       );
     } finally {
       setStartingChats((prev) => {

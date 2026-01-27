@@ -5,10 +5,10 @@ import SkeletonLoader from "../components/SkeletonLoader";
 import ReportModal from "../components/ReportModal";
 import { postService } from "../services/api";
 import api from "../services/api";
-import socket from "../services/socket";
 // Removed direct Toast component usage; using useToast hook instead
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { useSync } from "../hooks/useSync";
 
 function PostCard({
   post,
@@ -107,7 +107,7 @@ function PostCard({
                         setShowMenu(false);
                         if (
                           window.confirm(
-                            "Are you sure you want to delete this post?"
+                            "Are you sure you want to delete this post?",
                           )
                         ) {
                           onDelete(post.id);
@@ -124,7 +124,7 @@ function PostCard({
                       setShowMenu(false);
                       onReport(
                         post.id,
-                        post.content?.substring(0, 50) + "..." || "Post"
+                        post.content?.substring(0, 50) + "..." || "Post",
                       );
                     }}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
@@ -240,7 +240,7 @@ function PostCard({
                       src={
                         comment.user?.profilePic ||
                         `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                          comment.user?.name || "User"
+                          comment.user?.name || "User",
                         )}&background=3b82f6&color=fff&size=32`
                       }
                       alt={comment.user?.name}
@@ -266,8 +266,8 @@ function PostCard({
                                     comments.map((c) =>
                                       c.id === comment.id
                                         ? { ...c, text: editCommentText }
-                                        : c
-                                    )
+                                        : c,
+                                    ),
                                   );
                                   setEditingCommentId(null);
                                   showToast("Comment updated", "success");
@@ -275,7 +275,7 @@ function PostCard({
                                   console.error("Error updating comment:", e);
                                   showToast(
                                     "Failed to update comment",
-                                    "error"
+                                    "error",
                                   );
                                 }
                               }}
@@ -323,7 +323,7 @@ function PostCard({
                               try {
                                 await postService.deleteComment(comment.id);
                                 setComments(
-                                  comments.filter((c) => c.id !== comment.id)
+                                  comments.filter((c) => c.id !== comment.id),
                                 );
                                 onComment(post.id, -1);
                                 showToast("Comment deleted", "success");
@@ -346,7 +346,7 @@ function PostCard({
                             onReport(
                               comment.id,
                               `Comment by ${comment.user?.name}`,
-                              "Comment"
+                              "Comment",
                             )
                           }
                           className="text-gray-400 hover:text-red-500 text-sm"
@@ -429,7 +429,7 @@ export default function Home() {
       });
       if (node) observerRef.current.observe(node);
     },
-    [loadingMore, hasMore, showBookmarks]
+    [loadingMore, hasMore, showBookmarks],
   );
 
   // Fetch posts with pagination
@@ -443,7 +443,7 @@ export default function Home() {
           feedFilter,
           sortBy,
           currentPage,
-          10
+          10,
         );
         if (currentPage === 1) {
           setPosts(data.posts);
@@ -475,7 +475,7 @@ export default function Home() {
             feedFilter,
             sortBy,
             1,
-            10
+            10,
           );
           setPosts(data.posts);
           setCurrentPage(1);
@@ -519,39 +519,75 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedFilter, sortBy]);
 
-  // Listen for real-time events
+  const syncEvents = useSync();
+
+  // Handle real-time sync events
   useEffect(() => {
-    if (!socket.connected) {
-      console.log("🔌 Connecting socket for real-time updates");
-      socket.connect();
+    // Post Liked
+    if (syncEvents.postLiked) {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === syncEvents.postLiked.postId
+            ? {
+                ...p,
+                likesCount: syncEvents.postLiked.likesCount,
+                isLiked:
+                  p.id === syncEvents.postLiked.postId &&
+                  user?.id === syncEvents.postLiked.userId
+                    ? true
+                    : p.isLiked,
+              }
+            : p,
+        ),
+      );
     }
 
-    const handlePostLiked = ({ postId, likesCount }) => {
-      setPosts((prevPosts) =>
-        prevPosts.map((p) => (p.id === postId ? { ...p, likesCount } : p))
+    // Post Unliked
+    if (syncEvents.postUnliked) {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === syncEvents.postUnliked.postId
+            ? {
+                ...p,
+                likesCount: syncEvents.postUnliked.likesCount,
+                isLiked:
+                  p.id === syncEvents.postUnliked.postId &&
+                  user?.id === syncEvents.postUnliked.userId
+                    ? false
+                    : p.isLiked,
+              }
+            : p,
+        ),
       );
-    };
+    }
 
-    const handlePostUnliked = ({ postId, likesCount }) => {
-      setPosts((prevPosts) =>
-        prevPosts.map((p) => (p.id === postId ? { ...p, likesCount } : p))
+    // Post Deleted
+    if (syncEvents.postDeleted) {
+      setPosts((prev) =>
+        prev.filter((p) => p.id !== syncEvents.postDeleted.postId),
       );
-    };
+    }
 
-    const handlePostDeleted = ({ postId }) => {
-      setPosts((prevPosts) => prevPosts.filter((p) => p.id !== postId));
-    };
+    // New Post (prepend if on first page and "all"/appropriate filter)
+    if (syncEvents.newPost && currentPage === 1 && feedFilter === "all") {
+      // Avoid duplicates
+      setPosts((prev) => {
+        if (prev.some((p) => p.id === syncEvents.newPost.id)) return prev;
+        return [syncEvents.newPost, ...prev];
+      });
+    }
 
-    socket.on("post_liked", handlePostLiked);
-    socket.on("post_unliked", handlePostUnliked);
-    socket.on("post_deleted", handlePostDeleted);
-
-    return () => {
-      socket.off("post_liked", handlePostLiked);
-      socket.off("post_unliked", handlePostUnliked);
-      socket.off("post_deleted", handlePostDeleted);
-    };
-  }, []);
+    // New Comment (update count)
+    if (syncEvents.newComment) {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === syncEvents.newComment.postId
+            ? { ...p, commentsCount: p.commentsCount + 1 }
+            : p,
+        ),
+      );
+    }
+  }, [syncEvents, currentPage, feedFilter, user?.id]);
 
   const handleCreatePost = async (e) => {
     e.preventDefault();
@@ -597,8 +633,8 @@ export default function Home() {
               isLiked: !wasLiked,
               likesCount: p.likesCount + (wasLiked ? -1 : 1),
             }
-          : p
-      )
+          : p,
+      ),
     );
 
     try {
@@ -614,12 +650,12 @@ export default function Home() {
         const userId = JSON.parse(localStorage.getItem("user"))?.id;
         if (userId) {
           const { data } = await api.get(
-            `/notifications/${userId}/unread-count`
+            `/notifications/${userId}/unread-count`,
           );
           window.dispatchEvent(
             new CustomEvent("unread-updated", {
               detail: { unread: data.unreadCount },
-            })
+            }),
           );
         }
       } catch {
@@ -637,8 +673,8 @@ export default function Home() {
                 isLiked: wasLiked,
                 likesCount: p.likesCount + (wasLiked ? 1 : -1),
               }
-            : p
-        )
+            : p,
+        ),
       );
     } finally {
       // Remove from liking set
@@ -655,8 +691,8 @@ export default function Home() {
       posts.map((p) =>
         p.id === postId
           ? { ...p, commentsCount: p.commentsCount + countChange }
-          : p
-      )
+          : p,
+      ),
     );
     if (countChange > 0) {
       showToast("Comment posted", "success");
@@ -669,8 +705,8 @@ export default function Home() {
           window.dispatchEvent(
             new CustomEvent("unread-updated", {
               detail: { unread: data.unreadCount },
-            })
-          )
+            }),
+          ),
         );
       }
     } catch {
@@ -691,7 +727,7 @@ export default function Home() {
 
   const handleEditPost = (postId, newContent) => {
     setPosts(
-      posts.map((p) => (p.id === postId ? { ...p, content: newContent } : p))
+      posts.map((p) => (p.id === postId ? { ...p, content: newContent } : p)),
     );
   };
 
@@ -704,8 +740,8 @@ export default function Home() {
     // Optimistic update
     setPosts(
       posts.map((p) =>
-        p.id === postId ? { ...p, isBookmarked: !wasBookmarked } : p
-      )
+        p.id === postId ? { ...p, isBookmarked: !wasBookmarked } : p,
+      ),
     );
 
     try {
@@ -722,8 +758,8 @@ export default function Home() {
       // Revert on error
       setPosts(
         posts.map((p) =>
-          p.id === postId ? { ...p, isBookmarked: wasBookmarked } : p
-        )
+          p.id === postId ? { ...p, isBookmarked: wasBookmarked } : p,
+        ),
       );
     }
   };

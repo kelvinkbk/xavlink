@@ -4,10 +4,10 @@ import { useParams } from "react-router-dom";
 import PageTransition from "../components/PageTransition";
 import ReportModal from "../components/ReportModal";
 import api from "../services/api";
-import socket from "../services/socket";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../context/ToastContext";
+import { useSync } from "../hooks/useSync";
 import { uploadService } from "../services/api";
 import { ReviewSection } from "../components/ReviewSection";
 import ProfileStats from "../components/ProfileStats";
@@ -56,7 +56,7 @@ export default function Profile() {
           // Fetch own skills
           try {
             const { data: skillsData } = await api.get(
-              `/skills?userId=${currentUser?.id}`
+              `/skills?userId=${currentUser?.id}`,
             );
             setSkills(skillsData || []);
           } catch (err) {
@@ -67,7 +67,7 @@ export default function Profile() {
           const { data } = await api.get(`/users/${userId}`);
           setUser(data);
           const { data: status } = await api.get(
-            `/users/${userId}/follow-status`
+            `/users/${userId}/follow-status`,
           );
           setFollowStatus(status);
           // Track profile view
@@ -81,7 +81,7 @@ export default function Profile() {
           // Fetch user's skills
           try {
             const { data: skillsData } = await api.get(
-              `/skills?userId=${userId}`
+              `/skills?userId=${userId}`,
             );
             setSkills(skillsData || []);
           } catch (err) {
@@ -99,41 +99,62 @@ export default function Profile() {
     fetchProfile();
   }, [userId, currentUser, isOwnProfile, showToast]);
 
-  // Listen for real-time follow/unfollow events
+  // Handle real-time user updates
+  const syncEvents = useSync();
+
   useEffect(() => {
     if (!userId || isOwnProfile) return;
 
-    const handleUserFollowed = ({ followingId }) => {
-      if (followingId === userId) {
+    if (syncEvents.userUpdated && syncEvents.userUpdated.userId === userId) {
+      setUser((prev) => ({ ...prev, ...syncEvents.userUpdated.updates }));
+    }
+
+    if (syncEvents.userFollowed) {
+      if (syncEvents.userFollowed.followingId === userId) {
         setUser((prev) =>
           prev
             ? { ...prev, followersCount: (prev.followersCount || 0) + 1 }
-            : prev
+            : prev,
+        );
+        if (syncEvents.userFollowed.followerId === currentUser?.id) {
+          setFollowStatus((prev) => ({ ...prev, isFollowing: true }));
+        }
+      }
+      if (syncEvents.userFollowed.followerId === userId) {
+        setUser((prev) =>
+          prev
+            ? { ...prev, followingCount: (prev.followingCount || 0) + 1 }
+            : prev,
         );
       }
-    };
+    }
 
-    const handleUserUnfollowed = ({ followingId }) => {
-      if (followingId === userId) {
+    if (syncEvents.userUnfollowed) {
+      if (syncEvents.userUnfollowed.followingId === userId) {
         setUser((prev) =>
           prev
             ? {
                 ...prev,
                 followersCount: Math.max((prev.followersCount || 0) - 1, 0),
               }
-            : prev
+            : prev,
+        );
+        if (syncEvents.userUnfollowed.followerId === currentUser?.id) {
+          setFollowStatus((prev) => ({ ...prev, isFollowing: false }));
+        }
+      }
+      if (syncEvents.userUnfollowed.followerId === userId) {
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                followingCount: Math.max((prev.followingCount || 0) - 1, 0),
+              }
+            : prev,
         );
       }
-    };
-
-    socket.on("user_followed", handleUserFollowed);
-    socket.on("user_unfollowed", handleUserUnfollowed);
-
-    return () => {
-      socket.off("user_followed", handleUserFollowed);
-      socket.off("user_unfollowed", handleUserUnfollowed);
-    };
-  }, [userId, isOwnProfile]);
+    }
+  }, [syncEvents, userId, isOwnProfile, currentUser?.id]);
 
   const handleEditToggle = () => {
     setIsEditing(!isEditing);
@@ -176,7 +197,7 @@ export default function Profile() {
       console.error("Avatar upload failed", error);
       showToast(
         error?.response?.data?.message || "Failed to upload avatar",
-        "error"
+        "error",
       );
     }
   };
@@ -198,7 +219,7 @@ export default function Profile() {
       console.error("Failed to add skill:", error);
       showToast(
         error?.response?.data?.message || "Failed to add skill",
-        "error"
+        "error",
       );
     }
   };
@@ -308,8 +329,8 @@ export default function Profile() {
                         {updating
                           ? "Updating..."
                           : followStatus.isFollowing
-                          ? "Following"
-                          : "Follow"}
+                            ? "Following"
+                            : "Follow"}
                       </button>
                       <button
                         onClick={() => setReportModal({ isOpen: true })}

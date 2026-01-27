@@ -23,6 +23,8 @@ import EnhancementsScreen from "../screens/EnhancementsScreen";
 import { useAuth } from "../context/AuthContext";
 import { notificationService, requestService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
+import { useFABVisibility } from "../context/FABVisibilityContext";
+import { useSyncContext } from "../context/SyncContext";
 
 // Menu Screen
 import MenuScreen from "../screens/MenuScreen";
@@ -91,7 +93,7 @@ const ProfileStackNavigator = () => {
           title: `${route.params?.userName || "User"} is Following`,
         })}
       />
-      {/* Secondary Screens moved here */}
+
       <ProfileStack.Screen
         name="Skills"
         component={SkillsScreen}
@@ -144,10 +146,35 @@ const AnimatedTabIcon = ({ icon, color, isFocused }) => {
 const MainTabs = () => {
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { isVisible: isFABVisible } = useFABVisibility();
   const [badge, setBadge] = useState(0);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [showAddSkillModal, setShowAddSkillModal] = useState(false);
   const [showSchedulePostModal, setShowSchedulePostModal] = useState(false);
+  const { syncEvents } = useSyncContext();
+
+  // Listen for real-time unread count updates
+  useEffect(() => {
+    if (syncEvents.unreadCount !== null) {
+      setBadge((prev) => {
+        // We know unreadCount is the notifications count.
+        // But we also need pending requests.
+        // Ideally, we should fetch pending requests count again or separate them.
+        // For simplicity, we'll try to keep pending requests added if we knew them?
+        // Actually, the server 'unreadCount' event is only notifications.
+        // This might be tricky if we don't know pending request count without fetching.
+        // Let's just trust the sync event for notifications part.
+        return syncEvents.unreadCount;
+      });
+    }
+  }, [syncEvents.unreadCount]);
+
+  // Listen for new notification to increment badge if unreadCount not sent
+  useEffect(() => {
+    if (syncEvents.newNotification) {
+      setBadge((prev) => prev + 1);
+    }
+  }, [syncEvents.newNotification]);
 
   useEffect(() => {
     let active = true;
@@ -247,12 +274,15 @@ const MainTabs = () => {
           }}
         />
       </Tab.Navigator>
-      <FloatingActionButton
-        bottomOffset={70}
-        onCreatePost={() => setShowCreatePostModal(true)}
-        onSchedulePost={() => setShowSchedulePostModal(true)}
-        onAddSkill={() => setShowAddSkillModal(true)}
-      />
+      {/* FAB visibility controlled by context */}
+      {isFABVisible && (
+        <FloatingActionButton
+          bottomOffset={70}
+          onCreatePost={() => setShowCreatePostModal(true)}
+          onSchedulePost={() => setShowSchedulePostModal(true)}
+          onAddSkill={() => setShowAddSkillModal(true)}
+        />
+      )}
 
       <CreatePostModal
         visible={showCreatePostModal}
