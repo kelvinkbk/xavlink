@@ -105,7 +105,7 @@ const MenuScreen = () => {
 
       <View style={styles.versionInfo}>
         <Text style={[styles.versionText, { color: colors.textMuted }]}>
-          XavLink v1.0.1
+          XavLink v1.0.2
         </Text>
       </View>
     </ScrollView>
