@@ -28,6 +28,8 @@ const allowedOrigins = process.env.CORS_ORIGIN
       "http://localhost:8081", // Expo dev server
       "https://xavlink.vercel.app",
       "https://xavlink-kelvinkbks-projects.vercel.app",
+      "https://xavlink-backend.onrender.com",
+      "https://xavlink-28ehhlqb0-kelvins-projects-19ada992.vercel.app",
     ];
 
 console.log("🔧 Allowed Socket.io origins:", allowedOrigins);
@@ -55,7 +57,7 @@ const io = new Server(server, {
 
       // Development: log warning but allow
       console.log(
-        "   (Allowed in development mode - set NODE_ENV=production to enforce)"
+        "   (Allowed in development mode - set NODE_ENV=production to enforce)",
       );
       callback(null, true);
     },
