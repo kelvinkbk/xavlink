@@ -64,7 +64,7 @@ const io = new Server(server, {
     credentials: true,
     methods: ["GET", "POST"],
   },
-  transports: ["polling"], // Only polling for Render - WebSocket may not work reliably
+  transports: ["websocket", "polling"], // Allow WebSocket for mobile, polling for fallback
   maxHttpBufferSize: 1e6, // 1MB
   pingInterval: 25000,
   pingTimeout: 60000,

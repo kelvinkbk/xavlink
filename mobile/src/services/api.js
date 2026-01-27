@@ -7,14 +7,10 @@ import Constants from "expo-constants";
 const resolveApiBase = () => {
   console.log(" resolveApiBase called! Platform:", Platform.OS);
 
-  // FORCE LOCALHOST DEBUGGING (Top Priority)
-  if (Platform.OS === "android") {
-    console.log("forcing android local (priority)");
-    return "http://10.0.2.2:5000/api";
-  } else if (Platform.OS === "ios") {
-    console.log("forcing ios local (priority)");
-    return "http://localhost:5000/api";
-  }
+  // FORCE LAN IP DEBUGGING (Universal)
+  // This bypasses Android emulator loopback issues and works for iOS Simulator too
+  console.log("Using LAN IP (172.16.13.84) for connectivity");
+  return "http://172.16.13.84:5000/api";
 
   // 1) explicit env (ngrok URL for cross-network or LAN IP)
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
