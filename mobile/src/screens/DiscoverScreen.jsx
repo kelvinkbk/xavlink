@@ -159,7 +159,7 @@ const DiscoverScreen = () => {
         </View>
         <View style={styles.userStats}>
           <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-            {user.followersCount || 0}
+            {String(user.followersCount || 0)}
           </Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
             Followers

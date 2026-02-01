@@ -353,7 +353,7 @@ const ProfileScreen = ({ route, navigation }) => {
               }}
             >
               <Text style={[styles.statCount, { color: colors.textPrimary }]}>
-                {displayUser?.followersCount || 0}
+                {String(displayUser?.followersCount || 0)}
               </Text>
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>
                 Followers
@@ -371,7 +371,7 @@ const ProfileScreen = ({ route, navigation }) => {
               }}
             >
               <Text style={[styles.statCount, { color: colors.textPrimary }]}>
-                {displayUser?.followingCount || 0}
+                {String(displayUser?.followingCount || 0)}
               </Text>
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>
                 Following
@@ -379,7 +379,7 @@ const ProfileScreen = ({ route, navigation }) => {
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem}>
               <Text style={[styles.statCount, { color: colors.textPrimary }]}>
-                {displayUser?.postsCount || posts.length || 0}
+                {String(displayUser?.postsCount || posts.length || 0)}
               </Text>
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>
                 Posts

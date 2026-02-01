@@ -135,7 +135,7 @@ const PostCard = ({ post, onLike, onComment, onReport, onReportComment }) => {
             style={styles.actionBtn}
           >
             <Text style={[styles.actionText, { color: colors.textSecondary }]}>
-              {post.isLiked ? "❤️" : "🤍"} {post.likesCount || 0}
+              {post.isLiked ? "❤️" : "🤍"} {String(post.likesCount || 0)}
             </Text>
           </TouchableOpacity>
         </Animated.View>
@@ -144,7 +144,7 @@ const PostCard = ({ post, onLike, onComment, onReport, onReportComment }) => {
           style={styles.actionBtn}
         >
           <Text style={[styles.actionText, { color: colors.textSecondary }]}>
-            💬 {post.commentsCount || 0}
+            💬 {String(post.commentsCount || 0)}
           </Text>
         </TouchableOpacity>
       </View>

@@ -60,7 +60,7 @@ const ReportModal = ({
     } catch (err) {
       Alert.alert(
         "Error",
-        err?.response?.data?.message || "Failed to submit report"
+        err?.response?.data?.message || "Failed to submit report",
       );
     } finally {
       setSubmitting(false);
@@ -142,7 +142,7 @@ const ReportModal = ({
                 style={styles.textarea}
               />
               <Text style={styles.charCount}>
-                {description.length}/500 characters
+                {String(description.length)}/500 characters
               </Text>
             </View>
 

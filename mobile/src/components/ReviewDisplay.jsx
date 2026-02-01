@@ -134,7 +134,7 @@ export function ReviewDisplay({
               .join(""),
           )}
         </Text>
-        <Text style={styles.ratingValue}>{review.rating}/5</Text>
+        <Text style={styles.ratingValue}>{String(review.rating)}/5</Text>
       </View>
 
       {/* Comment */}

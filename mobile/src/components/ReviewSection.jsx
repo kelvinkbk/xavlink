@@ -199,7 +199,7 @@ export function ReviewSection({
               )}
             </Text>
             <Text style={styles.ratingText}>
-              {avgRating}/5 ({reviews.length}{" "}
+              {String(avgRating)}/5 ({String(reviews.length)}{" "}
               {reviews.length === 1 ? "review" : "reviews"})
             </Text>
           </View>
