@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
-import authService from "../services/api";
+import { authService } from "../services/api";
 
 const VerifyEmailScreen = ({ navigation, route }) => {
   const { isDark } = useTheme();
