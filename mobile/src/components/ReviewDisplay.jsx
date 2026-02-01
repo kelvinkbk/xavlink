@@ -128,9 +128,11 @@ export function ReviewDisplay({
       {/* Rating */}
       <View style={styles.ratingContainer}>
         <Text style={styles.stars}>
-          {[...Array(5)]
-            .map((_, i) => (i < review.rating ? "★" : "☆"))
-            .join("")}
+          {String(
+            [...Array(5)]
+              .map((_, i) => (i < review.rating ? "★" : "☆"))
+              .join(""),
+          )}
         </Text>
         <Text style={styles.ratingValue}>{review.rating}/5</Text>
       </View>

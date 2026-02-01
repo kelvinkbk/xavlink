@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { authService } from "../services/api";
+import { authService, setUnauthorizedHandler } from "../services/api";
 import {
   joinUserRoom,
   markUserOnline,
@@ -63,6 +63,9 @@ export const AuthProvider = ({ children }) => {
     if (data.token) {
       await AsyncStorage.setItem("token", data.token);
     }
+    if (data.refreshToken) {
+      await AsyncStorage.setItem("refreshToken", data.refreshToken);
+    }
     if (data.user) {
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
     }
@@ -76,6 +79,9 @@ export const AuthProvider = ({ children }) => {
     if (data.token) {
       await AsyncStorage.setItem("token", data.token);
     }
+    if (data.refreshToken) {
+      await AsyncStorage.setItem("refreshToken", data.refreshToken);
+    }
     if (data.user) {
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
     }
@@ -86,8 +92,19 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setToken(null);
     await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("refreshToken");
     await AsyncStorage.removeItem("user");
   };
+
+  useEffect(() => {
+    setUnauthorizedHandler(async () => {
+      await logout();
+    });
+
+    return () => {
+      setUnauthorizedHandler(null);
+    };
+  }, [logout]);
 
   const updateUser = async (nextUser) => {
     setUser(nextUser);

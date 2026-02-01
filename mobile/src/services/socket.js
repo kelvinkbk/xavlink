@@ -7,11 +7,16 @@ const SOCKET_URL = API_BASE
   : "http://localhost:5000";
 
 let socket;
+let lastConnectErrorAt = 0;
 
 export const getSocket = () => {
   if (!socket) {
     socket = io(SOCKET_URL, {
-      transports: ["websocket", "polling"],
+      transports: ["polling"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1500,
+      reconnectionDelayMax: 5000,
     });
 
     socket.on("connect", () => {
@@ -19,7 +24,11 @@ export const getSocket = () => {
     });
 
     socket.on("connect_error", (err) => {
-      console.error("❌ Socket connection error:", err.message);
+      const now = Date.now();
+      if (now - lastConnectErrorAt > 15000) {
+        console.error("❌ Socket connection error:", err.message);
+        lastConnectErrorAt = now;
+      }
     });
 
     socket.on("disconnect", (reason) => {

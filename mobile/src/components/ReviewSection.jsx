@@ -192,9 +192,11 @@ export function ReviewSection({
           <Text style={styles.title}>Reviews</Text>
           <View style={styles.ratingContainer}>
             <Text style={styles.stars}>
-              {[...Array(5)]
-                .map((_, i) => (i < Math.round(avgRating) ? "★" : "☆"))
-                .join("")}
+              {String(
+                [...Array(5)]
+                  .map((_, i) => (i < Math.round(avgRating) ? "★" : "☆"))
+                  .join(""),
+              )}
             </Text>
             <Text style={styles.ratingText}>
               {avgRating}/5 ({reviews.length}{" "}

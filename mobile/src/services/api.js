@@ -53,6 +53,11 @@ if (__DEV__) {
 // Token refresh logic
 let isRefreshing = false;
 let failedQueue = [];
+let onUnauthorized = null;
+
+export const setUnauthorizedHandler = (handler) => {
+  onUnauthorized = typeof handler === "function" ? handler : null;
+};
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
@@ -63,6 +68,17 @@ const processQueue = (error, token = null) => {
     }
   });
   failedQueue = [];
+};
+
+const handleUnauthorized = async (error) => {
+  await AsyncStorage.multiRemove(["token", "refreshToken", "user"]);
+  if (onUnauthorized) {
+    try {
+      await onUnauthorized(error);
+    } catch (_) {
+      // noop
+    }
+  }
 };
 
 api.interceptors.request.use(async (config) => {
@@ -113,20 +129,25 @@ api.interceptors.response.use(
 
       try {
         const refreshToken = await AsyncStorage.getItem("refreshToken");
-        if (refreshToken) {
-          const response = await axios.post(`${API_BASE}/auth/refresh`, {
-            refreshToken,
-          });
-          const { token } = response.data;
-          await AsyncStorage.setItem("token", token);
-          api.defaults.headers.common.Authorization = `Bearer ${token}`;
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          processQueue(null, token);
-          return api(originalRequest);
+        if (!refreshToken) {
+          const err = new Error("Missing refresh token");
+          processQueue(err, null);
+          await handleUnauthorized(err);
+          return Promise.reject(err);
         }
+
+        const response = await axios.post(`${API_BASE}/auth/refresh`, {
+          refreshToken,
+        });
+        const { token } = response.data;
+        await AsyncStorage.setItem("token", token);
+        api.defaults.headers.common.Authorization = `Bearer ${token}`;
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        processQueue(null, token);
+        return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        await AsyncStorage.multiRemove(["token", "refreshToken", "user"]);
+        await handleUnauthorized(refreshError);
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
