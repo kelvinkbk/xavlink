@@ -7,7 +7,9 @@ import Constants from "expo-constants";
 const resolveApiBase = () => {
   // Debug overrides removed to allow Production/Render connection
   // Fallback to env variable below
-  console.log(" resolveApiBase called! Platform:", Platform.OS);
+  if (__DEV__) {
+    console.log(" resolveApiBase called! Platform:", Platform.OS);
+  }
 
   // 1) explicit env (ngrok URL for cross-network or LAN IP)
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
@@ -44,7 +46,24 @@ const api = axios.create({
 });
 
 // Surface base URL once for debugging connectivity issues
-console.log("[API] Base URL", API_BASE);
+if (__DEV__) {
+  console.log("[API] Base URL", API_BASE);
+}
+
+// Token refresh logic
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
 api.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem("token");
@@ -56,14 +75,17 @@ api.interceptors.request.use(async (config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
     // Don't log 403 errors for admin endpoints (expected for non-admin users)
     const isAdminEndpoint =
       error?.config?.url?.includes("/admin/") ||
       error?.config?.url?.includes("/enhancements/admin/");
     const is403 = error?.response?.status === 403;
+    const is401 = error?.response?.status === 401;
 
-    if (!(is403 && isAdminEndpoint)) {
+    if (!(is403 && isAdminEndpoint) && __DEV__) {
       console.warn("[API] Error", {
         url: error?.config?.url,
         method: error?.config?.method,
@@ -72,6 +94,45 @@ api.interceptors.response.use(
         message: error?.message,
       });
     }
+
+    // Handle token refresh on 401
+    if (is401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshToken = await AsyncStorage.getItem("refreshToken");
+        if (refreshToken) {
+          const response = await axios.post(`${API_BASE}/auth/refresh`, {
+            refreshToken,
+          });
+          const { token } = response.data;
+          await AsyncStorage.setItem("token", token);
+          api.defaults.headers.common.Authorization = `Bearer ${token}`;
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          processQueue(null, token);
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        await AsyncStorage.multiRemove(["token", "refreshToken", "user"]);
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
     return Promise.reject(error);
   },
 );

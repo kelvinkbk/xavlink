@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
   Dimensions,
+  RefreshControl,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useAuth } from "../context/AuthContext";
@@ -126,7 +127,7 @@ const AdminDashboardScreen = () => {
         suspended: suspendedFilter,
         verified: verifiedFilter,
       });
-      console.log("API Response:", data);
+      if (__DEV__) console.log("API Response:", data);
       // Handle different response formats
       if (Array.isArray(data)) {
         setUsers(data);
@@ -137,7 +138,7 @@ const AdminDashboardScreen = () => {
         setError("Unexpected response format from server");
       }
     } catch (e) {
-      console.error("Error fetching users:", e);
+      if (__DEV__) console.error("Error fetching users:", e);
       setError(
         e?.response?.data?.message || e?.message || "Failed to load users",
       );
@@ -153,7 +154,6 @@ const AdminDashboardScreen = () => {
       const data = await adminService.listPosts();
       setPosts(Array.isArray(data) ? data : data?.posts || []);
     } catch (e) {
-      console.error("Error fetching posts:", e);
       setError(e?.response?.data?.message || "Failed to load posts");
     } finally {
       setPostsLoading(false);
@@ -166,7 +166,6 @@ const AdminDashboardScreen = () => {
       const data = await adminService.listComments();
       setComments(Array.isArray(data) ? data : data?.comments || []);
     } catch (e) {
-      console.error("Error fetching comments:", e);
       setError(e?.response?.data?.message || "Failed to load comments");
     } finally {
       setCommentsLoading(false);
@@ -179,7 +178,6 @@ const AdminDashboardScreen = () => {
       const data = await adminService.listReviews();
       setReviews(Array.isArray(data) ? data : data?.reviews || []);
     } catch (e) {
-      console.error("Error fetching reviews:", e);
       setError(e?.response?.data?.message || "Failed to load reviews");
     } finally {
       setReviewsLoading(false);
@@ -194,7 +192,6 @@ const AdminDashboardScreen = () => {
       });
       setReports(Array.isArray(data) ? data : data?.reports || []);
     } catch (e) {
-      console.error("Error fetching reports:", e);
       setError(e?.response?.data?.message || "Failed to load reports");
     } finally {
       setReportsLoading(false);
@@ -207,7 +204,6 @@ const AdminDashboardScreen = () => {
       const data = await adminService.listLogs();
       setLogs(Array.isArray(data) ? data : data?.logs || []);
     } catch (e) {
-      console.error("Error fetching logs:", e);
       setError(e?.response?.data?.message || "Failed to load logs");
     } finally {
       setLogsLoading(false);
@@ -223,6 +219,18 @@ const AdminDashboardScreen = () => {
     if (activeSection === "reports") fetchReports();
     if (activeSection === "logs") fetchLogs();
   }, [activeSection]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchStats();
+    if (activeSection === "users") await fetchUsers();
+    if (activeSection === "posts") await fetchPosts();
+    if (activeSection === "comments") await fetchComments();
+    if (activeSection === "reviews") await fetchReviews();
+    if (activeSection === "reports") await fetchReports();
+    if (activeSection === "logs") await fetchLogs();
+    setRefreshing(false);
+  };
 
   const handleEditStart = (item) => {
     setEditingId(item.id);
@@ -494,7 +502,17 @@ const AdminDashboardScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+      >
         <Text style={styles.header}>Admin / Moderator Dashboard</Text>
 
         {/* Tab Navigation */}

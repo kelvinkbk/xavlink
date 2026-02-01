@@ -8,6 +8,7 @@ import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import UpdateService from "./src/services/UpdateService";
 import { FABVisibilityProvider } from "./src/context/FABVisibilityContext";
 import { SyncProvider } from "./src/context/SyncContext";
+import ErrorBoundary from "./src/components/ErrorBoundary";
 
 function AppInner() {
   const { isDark } = useTheme();
@@ -27,16 +28,18 @@ function AppInner() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <FABVisibilityProvider>
-            <SyncProvider>
-              <AppInner />
-            </SyncProvider>
-          </FABVisibilityProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <FABVisibilityProvider>
+              <SyncProvider>
+                <AppInner />
+              </SyncProvider>
+            </FABVisibilityProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
