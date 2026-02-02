@@ -151,7 +151,9 @@ export function RatingModal({
           </View>
 
           {rating > 0 && (
-            <Text style={styles.ratingText}>{String(rating)} out of 5 stars</Text>
+            <Text style={styles.ratingText}>
+              {String(rating)} out of 5 stars
+            </Text>
           )}
 
           {/* Comment Input */}
@@ -189,8 +191,8 @@ export function RatingModal({
                 {loading
                   ? "Submitting..."
                   : existingReview
-                  ? "Update"
-                  : "Submit"}
+                    ? "Update"
+                    : "Submit"}
               </Text>
             </TouchableOpacity>
           </View>
