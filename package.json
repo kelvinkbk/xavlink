@@ -12,7 +12,8 @@
     "build:mobile": "npm -C mobile run build"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "expo": "^54.0.33"
   },
   "dependencies": {
     "@react-native-community/datetimepicker": "^8.6.0"

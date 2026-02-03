@@ -1,12 +1,48 @@
 {
   "expo": {
-    "extra": {
-      "eas": {
-        "projectId": "1facf94a-8134-4a49-8b84-dbf9529ad760"
+    "name": "xavlink-mobile",
+    "slug": "xavlink-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./mobile/assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./mobile/assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kelvinkbk.xavlinkmonorepo",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./mobile/assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
       "package": "com.kelvinkbk.xavlinkmonorepo"
+    },
+    "web": {
+      "favicon": "./mobile/assets/favicon.png"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/656df391-5e12-40de-baef-e3dc148f3307",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "656df391-5e12-40de-baef-e3dc148f3307"
+      }
     }
   }
 }
