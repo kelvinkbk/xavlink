@@ -26,9 +26,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.kelvinkbk.xavlinkmonorepo",
-      "permissions": [
-        "android.permission.POST_NOTIFICATIONS"
-      ]
+      "permissions": ["android.permission.POST_NOTIFICATIONS"]
     },
     "web": {
       "favicon": "./mobile/assets/favicon.png"
