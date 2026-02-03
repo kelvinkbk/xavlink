@@ -3,34 +3,48 @@
 ## Issues Fixed
 
 ### 1. **Chat Real-time Updates**
-   - ✅ Added socket listeners for `receive_message` in ChatListScreen
-   - ✅ Added socket listeners for `unread_count_update` to update unread counts
-   - ✅ Added socket listeners for `chat_read` to mark chats as read
-   - ✅ Implemented `markChatAsRead()` API call when entering a chat
+
+- ✅ Added socket listeners for `receive_message` in ChatListScreen
+- ✅ Added socket listeners for `unread_count_update` to update unread counts
+- ✅ Added socket listeners for `chat_read` to mark chats as read
+- ✅ Implemented `markChatAsRead()` API call when entering a chat
+- ✅ Fixed HTTP method: Changed from PUT to POST to match backend route
 
 ### 2. **Typing Indicators**
-   - ✅ Added typing indicator display in ChatScreen
-   - ✅ Implemented `sendTyping()` and `sendStopTyping()` socket events
-   - ✅ Added `handleTextChange()` to trigger typing events
-   - ✅ Auto-stops typing after 2 seconds of inactivity
-   - ✅ Shows "User is typing..." message above input field
+
+- ✅ Added typing indicator display in ChatScreen
+- ✅ Implemented `sendTyping()` and `sendStopTyping()` socket events
+- ✅ Added `handleTextChange()` to trigger typing events
+- ✅ Auto-stops typing after 2 seconds of inactivity
+- ✅ Shows "User is typing..." message above input field
 
 ### 3. **Notification Real-time**
-   - ✅ Enhanced notification logging in NotificationsScreen
-   - ✅ Prevents duplicate notifications from being added
-   - ✅ Properly handles `newNotification` from SyncContext
-   - ✅ Added unread count tracking
+
+- ✅ Enhanced notification logging in NotificationsScreen
+- ✅ Prevents duplicate notifications from being added
+- ✅ Properly handles `newNotification` from SyncContext
+- ✅ Added unread count tracking
 
 ### 4. **Socket Connection Improvements**
-   - ✅ Upgraded socket transport from `polling-only` to `websocket + polling`
-   - ✅ Added reconnection event logging
-   - ✅ Added transport type logging (shows if using websocket or polling)
-   - ✅ Increased timeout to 10 seconds for better reliability
-   - ✅ Enhanced user online status tracking in AuthContext
+
+- ✅ Upgraded socket transport from `polling-only` to `websocket + polling`
+- ✅ Smart transport selection: polling for HTTPS/production, websocket for local dev
+- ✅ Fixed websocket errors on Render.com by using polling for HTTPS
+- ✅ Added reconnection event logging
+- ✅ Added transport type logging (shows if using websocket or polling)
+- ✅ Increased timeout to 10 seconds for better reliability
+- ✅ Enhanced user online status tracking in AuthContext
 
 ### 5. **Chat Service API**
-   - ✅ Added `markChatAsRead()` method to API service
-   - ✅ Integrated with backend `/chats/:chatId/read` endpoint
+
+- ✅ Added `markChatAsRead()` method to API service
+- ✅ Fixed HTTP method from PUT to POST to match backend route
+- ✅ Integrated with backend `/chats/:chatId/read` endpoint
+
+### 6. **UI Fixes**
+
+- ✅ Fixed "Text strings must be rendered within <Text> component" error in DiscoverScreen
+- ✅ Replaced Fragment (`<>`) with View wrapper for message button layout
 
 ## Files Modified
 
@@ -53,17 +67,29 @@
    - Enhanced socket connection logging
    - Improved user online status tracking
 
-5. **mobile/src/services/socket.js**
-   - Upgraded from polling-only to websocket + polling
+5. **mobile/src/services/api.js**
+   - Added `markChatAsRead()` method to chatService
+   - Fixed HTTP method from PUT to POST
+
+6. **mobile/src/services/socket.js**
+   - Added `markChatAsRead()` method to chatService
+   - Fixed HTTP method from PUT to POST
+
+7. **mobile/src/services/socket.js**
+   - Smart transport selection based on protocol (HTTPS vs HTTP)
+   - Uses polling for HTTPS to avoid websocket errors on Render
+   - Uses websocket for local development
    - Added reconnection event handlers
    - Added transport type logging
 
-6. **mobile/src/services/api.js**
-   - Added `markChatAsRead()` method to chatService
+7. **mobile/src/screens/DiscoverScreen.jsx**
+   - Fixed React Native text rendering error
+   - Wrapped message button Text components in View instead of Fragment
 
 ## How It Works
 
 ### Real-time Chat Flow
+
 1. User opens ChatScreen → joins chat room via `joinRoom(chatId)`
 2. User sends message → `sendMessage()` emits to backend
 3. Backend broadcasts to room → all users receive via `receive_message`
@@ -72,6 +98,7 @@
 6. When user opens chat → `markChatAsRead()` is called → `chat_read` event emitted
 
 ### Typing Indicators
+
 1. User types → `handleTextChange()` triggers → `sendTyping()` emitted
 2. Backend broadcasts to other users in chat room
 3. Other users see "User is typing..." message
@@ -79,6 +106,7 @@
 5. Typing indicator disappears
 
 ### Real-time Notifications
+
 1. Backend creates notification → emits `new_notification` to `user:${userId}` room
 2. Mobile socket (connected via `markUserOnline()`) receives event
 3. SyncContext updates `syncEvents.newNotification`
@@ -100,6 +128,7 @@
 ## Backend Events Reference
 
 ### Chat Events (Server → Client)
+
 - `receive_message` - New message in chat
 - `unread_count_update` - Unread count changed
 - `chat_read` - Chat marked as read
@@ -107,10 +136,12 @@
 - `user_stopped_typing` - User stopped typing
 
 ### Notification Events (Server → Client)
+
 - `new_notification` - New notification received
 - `notification:unread-count` - Unread notification count update
 
 ### Client → Server Events
+
 - `join_room` - Join a chat room
 - `send_message` - Send a message
 - `typing` - User started typing
@@ -128,17 +159,20 @@
 ## Troubleshooting
 
 ### If messages don't appear in real-time:
+
 1. Check socket connection in console (look for "✅ Socket connected")
 2. Verify transport type (should be "websocket" or fallback to "polling")
 3. Check if user joined room (look for "🟢 Joined chat room")
 4. Verify backend is running and accessible
 
 ### If typing indicator doesn't work:
+
 1. Ensure both users are in the same chat room
 2. Check socket events in console
 3. Verify `handleTextChange` is being called
 
 ### If notifications don't appear:
+
 1. Check if `markUserOnline()` was called successfully
 2. Verify backend emits to correct room: `user:${userId}`
 3. Check SyncContext is wrapping the app in App.js

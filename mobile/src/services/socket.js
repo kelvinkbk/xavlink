@@ -12,8 +12,12 @@ let lastConnectErrorAt = 0;
 export const getSocket = () => {
   if (!socket) {
     console.log("🔌 Initializing socket connection to:", SOCKET_URL);
+    // Use polling for HTTPS (production), websocket for local dev
+    const isHttps = SOCKET_URL.startsWith("https");
+    const transports = isHttps ? ["polling"] : ["websocket", "polling"];
+
     socket = io(SOCKET_URL, {
-      transports: ["websocket", "polling"], // Try websocket first, fallback to polling
+      transports,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1500,

@@ -92,8 +92,8 @@ const ChatListScreen = () => {
       if (userId === user.id) {
         setChats((prevChats) =>
           prevChats.map((chat) =>
-            chat.id === chatId ? { ...chat, unreadCount } : chat
-          )
+            chat.id === chatId ? { ...chat, unreadCount } : chat,
+          ),
         );
       }
     };
@@ -104,8 +104,8 @@ const ChatListScreen = () => {
       if (userId === user.id) {
         setChats((prevChats) =>
           prevChats.map((chat) =>
-            chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
-          )
+            chat.id === chatId ? { ...chat, unreadCount: 0 } : chat,
+          ),
         );
       }
     };

@@ -21,10 +21,13 @@ const NotificationsScreen = () => {
   // Real-time new notification
   useEffect(() => {
     if (syncEvents.newNotification) {
-      console.log("📬 Adding new notification to list:", syncEvents.newNotification);
+      console.log(
+        "📬 Adding new notification to list:",
+        syncEvents.newNotification,
+      );
       setNotifications((prev) => {
         // Avoid duplicates
-        const exists = prev.find(n => n.id === syncEvents.newNotification.id);
+        const exists = prev.find((n) => n.id === syncEvents.newNotification.id);
         if (exists) return prev;
         return [syncEvents.newNotification, ...prev];
       });
@@ -33,7 +36,10 @@ const NotificationsScreen = () => {
 
   // Real-time unread count
   useEffect(() => {
-    if (syncEvents.unreadCount !== null && syncEvents.unreadCount !== undefined) {
+    if (
+      syncEvents.unreadCount !== null &&
+      syncEvents.unreadCount !== undefined
+    ) {
       console.log("🔢 Unread count update:", syncEvents.unreadCount);
     }
   }, [syncEvents.unreadCount]);

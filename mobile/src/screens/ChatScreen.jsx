@@ -197,16 +197,16 @@ const ChatScreen = ({ route }) => {
 
   const handleTextChange = (newText) => {
     setText(newText);
-    
+
     // Send typing indicator
     if (newText.trim() && chatId && user?.id) {
       sendTyping(chatId, user.id, user.name);
-      
+
       // Clear previous timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      
+
       // Stop typing after 2 seconds of no input
       typingTimeoutRef.current = setTimeout(() => {
         sendStopTyping(chatId, user.id);
@@ -370,9 +370,21 @@ const ChatScreen = ({ route }) => {
         />
 
         {typingUsers.length > 0 && (
-          <View style={[styles.typingIndicator, { backgroundColor: colors.surface }]}>
-            <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
-              {typingUsers.map(u => u.userName).join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+          <View
+            style={[
+              styles.typingIndicator,
+              { backgroundColor: colors.surface },
+            ]}
+          >
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: 12,
+                fontStyle: "italic",
+              }}
+            >
+              {typingUsers.map((u) => u.userName).join(", ")}{" "}
+              {typingUsers.length === 1 ? "is" : "are"} typing...
             </Text>
           </View>
         )}

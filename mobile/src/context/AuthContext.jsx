@@ -49,7 +49,10 @@ export const AuthProvider = ({ children }) => {
 
       // Listen for real-time notifications
       const cleanup = onNewNotification((notification) => {
-        console.log("🔔 New notification received in AuthContext:", notification);
+        console.log(
+          "🔔 New notification received in AuthContext:",
+          notification,
+        );
         // The notification will be handled by SyncContext
       });
 
