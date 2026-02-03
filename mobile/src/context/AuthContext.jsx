@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authService, setUnauthorizedHandler } from "../services/api";
-import {
-  markUserOnline,
-  onNewNotification,
-} from "../services/socket";
+import { markUserOnline, onNewNotification, ensureSocketInitialized } from "../services/socket";
 
 const AuthContext = createContext();
 
@@ -39,6 +36,16 @@ export const AuthProvider = ({ children }) => {
     bootstrap();
   }, []);
 
+  // Initialize socket when we have a token
+  useEffect(() => {
+    if (token) {
+      console.log("🔌 Initializing socket connection");
+      ensureSocketInitialized().catch((err) => {
+        console.error("Failed to initialize socket:", err);
+      });
+    }
+  }, [token]);
+
   // Setup socket connection when user is authenticated
   useEffect(() => {
     if (user?.id) {
@@ -57,7 +64,7 @@ export const AuthProvider = ({ children }) => {
 
       return () => {
         console.log("🔌 Cleaning up socket listeners for user:", user.id);
-        cleanup();
+        if (cleanup) cleanup();
       };
     }
   }, [user?.id]);

@@ -8,128 +8,155 @@ const SOCKET_URL = API_BASE
   : "http://localhost:5000";
 
 let socket;
+let initPromise = null;
 let lastConnectErrorAt = 0;
 
-export const getSocket = async () => {
-  if (!socket) {
-    console.log("🔌 Initializing socket connection to:", SOCKET_URL);
-    
-    // Get auth token
-    const token = await AsyncStorage.getItem("token");
-    
-    // Use polling for HTTPS (production), websocket for local dev
-    const isHttps = SOCKET_URL.startsWith("https");
-    const transports = isHttps ? ["polling"] : ["websocket", "polling"];
+// Initialize socket connection
+const initSocket = async () => {
+  if (initPromise) return initPromise;
+  if (socket) return socket;
 
-    socket = io(SOCKET_URL, {
-      transports,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1500,
-      reconnectionDelayMax: 5000,
-      timeout: 10000,
-      auth: {
-        token: token || "",
-      },
-    });
+  initPromise = (async () => {
+    try {
+      console.log("🔌 Initializing socket connection to:", SOCKET_URL);
+      const token = await AsyncStorage.getItem("token");
+      const isHttps = SOCKET_URL.startsWith("https");
+      const transports = isHttps ? ["polling"] : ["websocket", "polling"];
 
-    socket.on("connect", () => {
-      console.log("✅ Socket connected:", socket.id);
-      console.log("🔗 Transport:", socket.io.engine.transport.name);
-    });
+      socket = io(SOCKET_URL, {
+        transports,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1500,
+        reconnectionDelayMax: 5000,
+        timeout: 10000,
+        auth: {
+          token: token || "",
+        },
+      });
 
-    socket.on("connect_error", (err) => {
-      const now = Date.now();
-      if (now - lastConnectErrorAt > 15000) {
-        console.error("❌ Socket connection error:", err.message);
-        lastConnectErrorAt = now;
-      }
-    });
+      socket.on("connect", () => {
+        console.log("✅ Socket connected:", socket.id);
+        console.log("🔗 Transport:", socket.io.engine.transport.name);
+      });
 
-    socket.on("disconnect", (reason) => {
-      console.log("⚠️ Socket disconnected:", reason);
-    });
+      socket.on("connect_error", (err) => {
+        const now = Date.now();
+        if (now - lastConnectErrorAt > 15000) {
+          console.error("❌ Socket connection error:", err.message);
+          lastConnectErrorAt = now;
+        }
+      });
 
-    socket.on("reconnect", (attemptNumber) => {
-      console.log("🔄 Socket reconnected after", attemptNumber, "attempts");
-    });
+      socket.on("disconnect", (reason) => {
+        console.log("⚠️ Socket disconnected:", reason);
+      });
 
-    // Return a promise that resolves when socket is connected
-    socket.connectedPromise = new Promise((resolve) => {
-      if (socket.connected) {
-        resolve(socket);
-      } else {
-        socket.once("connect", () => resolve(socket));
-      }
-    });
+      socket.on("reconnect", (attemptNumber) => {
+        console.log("🔄 Socket reconnected after", attemptNumber, "attempts");
+      });
+
+      return socket;
+    } catch (error) {
+      console.error("❌ Error initializing socket:", error);
+      return null;
+    }
+  })();
+
+  return initPromise;
+};
+
+// Get socket - synchronous for already initialized, triggers async init if needed
+export const getSocket = () => {
+  if (!socket && !initPromise) {
+    // Start initialization in the background
+    initSocket().catch(console.error);
   }
   return socket;
 };
 
-// Wait for socket to be connected
-export const waitForSocketConnection = async () => {
-  const s = await getSocket();
-  if (s?.connectedPromise) {
-    return s.connectedPromise;
-  }
-  return s;
+// Ensure socket is initialized
+export const ensureSocketInitialized = async () => {
+  if (socket) return socket;
+  await initSocket();
+  return socket;
 };
 
 // Join user's notification room
 export const joinUserRoom = (userId) => {
   const s = getSocket();
-  if (userId) {
+  if (userId && s?.connected) {
     s.emit("join_user_room", { userId });
   }
 };
 
 // Mark user as online
-export const markUserOnline = async (userId) => {
-  try {
-    const s = await waitForSocketConnection();
-    if (userId && s?.connected) {
+export const markUserOnline = (userId) => {
+  const s = getSocket();
+  if (!s) {
+    console.warn("⚠️ Socket not initialized yet, will retry");
+    // Retry after a short delay
+    setTimeout(() => markUserOnline(userId), 500);
+    return;
+  }
+  if (userId) {
+    if (s.connected) {
       console.log("📤 Marking user online:", userId);
-      s.emit("user_online", { userId }, (ack) => {
-        if (ack) console.log("✅ User online ack:", ack);
-      });
-    } else if (!s?.connected) {
-      console.warn("⚠️ Socket not connected, cannot mark user online");
+      s.emit("user_online", { userId });
+    } else {
+      console.warn("⚠️ Socket not connected, retrying");
+      setTimeout(() => markUserOnline(userId), 1000);
     }
-  } catch (error) {
-    console.error("❌ Error marking user online:", error);
   }
 };
 
 // Chat room management
 export const joinRoom = (chatId) => {
   const s = getSocket();
-  if (chatId) {
+  if (chatId && s?.connected) {
+    console.log("📤 Joining chat room:", chatId);
     s.emit("join_room", { chatId });
+  } else if (chatId && s && !s.connected) {
+    // Retry when connected
+    setTimeout(() => joinRoom(chatId), 1000);
   }
 };
 
 // Typing indicators
 export const sendTyping = (chatId, userId, userName) => {
   const s = getSocket();
-  s.emit("typing", { chatId, userId, userName });
+  if (s?.connected) {
+    s.emit("typing", { chatId, userId, userName });
+  }
 };
 
 export const sendStopTyping = (chatId, userId) => {
   const s = getSocket();
-  s.emit("stop_typing", { chatId, userId });
+  if (s?.connected) {
+    s.emit("stop_typing", { chatId, userId });
+  }
 };
 
 export const sendMessage = (payload, callback) => {
   const s = getSocket();
-  console.log("📤 Emitting send_message:", payload);
-  s.emit("send_message", payload, (response) => {
-    console.log("📥 send_message response:", response);
-    if (callback) callback(response);
-  });
+  if (s?.connected) {
+    console.log("📤 Emitting send_message:", payload);
+    s.emit("send_message", payload, (response) => {
+      console.log("📥 send_message response:", response);
+      if (callback) callback(response);
+    });
+  } else {
+    console.error("❌ Socket not connected, cannot send message");
+    if (callback) callback({ error: "Socket not connected" });
+  }
 };
 
 export const onMessage = (handler) => {
   const s = getSocket();
+  if (!s) {
+    console.warn("Socket not initialized for message listener");
+    return () => {};
+  }
   s.on("receive_message", handler);
   return () => s.off("receive_message", handler);
 };
@@ -137,6 +164,10 @@ export const onMessage = (handler) => {
 // Notification listeners
 export const onNewNotification = (handler) => {
   const s = getSocket();
+  if (!s) {
+    console.warn("Socket not initialized for notification listener");
+    return () => {};
+  }
   s.on("new_notification", handler);
   return () => s.off("new_notification", handler);
 };

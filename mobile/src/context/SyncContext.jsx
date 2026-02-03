@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { getSocket, onMessage } from "../services/socket";
+import { getSocket } from "../services/socket";
 
 const SyncContext = createContext();
 
@@ -27,100 +27,120 @@ export const SyncProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    // Initialize socket connection
-    const socket = getSocket();
-    if (!socket) {
-      console.error("Failed to initialize socket connection");
-      return;
+    // Try to get socket, which may be initializing
+    let socket = getSocket();
+    let retries = 0;
+    const maxRetries = 10;
+
+    const setupListeners = (s) => {
+      if (!s) return;
+
+      // Listen for post events
+      const handleNewPost = (data) => {
+        console.log("🆕 New post received:", data);
+        setSyncEvents((prev) => ({ ...prev, newPost: data }));
+      };
+
+      const handlePostLiked = (data) => {
+        console.log("❤️ Post liked:", data);
+        setSyncEvents((prev) => ({ ...prev, postLiked: data }));
+      };
+
+      const handlePostUnliked = (data) => {
+        console.log("💔 Post unliked:", data);
+        setSyncEvents((prev) => ({ ...prev, postUnliked: data }));
+      };
+
+      const handleNewComment = (data) => {
+        console.log("💬 New comment:", data);
+        setSyncEvents((prev) => ({ ...prev, newComment: data }));
+      };
+
+      const handlePostDeleted = (data) => {
+        console.log("🗑️ Post deleted:", data);
+        setSyncEvents((prev) => ({ ...prev, postDeleted: data }));
+      };
+
+      const handlePostUpdated = (data) => {
+        console.log("✏️ Post updated:", data);
+        setSyncEvents((prev) => ({ ...prev, postUpdated: data }));
+      };
+
+      // User/Profile events
+      const handleUserUpdated = (data) => {
+        console.log("👤 User updated:", data);
+        setSyncEvents((prev) => ({ ...prev, userUpdated: data }));
+      };
+
+      const handleUserFollowed = (data) => {
+        console.log("➕ User followed:", data);
+        setSyncEvents((prev) => ({ ...prev, userFollowed: data }));
+      };
+
+      const handleUserUnfollowed = (data) => {
+        console.log("➖ User unfollowed:", data);
+        setSyncEvents((prev) => ({ ...prev, userUnfollowed: data }));
+      };
+
+      // Notification events
+      const handleNewNotification = (data) => {
+        console.log("🔔 New notification:", data);
+        setSyncEvents((prev) => ({ ...prev, newNotification: data }));
+      };
+
+      const handleUnreadCount = (data) => {
+        console.log("🔢 Unread count:", data);
+        setSyncEvents((prev) => ({ ...prev, unreadCount: data }));
+      };
+
+      // Register listeners
+      s.on("new_post", handleNewPost);
+      s.on("post_liked", handlePostLiked);
+      s.on("post_unliked", handlePostUnliked);
+      s.on("new_comment", handleNewComment);
+      s.on("post_deleted", handlePostDeleted);
+      s.on("post_updated", handlePostUpdated);
+      s.on("user_updated", handleUserUpdated);
+      s.on("user_followed", handleUserFollowed);
+      s.on("user_unfollowed", handleUserUnfollowed);
+      s.on("new_notification", handleNewNotification);
+      s.on("notification:unread-count", handleUnreadCount);
+
+      // Cleanup function
+      return () => {
+        s.off("new_post", handleNewPost);
+        s.off("post_liked", handlePostLiked);
+        s.off("post_unliked", handlePostUnliked);
+        s.off("new_comment", handleNewComment);
+        s.off("post_deleted", handlePostDeleted);
+        s.off("post_updated", handlePostUpdated);
+        s.off("user_updated", handleUserUpdated);
+        s.off("user_followed", handleUserFollowed);
+        s.off("user_unfollowed", handleUserUnfollowed);
+        s.off("new_notification", handleNewNotification);
+        s.off("notification:unread-count", handleUnreadCount);
+      };
+    };
+
+    if (socket) {
+      return setupListeners(socket);
     }
 
-    console.log("📡 Setting up SyncContext socket listeners");
+    // Socket not initialized yet, retry
+    const checkInterval = setInterval(() => {
+      socket = getSocket();
+      retries++;
+      if (socket) {
+        clearInterval(checkInterval);
+        return setupListeners(socket);
+      }
+      if (retries >= maxRetries) {
+        console.warn("⚠️ Socket not initialized after retries in SyncContext");
+        clearInterval(checkInterval);
+      }
+    }, 300);
 
-    // Listen for post events
-    const handleNewPost = (data) => {
-      console.log("🆕 New post received:", data);
-      setSyncEvents((prev) => ({ ...prev, newPost: data }));
-    };
-
-    const handlePostLiked = (data) => {
-      console.log("❤️ Post liked:", data);
-      setSyncEvents((prev) => ({ ...prev, postLiked: data }));
-    };
-
-    const handlePostUnliked = (data) => {
-      console.log("💔 Post unliked:", data);
-      setSyncEvents((prev) => ({ ...prev, postUnliked: data }));
-    };
-
-    const handleNewComment = (data) => {
-      console.log("💬 New comment:", data);
-      setSyncEvents((prev) => ({ ...prev, newComment: data }));
-    };
-
-    const handlePostDeleted = (data) => {
-      console.log("🗑️ Post deleted:", data);
-      setSyncEvents((prev) => ({ ...prev, postDeleted: data }));
-    };
-
-    const handlePostUpdated = (data) => {
-      console.log("✏️ Post updated:", data);
-      setSyncEvents((prev) => ({ ...prev, postUpdated: data }));
-    };
-
-    // User/Profile events
-    const handleUserUpdated = (data) => {
-      console.log("👤 User updated:", data);
-      setSyncEvents((prev) => ({ ...prev, userUpdated: data }));
-    };
-
-    const handleUserFollowed = (data) => {
-      console.log("➕ User followed:", data);
-      setSyncEvents((prev) => ({ ...prev, userFollowed: data }));
-    };
-
-    const handleUserUnfollowed = (data) => {
-      console.log("➖ User unfollowed:", data);
-      setSyncEvents((prev) => ({ ...prev, userUnfollowed: data }));
-    };
-
-    // Notification events
-    const handleNewNotification = (data) => {
-      console.log("🔔 New notification:", data);
-      setSyncEvents((prev) => ({ ...prev, newNotification: data }));
-    };
-
-    const handleUnreadCount = (data) => {
-      console.log("🔢 Unread count:", data);
-      setSyncEvents((prev) => ({ ...prev, unreadCount: data }));
-    };
-
-    // Register listeners
-    socket.on("new_post", handleNewPost);
-    socket.on("post_liked", handlePostLiked);
-    socket.on("post_unliked", handlePostUnliked);
-    socket.on("new_comment", handleNewComment);
-    socket.on("post_deleted", handlePostDeleted);
-    socket.on("post_updated", handlePostUpdated);
-    socket.on("user_updated", handleUserUpdated);
-    socket.on("user_followed", handleUserFollowed);
-    socket.on("user_unfollowed", handleUserUnfollowed);
-    socket.on("new_notification", handleNewNotification);
-    socket.on("notification:unread-count", handleUnreadCount);
-
-    // Cleanup
-    return () => {
-      socket.off("new_post", handleNewPost);
-      socket.off("post_liked", handlePostLiked);
-      socket.off("post_unliked", handlePostUnliked);
-      socket.off("new_comment", handleNewComment);
-      socket.off("post_deleted", handlePostDeleted);
-      socket.off("post_updated", handlePostUpdated);
-      socket.off("user_updated", handleUserUpdated);
-      socket.off("user_followed", handleUserFollowed);
-      socket.off("user_unfollowed", handleUserUnfollowed);
-      socket.off("new_notification", handleNewNotification);
-      socket.off("notification:unread-count", handleUnreadCount);
-    };
+    return () => clearInterval(checkInterval);
   }, []);
 
   return (
@@ -129,3 +149,4 @@ export const SyncProvider = ({ children }) => {
     </SyncContext.Provider>
   );
 };
+
