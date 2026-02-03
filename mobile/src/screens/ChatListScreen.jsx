@@ -78,7 +78,19 @@ const ChatListScreen = () => {
   // Listen for real-time chat events
   useEffect(() => {
     const socket = getSocket();
-    if (!socket || !user?.id) return;
+    if (!socket || !user?.id) {
+      // Will retry when socket connects or user loads
+      return;
+    }
+
+    // Wait a bit for socket to be connected if it's not already
+    const checkConnection = async () => {
+      const s = await socket.connectedPromise?.catch(() => null);
+      if (!s?.connected) {
+        console.warn("⚠️ Socket not fully connected for chat listeners");
+      }
+    };
+    checkConnection();
 
     // Listen for new messages
     const handleReceiveMessage = (message) => {

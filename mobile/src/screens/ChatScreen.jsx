@@ -90,7 +90,7 @@ const ChatScreen = ({ route }) => {
     };
 
     loadMessages();
-    joinRoom(chatId);
+    joinRoom(chatId).catch(console.error);
 
     // Listen for incoming messages
     const off = onMessage((msg) => {
