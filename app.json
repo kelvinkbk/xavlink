@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "xavlink-mobile",
-    "slug": "xavlink-mobile",
+    "name": "XavLink Mobile",
+    "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./mobile/assets/icon.png",
