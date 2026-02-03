@@ -1,7 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authService, setUnauthorizedHandler } from "../services/api";
-import { markUserOnline, onNewNotification, ensureSocketInitialized } from "../services/socket";
+import {
+  markUserOnline,
+  onNewNotification,
+  ensureSocketInitialized,
+} from "../services/socket";
 
 const AuthContext = createContext();
 

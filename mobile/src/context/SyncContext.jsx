@@ -149,4 +149,3 @@ export const SyncProvider = ({ children }) => {
     </SyncContext.Provider>
   );
 };
-

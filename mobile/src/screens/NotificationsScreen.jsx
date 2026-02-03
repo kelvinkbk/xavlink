@@ -58,7 +58,7 @@ const NotificationsScreen = () => {
       setLoading(false);
       return;
     }
-    
+
     try {
       const { data } = await api.get("/notifications");
       // Backend returns { notifications: [...] }
