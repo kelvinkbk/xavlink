@@ -20,5 +20,8 @@
   "typescript.skipLibCheck": true,
   "[sql]": {
     "editor.defaultFormatter": "cweijan.vscode-mysql-client2"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "eas": true
   }
 }

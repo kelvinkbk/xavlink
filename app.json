@@ -4,6 +4,9 @@
       "eas": {
         "projectId": "1facf94a-8134-4a49-8b84-dbf9529ad760"
       }
+    },
+    "android": {
+      "package": "com.kelvinkbk.xavlinkmonorepo"
     }
   }
 }
