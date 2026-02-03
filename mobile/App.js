@@ -2,7 +2,6 @@ import "react-native-gesture-handler";
 import React, { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import * as Notifications from "expo-notifications";
-import * as Permissions from "expo-permissions";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { AuthProvider } from "./src/context/AuthContext";
@@ -15,7 +14,7 @@ import ErrorBoundary from "./src/components/ErrorBoundary";
 // Request notification permission on app startup
 const requestNotificationPermission = async () => {
   try {
-    const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
+    const { status } = await Notifications.requestPermissionsAsync();
     if (status === "granted") {
       console.log("✅ Notification permission granted");
     } else {
