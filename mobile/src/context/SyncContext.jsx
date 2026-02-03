@@ -27,8 +27,14 @@ export const SyncProvider = ({ children }) => {
   });
 
   useEffect(() => {
+    // Initialize socket connection
     const socket = getSocket();
-    if (!socket) return;
+    if (!socket) {
+      console.error("Failed to initialize socket connection");
+      return;
+    }
+
+    console.log("📡 Setting up SyncContext socket listeners");
 
     // Listen for post events
     const handleNewPost = (data) => {

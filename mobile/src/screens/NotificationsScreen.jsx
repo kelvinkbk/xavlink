@@ -53,12 +53,24 @@ const NotificationsScreen = () => {
   }, [user?.id]);
 
   const fetchNotifications = async () => {
+    if (!user?.id) {
+      console.warn("Cannot fetch notifications: user not authenticated");
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const { data } = await api.get(`/notifications/${user?.id}`);
-      setNotifications(data);
+      const { data } = await api.get("/notifications");
+      // Backend returns { notifications: [...] }
+      const notifList = data.notifications || data || [];
+      setNotifications(Array.isArray(notifList) ? notifList : []);
       setLoading(false);
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
+      if (error?.response?.status === 401) {
+        console.warn("Unauthorized - user may need to re-login");
+      }
+      setNotifications([]);
       setLoading(false);
     }
   };
@@ -74,7 +86,7 @@ const NotificationsScreen = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await api.put(`/notifications/${user?.id}/read-all`);
+      await api.put("/notifications/read-all");
       fetchNotifications();
     } catch (error) {
       console.error("Failed to mark all as read:", error);

@@ -82,7 +82,7 @@
    - Added reconnection event handlers
    - Added transport type logging
 
-7. **mobile/src/screens/DiscoverScreen.jsx**
+8. **mobile/src/screens/DiscoverScreen.jsx**
    - Fixed React Native text rendering error
    - Wrapped message button Text components in View instead of Fragment
 

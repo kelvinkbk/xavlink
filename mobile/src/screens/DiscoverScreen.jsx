@@ -177,7 +177,7 @@ const DiscoverScreen = () => {
         {startingChats.has(user.id) ? (
           <ActivityIndicator color="#fff" size="small" />
         ) : (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
             <Text style={styles.messageBtnText}>💬</Text>
             <Text style={styles.messageBtnText}>Message</Text>
           </View>
