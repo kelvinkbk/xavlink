@@ -21,11 +21,25 @@ const NotificationsScreen = () => {
   // Real-time new notification
   useEffect(() => {
     if (syncEvents.newNotification) {
-      setNotifications((prev) => [syncEvents.newNotification, ...prev]);
+      console.log("📬 Adding new notification to list:", syncEvents.newNotification);
+      setNotifications((prev) => {
+        // Avoid duplicates
+        const exists = prev.find(n => n.id === syncEvents.newNotification.id);
+        if (exists) return prev;
+        return [syncEvents.newNotification, ...prev];
+      });
     }
   }, [syncEvents.newNotification]);
 
+  // Real-time unread count
   useEffect(() => {
+    if (syncEvents.unreadCount !== null && syncEvents.unreadCount !== undefined) {
+      console.log("🔢 Unread count update:", syncEvents.unreadCount);
+    }
+  }, [syncEvents.unreadCount]);
+
+  useEffect(() => {
+    if (!user?.id) return;
     fetchNotifications();
     // Keep polling as backup but reduce frequency if needed
     // const interval = setInterval(fetchNotifications, 30000);

@@ -13,6 +13,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useSyncContext } from "../context/SyncContext";
 import { chatService } from "../services/api";
+import { getSocket } from "../services/socket";
 
 const ChatListScreen = () => {
   const navigation = useNavigation();
@@ -73,6 +74,52 @@ const ChatListScreen = () => {
       loadChats();
     }
   }, [syncEvents.newNotification]);
+
+  // Listen for real-time chat events
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket || !user?.id) return;
+
+    // Listen for new messages
+    const handleReceiveMessage = (message) => {
+      console.log("📨 New message received in chat list:", message);
+      loadChats(); // Reload to update last message and unread count
+    };
+
+    // Listen for unread count updates
+    const handleUnreadCountUpdate = ({ chatId, userId, unreadCount }) => {
+      console.log("🔢 Unread count update:", { chatId, userId, unreadCount });
+      if (userId === user.id) {
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.id === chatId ? { ...chat, unreadCount } : chat
+          )
+        );
+      }
+    };
+
+    // Listen for chat read events
+    const handleChatRead = ({ chatId, userId }) => {
+      console.log("✅ Chat read:", { chatId, userId });
+      if (userId === user.id) {
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
+          )
+        );
+      }
+    };
+
+    socket.on("receive_message", handleReceiveMessage);
+    socket.on("unread_count_update", handleUnreadCountUpdate);
+    socket.on("chat_read", handleChatRead);
+
+    return () => {
+      socket.off("receive_message", handleReceiveMessage);
+      socket.off("unread_count_update", handleUnreadCountUpdate);
+      socket.off("chat_read", handleChatRead);
+    };
+  }, [user?.id]);
 
   const getChatName = (chat) => {
     if (chat.name) return chat.name;

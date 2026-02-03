@@ -255,6 +255,7 @@ export const chatService = {
     api.post("/chats/direct", { otherUserId }),
   createGroupChat: (participantIds, name) =>
     api.post("/chats/group", { participantIds, name }),
+  markChatAsRead: (chatId) => api.put(`/chats/${chatId}/read`),
 };
 
 export const notificationService = {

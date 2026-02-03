@@ -22,6 +22,8 @@ import {
   joinRoom,
   sendMessage,
   onMessage,
+  sendTyping,
+  sendStopTyping,
 } from "../services/socket";
 import { chatService, uploadService, API_BASE } from "../services/api";
 import { useFABVisibility } from "../context/FABVisibilityContext";
@@ -50,7 +52,9 @@ const ChatScreen = ({ route }) => {
   const [error, setError] = useState("");
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [typingUsers, setTypingUsers] = useState([]);
   const listRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   // Hide FAB when this screen is active
   useEffect(() => {
@@ -88,6 +92,7 @@ const ChatScreen = ({ route }) => {
     loadMessages();
     joinRoom(chatId);
 
+    // Listen for incoming messages
     const off = onMessage((msg) => {
       if (msg.chatId !== chatId) return;
       const keyOf = (m) =>
@@ -102,8 +107,32 @@ const ChatScreen = ({ route }) => {
       );
     });
 
-    return off;
-  }, [chatId]);
+    // Listen for typing indicators
+    const socket = getSocket();
+    const handleUserTyping = ({ userId, userName }) => {
+      if (userId === user?.id) return; // Don't show own typing
+      setTypingUsers((prev) => {
+        if (prev.find((u) => u.userId === userId)) return prev;
+        return [...prev, { userId, userName }];
+      });
+    };
+
+    const handleUserStoppedTyping = ({ userId }) => {
+      setTypingUsers((prev) => prev.filter((u) => u.userId !== userId));
+    };
+
+    socket.on("user_typing", handleUserTyping);
+    socket.on("user_stopped_typing", handleUserStoppedTyping);
+
+    // Mark chat as read when entering
+    chatService.markChatAsRead(chatId).catch(console.error);
+
+    return () => {
+      off();
+      socket.off("user_typing", handleUserTyping);
+      socket.off("user_stopped_typing", handleUserStoppedTyping);
+    };
+  }, [chatId, user?.id]);
 
   const pickAttachment = async () => {
     try {
@@ -166,8 +195,35 @@ const ChatScreen = ({ route }) => {
     }
   };
 
+  const handleTextChange = (newText) => {
+    setText(newText);
+    
+    // Send typing indicator
+    if (newText.trim() && chatId && user?.id) {
+      sendTyping(chatId, user.id, user.name);
+      
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Stop typing after 2 seconds of no input
+      typingTimeoutRef.current = setTimeout(() => {
+        sendStopTyping(chatId, user.id);
+      }, 2000);
+    } else if (!newText.trim() && chatId && user?.id) {
+      sendStopTyping(chatId, user.id);
+    }
+  };
+
   const handleSend = () => {
     if ((!text.trim() && !attachmentUrl) || !chatId) return;
+
+    // Stop typing indicator
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    sendStopTyping(chatId, user?.id);
 
     const tempId = Date.now().toString();
     const tempMessage = {
@@ -313,6 +369,14 @@ const ChatScreen = ({ route }) => {
           contentContainerStyle={{ padding: 16 }}
         />
 
+        {typingUsers.length > 0 && (
+          <View style={[styles.typingIndicator, { backgroundColor: colors.surface }]}>
+            <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
+              {typingUsers.map(u => u.userName).join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+            </Text>
+          </View>
+        )}
+
         <View
           style={[
             styles.inputRow,
@@ -353,7 +417,7 @@ const ChatScreen = ({ route }) => {
               ]}
               placeholder="Type a message"
               value={text}
-              onChangeText={setText}
+              onChangeText={handleTextChange}
               placeholderTextColor={colors.textMuted}
             />
             <Animated.View style={{ transform: [{ scale: sendScale }] }}>
@@ -428,6 +492,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   sendText: { color: "#fff", fontWeight: "700" },
+  typingIndicator: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+  },
 });
 
 export default ChatScreen;

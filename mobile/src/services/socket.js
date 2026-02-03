@@ -11,16 +11,19 @@ let lastConnectErrorAt = 0;
 
 export const getSocket = () => {
   if (!socket) {
+    console.log("🔌 Initializing socket connection to:", SOCKET_URL);
     socket = io(SOCKET_URL, {
-      transports: ["polling"],
+      transports: ["websocket", "polling"], // Try websocket first, fallback to polling
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1500,
       reconnectionDelayMax: 5000,
+      timeout: 10000,
     });
 
     socket.on("connect", () => {
       console.log("✅ Socket connected:", socket.id);
+      console.log("🔗 Transport:", socket.io.engine.transport.name);
     });
 
     socket.on("connect_error", (err) => {
@@ -33,6 +36,10 @@ export const getSocket = () => {
 
     socket.on("disconnect", (reason) => {
       console.log("⚠️ Socket disconnected:", reason);
+    });
+
+    socket.on("reconnect", (attemptNumber) => {
+      console.log("🔄 Socket reconnected after", attemptNumber, "attempts");
     });
   }
   return socket;

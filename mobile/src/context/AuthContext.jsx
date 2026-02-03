@@ -43,16 +43,20 @@ export const AuthProvider = ({ children }) => {
   // Setup socket connection when user is authenticated
   useEffect(() => {
     if (user?.id) {
-      // joinUserRoom(user.id); // Backend uses user_online for this
+      console.log("🔌 Setting up socket for user:", user.id);
+      // Mark user as online (which also joins user room on backend)
       markUserOnline(user.id);
 
       // Listen for real-time notifications
       const cleanup = onNewNotification((notification) => {
-        console.log("New notification received:", notification);
-        // You can show a local notification or update badge here
+        console.log("🔔 New notification received in AuthContext:", notification);
+        // The notification will be handled by SyncContext
       });
 
-      return cleanup;
+      return () => {
+        console.log("🔌 Cleaning up socket listeners for user:", user.id);
+        cleanup();
+      };
     }
   }, [user?.id]);
 
