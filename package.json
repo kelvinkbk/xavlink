@@ -13,7 +13,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "expo": "^54.0.33"
+    "expo": "^54.0.33",
+    "expo-module-scripts": "^3.0.0"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
