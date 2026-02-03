@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import * as Notifications from "expo-notifications";
 import { getSocket } from "../services/socket";
 
 const SyncContext = createContext();
@@ -83,9 +84,24 @@ export const SyncProvider = ({ children }) => {
       };
 
       // Notification events
-      const handleNewNotification = (data) => {
+      const handleNewNotification = async (data) => {
         console.log("🔔 New notification:", data);
         setSyncEvents((prev) => ({ ...prev, newNotification: data }));
+
+        // Send local notification to user
+        try {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: data.title || "New Notification",
+              body: data.message || data.description || "",
+              data: data,
+            },
+            trigger: null, // Show immediately
+          });
+          console.log("✅ Local notification sent");
+        } catch (error) {
+          console.error("Error sending local notification:", error);
+        }
       };
 
       const handleUnreadCount = (data) => {
