@@ -1483,157 +1483,156 @@ export default function ChatPage() {
               {toast.message}
             </div>
           )}
-          {/* Header */}
-          <div className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => navigate("/chats")}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Chat
-            </h2>
-            {chat?.participants && chat.participants.length > 2 && (
+          {/* Header - mobile-friendly, two-row layout */}
+          <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-2 sm:px-4 sm:py-3">
+            <div className="flex items-center gap-3">
               <button
-                type="button"
-                onClick={() => setShowMembersModal(true)}
-                className="ml-2 px-3 py-1 rounded text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
-                title="View group members"
+                onClick={() => navigate("/chats")}
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               >
-                👥 Members ({chat.participants.length})
-              </button>
-            )}
-            {primaryPeer && (
-              <div className="flex items-center gap-2 ml-2">
-                <button
-                  type="button"
-                  onClick={toggleBlockPeer}
-                  className={`px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                    blockedUsers.includes(String(primaryPeer.id))
-                      ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
-                      : "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
-                  }`}
-                  title={`${
-                    blockedUsers.includes(String(primaryPeer.id))
-                      ? "Unblock"
-                      : "Block"
-                  } ${primaryPeer.name}`}
-                  aria-label={`${
-                    blockedUsers.includes(String(primaryPeer.id))
-                      ? "Unblock"
-                      : "Block"
-                  } ${primaryPeer.name}`}
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <span className="text-base">
-                    {blockedUsers.includes(String(primaryPeer.id))
-                      ? "🔓"
-                      : "🚫"}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+              <div className="flex flex-col min-w-0">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
+                  Chat
+                </h2>
+                {primaryPeer && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {primaryPeer.name}
                   </span>
-                  <span>
-                    {blockedUsers.includes(String(primaryPeer.id))
-                      ? "Unblock"
-                      : "Block"}
-                  </span>
-                </button>
+                )}
               </div>
-            )}
-            {blockedUsers.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowBlockedUsersModal(true)}
-                className="ml-2 px-3 py-1 rounded text-sm font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 transition-colors"
-                title="View blocked users"
-              >
-                🚫 Blocked ({blockedUsers.length})
-              </button>
-            )}
-            {pinnedMessages.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowPinnedMessagesModal(true)}
-                className="ml-2 px-3 py-1 rounded text-sm font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50 transition-colors"
-                title="View pinned messages"
-              >
-                📌 Pinned ({pinnedMessages.length})
-              </button>
-            )}
-            {notificationsSupported() && notifPermission !== "granted" && (
-              <div className="ml-auto flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-2 py-1 rounded">
-                <span className="text-xs text-blue-800 dark:text-blue-300">
-                  Enable desktop notifications?
-                </span>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const granted = await requestNotificationPermission();
-                    setNotifPermission(granted ? "granted" : "denied");
-                  }}
-                  className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
-                >
-                  Enable
-                </button>
-              </div>
-            )}
-            <input
-              type="text"
-              placeholder="🔍 Search messages..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="px-3 py-1 border border-gray-300 rounded text-sm dark:bg-gray-700 dark:border-gray-600"
-            />
-            {!selectionMode ? (
-              <button
-                onClick={() => setSelectionMode(true)}
-                className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
-                title="Select messages to delete"
-              >
-                Select
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    const myMessages = messages
-                      .filter((m) => m.sender.id === user.id)
-                      .map((m) => m.id);
-                    setSelectedMessages(new Set(myMessages));
-                  }}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                >
-                  ✓ All Mine
-                </button>
-                {selectedMessages.size > 0 && (
+
+              {/* Quick actions – hidden on very small screens */}
+              <div className="ml-auto hidden md:flex items-center gap-2">
+                {chat?.participants && chat.participants.length > 2 && (
                   <button
-                    onClick={handleBulkDelete}
-                    className="px-3 py-1 bg-red-600 text-white rounded text-sm font-semibold hover:bg-red-700"
+                    type="button"
+                    onClick={() => setShowMembersModal(true)}
+                    className="px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
+                    title="View group members"
                   >
-                    🗑️ Delete ({selectedMessages.size})
+                    👥 {chat.participants.length}
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    setSelectionMode(false);
-                    setSelectedMessages(new Set());
-                  }}
-                  className="px-3 py-1 bg-gray-400 text-white rounded text-sm hover:bg-gray-500"
-                >
-                  Cancel
-                </button>
+                {primaryPeer && (
+                  <button
+                    type="button"
+                    onClick={toggleBlockPeer}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                      blockedUsers.includes(String(primaryPeer.id))
+                        ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
+                        : "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                    }`}
+                    title={`${
+                      blockedUsers.includes(String(primaryPeer.id))
+                        ? "Unblock"
+                        : "Block"
+                    } ${primaryPeer.name}`}
+                    aria-label={`${
+                      blockedUsers.includes(String(primaryPeer.id))
+                        ? "Unblock"
+                        : "Block"
+                    } ${primaryPeer.name}`}
+                  >
+                    <span className="text-base">
+                      {blockedUsers.includes(String(primaryPeer.id))
+                        ? "🔓"
+                        : "🚫"}
+                    </span>
+                  </button>
+                )}
+                {pinnedMessages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPinnedMessagesModal(true)}
+                    className="px-3 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50 transition-colors"
+                    title="View pinned messages"
+                  >
+                    📌 {pinnedMessages.length}
+                  </button>
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Secondary row: search + actions; stacked on mobile */}
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <input
+                type="text"
+                placeholder="🔍 Search messages..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full px-3 py-1.5 border border-gray-300 rounded-full text-sm dark:bg-gray-700 dark:border-gray-600"
+              />
+
+              <div className="flex items-center gap-2 justify-end">
+                {notificationsSupported() && notifPermission !== "granted" && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const granted = await requestNotificationPermission();
+                      setNotifPermission(granted ? "granted" : "denied");
+                    }}
+                    className="px-3 py-1 rounded-full text-xs font-medium bg-blue-600 text-white hover:bg-blue-700"
+                  >
+                    Enable alerts
+                  </button>
+                )}
+
+                {!selectionMode ? (
+                  <button
+                    onClick={() => setSelectionMode(true)}
+                    className="px-3 py-1 bg-gray-600 text-white rounded-full text-xs hover:bg-gray-700"
+                    title="Select messages to delete"
+                  >
+                    Select
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        const myMessages = messages
+                          .filter((m) => m.sender.id === user.id)
+                          .map((m) => m.id);
+                        setSelectedMessages(new Set(myMessages));
+                      }}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-full text-xs hover:bg-blue-700"
+                    >
+                      ✓ Mine
+                    </button>
+                    {selectedMessages.size > 0 && (
+                      <button
+                        onClick={handleBulkDelete}
+                        className="px-3 py-1 bg-red-600 text-white rounded-full text-xs font-semibold hover:bg-red-700"
+                      >
+                        🗑️ {selectedMessages.size}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setSelectionMode(false);
+                        setSelectedMessages(new Set());
+                      }}
+                      className="px-3 py-1 bg-gray-400 text-white rounded-full text-xs hover:bg-gray-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Messages */}

@@ -13,6 +13,7 @@ import {
   Alert,
   Image,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -40,6 +41,7 @@ const ChatScreen = ({ route }) => {
   const { chatId } = route.params || {};
   const { user } = useAuth();
   const { colors } = useTheme();
+  const navigation = useNavigation();
   const { setIsVisible } = useFABVisibility();
   const {
     scaleAnim: sendScale,
@@ -47,6 +49,7 @@ const ChatScreen = ({ route }) => {
     onPressOut: onSendPressOut,
   } = useScalePressAnimation();
   const [messages, setMessages] = useState([]);
+  const [chat, setChat] = useState(null);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -71,12 +74,47 @@ const ChatScreen = ({ route }) => {
       return;
     }
 
-    // Load existing messages
-    const loadMessages = async () => {
+    // Load chat details and messages
+    const loadChatData = async () => {
       try {
+        // Try to get chat details (participants) if available
+        try {
+          const chats = await chatService.getUserChats();
+          const currentChat = chats.data?.find((c) => c.id === chatId);
+          if (currentChat) {
+            setChat(currentChat);
+            // Update navigation header with participant name
+            const otherParticipant = currentChat.participants?.find(
+              (p) => p.user?.id !== user?.id,
+            );
+            if (otherParticipant?.user?.name) {
+              navigation.setOptions({
+                title: otherParticipant.user.name,
+              });
+            }
+          }
+        } catch (e) {
+          console.log("Could not load chat details:", e);
+        }
+
+        // Load messages
         const { data } = await chatService.getChatMessages(chatId);
-        setMessages(Array.isArray(data) ? data : []);
+        const sortedMessages = Array.isArray(data)
+          ? [...data].sort((a, b) => {
+              const timeA = new Date(a.createdAt || a.timestamp || 0).getTime();
+              const timeB = new Date(b.createdAt || b.timestamp || 0).getTime();
+              return timeA - timeB;
+            })
+          : [];
+        setMessages(sortedMessages);
         setError("");
+
+        // Scroll to bottom after messages load
+        setTimeout(() => {
+          if (sortedMessages.length > 0) {
+            listRef.current?.scrollToEnd({ animated: false });
+          }
+        }, 200);
       } catch (error) {
         console.error("Failed to load messages:", error);
         setError(
@@ -89,7 +127,7 @@ const ChatScreen = ({ route }) => {
       }
     };
 
-    loadMessages();
+    loadChatData();
     joinRoom(chatId);
 
     // Listen for incoming messages
@@ -100,11 +138,16 @@ const ChatScreen = ({ route }) => {
         `${m?.senderId}-${m?.text}-${m?.createdAt ?? m?.timestamp ?? ""}`;
       setMessages((prev) => {
         if (prev.some((p) => keyOf(p) === keyOf(msg))) return prev;
-        return [...prev, msg];
+        const updated = [...prev, msg].sort((a, b) => {
+          const timeA = new Date(a.createdAt || a.timestamp || 0).getTime();
+          const timeB = new Date(b.createdAt || b.timestamp || 0).getTime();
+          return timeA - timeB;
+        });
+        return updated;
       });
-      requestAnimationFrame(() =>
-        listRef.current?.scrollToEnd({ animated: true }),
-      );
+      setTimeout(() => {
+        listRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     });
 
     // Listen for typing indicators
@@ -259,6 +302,10 @@ const ChatScreen = ({ route }) => {
         setMessages((prev) =>
           prev.map((m) => (m.id === tempId ? response.message : m)),
         );
+        // Scroll to bottom after sending
+        setTimeout(() => {
+          listRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       } else {
         // Handle failure
         Alert.alert("Error", "Failed to send message");
@@ -336,37 +383,84 @@ const ChatScreen = ({ route }) => {
           keyExtractor={(item, idx) =>
             item?.id ? `msg-${item.id}-${idx}` : `msg-${idx}`
           }
-          renderItem={({ item }) => (
-            <Animated.View
-              style={[
-                styles.bubble,
-                item.senderId === user?.id
-                  ? { backgroundColor: colors.primary, alignSelf: "flex-end" }
-                  : {
-                      backgroundColor: colors.surface,
-                      alignSelf: "flex-start",
-                    },
-                { opacity: new Animated.Value(0.5) },
-              ]}
-            >
-              {item.attachmentUrl && (
-                <Image
-                  source={{ uri: toAbsoluteUrl(item.attachmentUrl) }}
-                  style={styles.attachmentImage}
-                />
-              )}
-              <Text
-                style={
-                  item.senderId === user?.id
-                    ? { color: "#fff" }
-                    : { color: colors.textPrimary }
-                }
+          renderItem={({ item }) => {
+            const isOwn = item.senderId === user?.id;
+            const senderName =
+              item.sender?.name ||
+              (isOwn ? "You" : chat?.participants?.find((p) => p.user?.id === item.senderId)?.user?.name || "Unknown");
+            const timestamp = item.createdAt || item.timestamp;
+            const formattedTime = timestamp
+              ? new Date(timestamp).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })
+              : "";
+
+            return (
+              <View
+                style={[
+                  styles.messageContainer,
+                  isOwn ? styles.messageContainerOwn : styles.messageContainerOther,
+                ]}
               >
-                {item.text}
-              </Text>
-            </Animated.View>
-          )}
-          contentContainerStyle={{ padding: 16 }}
+                {!isOwn && (
+                  <Text style={[styles.senderName, { color: colors.textSecondary }]}>
+                    {senderName}
+                  </Text>
+                )}
+                <View
+                  style={[
+                    styles.bubble,
+                    isOwn
+                      ? { backgroundColor: colors.primary, alignSelf: "flex-end" }
+                      : {
+                          backgroundColor: colors.surface,
+                          alignSelf: "flex-start",
+                        },
+                  ]}
+                >
+                  {item.attachmentUrl && (
+                    <Image
+                      source={{ uri: toAbsoluteUrl(item.attachmentUrl) }}
+                      style={styles.attachmentImage}
+                    />
+                  )}
+                  <Text
+                    style={[
+                      styles.messageText,
+                      isOwn
+                        ? { color: "#fff" }
+                        : { color: colors.textPrimary },
+                    ]}
+                  >
+                    {item.text}
+                  </Text>
+                  {formattedTime && (
+                    <Text
+                      style={[
+                        styles.timestamp,
+                        isOwn
+                          ? { color: "rgba(255,255,255,0.7)" }
+                          : { color: colors.textMuted },
+                      ]}
+                    >
+                      {formattedTime}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            );
+          }}
+          contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 8 }}
+          onContentSizeChange={() => {
+            listRef.current?.scrollToEnd({ animated: false });
+          }}
+          onLayout={() => {
+            if (messages.length > 0) {
+              listRef.current?.scrollToEnd({ animated: false });
+            }
+          }}
         />
 
         {typingUsers.length > 0 && (
@@ -452,22 +546,47 @@ const ChatScreen = ({ route }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8fafc" },
+  messageContainer: {
+    marginVertical: 4,
+    marginHorizontal: 12,
+    maxWidth: "80%",
+  },
+  messageContainerOwn: {
+    alignSelf: "flex-end",
+    alignItems: "flex-end",
+  },
+  messageContainerOther: {
+    alignSelf: "flex-start",
+    alignItems: "flex-start",
+  },
+  senderName: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 4,
+    marginLeft: 4,
+  },
+  bubble: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    maxWidth: "100%",
+  },
+  messageText: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  timestamp: {
+    fontSize: 11,
+    marginTop: 4,
+    alignSelf: "flex-end",
+  },
   attachmentImage: {
     width: 200,
     height: 200,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 8,
     resizeMode: "cover",
   },
-  bubble: {
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 8,
-    maxWidth: "75%",
-  },
-  mine: { backgroundColor: "#3b82f6", alignSelf: "flex-end" },
-  theirs: { backgroundColor: "#e2e8f0", alignSelf: "flex-start" },
-  msgText: { color: "#0f172a" },
   inputRow: {
     padding: 12,
     backgroundColor: "#fff",
@@ -491,19 +610,22 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: "#cbd5e1",
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderRadius: 20,
+    paddingHorizontal: 16,
     marginRight: 8,
     height: 44,
     backgroundColor: "#fff",
+    fontSize: 15,
   },
   sendBtn: {
     backgroundColor: "#3b82f6",
-    borderRadius: 10,
-    paddingHorizontal: 16,
+    borderRadius: 22,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     justifyContent: "center",
+    minHeight: 44,
   },
-  sendText: { color: "#fff", fontWeight: "700" },
+  sendText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   typingIndicator: {
     paddingHorizontal: 16,
     paddingVertical: 8,

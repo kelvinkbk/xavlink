@@ -8,6 +8,7 @@ import {
   ScrollView,
   Modal,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -33,6 +34,7 @@ const SettingsScreen = () => {
   const { colors, colorPalette, colorPalettes, setPalette } = useTheme();
   const [notifications, setNotifications] = useState(true);
   const [showPaletteModal, setShowPaletteModal] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   const handleSelectPalette = (palette) => {
     setPalette(palette);
@@ -112,12 +114,24 @@ const SettingsScreen = () => {
           </Text>
         </View>
         <TouchableOpacity
-          style={{ padding: 8 }}
-          onPress={() => UpdateService.checkForUpdate(true)}
+          style={{ padding: 8, minWidth: 60, alignItems: "center" }}
+          onPress={async () => {
+            setCheckingUpdate(true);
+            try {
+              await UpdateService.checkForUpdate(true);
+            } finally {
+              setCheckingUpdate(false);
+            }
+          }}
+          disabled={checkingUpdate}
         >
-          <Text style={{ color: colors.primary, fontWeight: "600" }}>
-            Check
-          </Text>
+          {checkingUpdate ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Text style={{ color: colors.primary, fontWeight: "600" }}>
+              Check
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 

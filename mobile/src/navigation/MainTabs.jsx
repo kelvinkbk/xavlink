@@ -52,7 +52,10 @@ const ChatStackNavigator = () => {
       <ChatStack.Screen
         name="Chat"
         component={ChatScreen}
-        options={{ title: "Chat" }}
+        options={({ route }) => ({
+          title: route.params?.userName || "Chat",
+          headerBackTitleVisible: false,
+        })}
       />
     </ChatStack.Navigator>
   );

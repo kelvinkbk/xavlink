@@ -18,6 +18,29 @@ const UpdateService = {
     }
 
     try {
+      // Check if updates are enabled
+      if (!Updates.isEnabled) {
+        if (showNoUpdateAlert) {
+          Alert.alert(
+            "Updates Disabled",
+            "Updates are not enabled for this build. This may be a development build or updates were disabled during build.",
+          );
+        }
+        return;
+      }
+
+      // Check if we're using an embedded update
+      const updateId = Updates.updateId;
+      const isEmbeddedLaunch = Updates.isEmbeddedLaunch;
+      
+      console.log("Update check info:", {
+        updateId,
+        isEmbeddedLaunch,
+        isEnabled: Updates.isEnabled,
+        channel: Updates.channel,
+        runtimeVersion: Updates.runtimeVersion,
+      });
+
       const update = await Updates.checkForUpdateAsync();
 
       if (update.isAvailable) {
@@ -40,10 +63,11 @@ const UpdateService = {
       }
     } catch (error) {
       console.error("Error checking for updates:", error);
+      const errorMessage = error?.message || "Unknown error";
       if (showNoUpdateAlert) {
         Alert.alert(
           "Error",
-          "Failed to check for updates. Please try again later.",
+          `Failed to check for updates: ${errorMessage}\n\nPlease ensure:\n- You're using a production/preview build\n- The app has network access\n- Updates are enabled for your build`,
         );
       }
     }
