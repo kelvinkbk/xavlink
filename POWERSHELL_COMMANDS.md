@@ -2,12 +2,14 @@
 
 ## 🚀 Quick Start Commands
 
-### 1. **Navigate to Project Directory**
+### 1. Navigate to Project Directory
+
 ```powershell
 cd D:\html\project\xavlink
 ```
 
-### 2. **Backend Commands**
+### 2. Backend Commands
+
 ```powershell
 # Navigate to backend
 cd backend
@@ -34,7 +36,8 @@ npm audit
 npm audit fix
 ```
 
-### 3. **Frontend (Web) Commands**
+### 3. Frontend (Web) Commands
+
 ```powershell
 # Navigate to web
 cd web
@@ -55,7 +58,8 @@ npm run preview
 npm run lint
 ```
 
-### 4. **Mobile App Commands**
+### 4. Mobile App Commands
+
 ```powershell
 # Navigate to mobile
 cd mobile
@@ -86,7 +90,8 @@ npx expo start --web
 
 ## 📦 Package Management
 
-### 5. **Update Dependencies**
+### 5. Update Dependencies
+
 ```powershell
 # Update all packages to latest within semver range
 npm update
@@ -101,7 +106,8 @@ npm outdated
 npm install package-name@version
 ```
 
-### 6. **Security & Audit**
+### 6. Security & Audit
+
 ```powershell
 # Check for vulnerabilities
 npm audit
@@ -118,7 +124,8 @@ npm outdated
 
 ## 🔧 Development Tools
 
-### 7. **Database Commands (Prisma)**
+### 7. Database Commands (Prisma)
+
 ```powershell
 # Generate Prisma Client
 cd backend
@@ -137,7 +144,8 @@ npx prisma studio
 npx prisma db push
 ```
 
-### 8. **Git Commands**
+### 8. Git Commands
+
 ```powershell
 # Check status
 git status
@@ -161,7 +169,8 @@ git checkout -b branch-name
 git checkout branch-name
 ```
 
-### 9. **System & Environment**
+### 9. System & Environment
+
 ```powershell
 # Check Node.js version
 node --version
@@ -199,6 +208,7 @@ cls
 ## 🐛 Troubleshooting
 
 ### Fix Expo Not Found Error
+
 ```powershell
 # If 'expo' is not recognized, install it globally or use npx
 cd mobile
@@ -209,17 +219,20 @@ npm install -g expo-cli
 ```
 
 ### Fix Permission Errors
+
 ```powershell
 # Run PowerShell as Administrator (Right-click → Run as Administrator)
 # Then run your commands
 ```
 
 ### Clear npm Cache
+
 ```powershell
 npm cache clean --force
 ```
 
 ### Remove node_modules and Reinstall
+
 ```powershell
 # Remove node_modules
 Remove-Item -Recurse -Force node_modules
@@ -232,6 +245,7 @@ npm install
 ```
 
 ### Fix Port Already in Use
+
 ```powershell
 # Find process using port (e.g., 5000)
 netstat -ano | findstr :5000
@@ -246,6 +260,7 @@ Get-NetTCPConnection -LocalPort 5000 | Select-Object -ExpandProperty OwningProce
 ## 📝 Common Workflows
 
 ### Start All Services (Development)
+
 ```powershell
 # Terminal 1 - Backend
 cd backend
@@ -261,6 +276,7 @@ npx expo start
 ```
 
 ### Update All Dependencies
+
 ```powershell
 # Backend
 cd backend
@@ -279,6 +295,7 @@ npm audit fix
 ```
 
 ### Build for Production
+
 ```powershell
 # Backend
 cd backend
@@ -292,6 +309,7 @@ npm run build
 ## 🔍 Useful Aliases (Optional)
 
 Add these to your PowerShell profile for convenience:
+
 ```powershell
 # Edit profile
 notepad $PROFILE
@@ -311,12 +329,10 @@ function xav-root { cd D:\html\project\xavlink }
 
 ## 📚 Additional Resources
 
-- **Node.js**: https://nodejs.org/
-- **npm**: https://www.npmjs.com/
-- **Expo**: https://docs.expo.dev/
-- **Prisma**: https://www.prisma.io/docs/
-- **PowerShell**: https://docs.microsoft.com/powershell/
-
----
+- **Node.js**: <https://nodejs.org/>
+- **npm**: <https://www.npmjs.com/>
+- **Expo**: <https://docs.expo.dev/>
+- **Prisma**: <https://www.prisma.io/docs/>
+- **PowerShell**: <https://docs.microsoft.com/powershell/>
 
 **Note**: If you're using Git Bash or WSL, commands may differ. Use PowerShell-specific syntax when in PowerShell.

@@ -16,7 +16,7 @@
   "chat.agent.maxRequests": 3000000000000,
   "json.schemaDownload.enable": false,
   "chat.extensionUnification.enabled": true,
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
   "typescript.skipLibCheck": true,
   "[sql]": {
     "editor.defaultFormatter": "cweijan.vscode-mysql-client2"

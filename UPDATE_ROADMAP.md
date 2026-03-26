@@ -5,25 +5,28 @@
 
 ---
 
-## 🚨 **PRIORITY 1: Security & Critical Updates**
+## 🚨 PRIORITY 1: Security & Critical Updates
 
-### **1.1 Dependency Updates**
+### 1.1 Dependency Updates
+
 - ✅ **Socket.IO**: Current `^4.8.1` → Update to latest `4.8.x` or `4.9.x`
   - Check for security patches
   - Verify compatibility with current implementation
-- ✅ **Prisma**: Current `^5.22.0` → Update to latest `5.x` 
+- ✅ **Prisma**: Current `^5.22.0` → Update to latest `5.x`
   - MongoDB compatibility improvements
   - Performance enhancements
 - ✅ **Express**: Current `^5.2.1` → Verify latest `5.x` patches
 - ✅ **Security packages**: Run `npm audit fix`
   - `helmet`, `cors`, `bcryptjs`, `jsonwebtoken`
 
-### **1.2 Code Issues Found**
+### 1.2 Code Issues Found
+
 - ⚠️ **TODO in authController.js** (line 360): Email reset link implementation
   - Verify password reset email is working correctly
   - Check if email service is properly integrated
 
-### **1.3 CORS Security**
+### 1.3 CORS Security
+
 - ⚠️ **Socket.IO CORS** (server.js line 48-51)
   - Currently allows non-production origins for debugging
   - **Action:** Lock down CORS in production (already has check, verify it's working)
@@ -31,9 +34,10 @@
 
 ---
 
-## 🎯 **PRIORITY 2: Performance & Stability**
+## 🎯 PRIORITY 2: Performance & Stability
 
-### **2.1 Database Optimization**
+### 2.1 Database Optimization
+
 - [ ] **Add missing indexes** for frequently queried fields
   - User search indexes (name, email)
   - Post queries (userId, createdAt, isPinned)
@@ -46,7 +50,8 @@
   - Use Prisma `include` and `select` efficiently
   - Batch queries where possible
 
-### **2.2 Caching Layer**
+### 2.2 Caching Layer
+
 - [ ] **Implement Redis caching** for:
   - User profiles (cache frequently accessed)
   - Post feeds (cache with TTL)
@@ -57,14 +62,16 @@
   - Invalidate on updates
   - Use cache tags for related data
 
-### **2.3 Socket.IO Scaling**
+### 2.3 Socket.IO Scaling
+
 - [ ] **Redis Adapter for Socket.IO**
   - Required for multi-instance deployment
   - Enables sticky session support
   - Shared room state across servers
   - Install: `@socket.io/redis-adapter` + Redis client
 
-### **2.4 Background Jobs**
+### 2.4 Background Jobs
+
 - [ ] **Job Queue System** (Bull/BullMQ)
   - Move scheduled posts to queue
   - Email sending queue
@@ -76,23 +83,26 @@
 
 ---
 
-## 📊 **PRIORITY 3: Monitoring & Observability**
+## 📊 PRIORITY 3: Monitoring & Observability
 
-### **3.1 Error Tracking**
+### 3.1 Error Tracking
+
 - [ ] **Integrate Sentry** or similar
   - Backend error tracking
   - Frontend error tracking
   - Performance monitoring
   - Real-time alerts
 
-### **3.2 Logging Improvements**
+### 3.2 Logging Improvements
+
 - [ ] **Structured logging** (Winston/Pino)
   - JSON logs for better parsing
   - Log levels (error, warn, info, debug)
   - Request ID tracking
   - Correlation IDs for requests
 
-### **3.3 Health Checks**
+### 3.3 Health Checks
+
 - [ ] **Enhanced health endpoint**
   - Database connection status
   - Redis connection status (if added)
@@ -100,7 +110,8 @@
   - Memory/CPU usage
   - Response time metrics
 
-### **3.4 Analytics Dashboard**
+### 3.4 Analytics Dashboard
+
 - [ ] **Application metrics**
   - Request rate
   - Error rate
@@ -111,9 +122,10 @@
 
 ---
 
-## 🎨 **PRIORITY 4: Frontend Improvements**
+## 🎨 PRIORITY 4: Frontend Improvements
 
-### **4.1 Performance**
+### 4.1 Performance
+
 - [ ] **Code splitting & lazy loading**
   - Route-based code splitting
   - Component lazy loading
@@ -123,7 +135,8 @@
   - Remove unused dependencies
   - Tree shaking verification
 
-### **4.2 UX Enhancements**
+### 4.2 UX Enhancements
+
 - [ ] **Offline support**
   - Service worker for offline mode
   - Queue messages when offline
@@ -134,7 +147,8 @@
   - Typing indicators (already implemented, verify)
   - Online/offline status (already implemented, verify)
 
-### **4.3 Accessibility**
+### 4.3 Accessibility
+
 - [ ] **ARIA labels** for interactive elements
 - [ ] **Keyboard navigation** support
 - [ ] **Screen reader** compatibility
@@ -142,9 +156,10 @@
 
 ---
 
-## 🔒 **PRIORITY 5: Security Hardening**
+## 🔒 PRIORITY 5: Security Hardening
 
-### **5.1 Authentication**
+### 5.1 Authentication
+
 - [ ] **Refresh tokens** implementation
   - Current: JWT only (may have long expiration)
   - Add refresh token rotation
@@ -158,7 +173,8 @@
   - Force logout on security events
   - Session timeout handling
 
-### **5.2 Input Validation**
+### 5.2 Input Validation
+
 - [ ] **Content filtering**
   - Profanity filter
   - Spam detection
@@ -169,7 +185,8 @@
   - File size limits (already implemented)
   - Virus scanning (optional)
 
-### **5.3 Data Protection**
+### 5.3 Data Protection
+
 - [ ] **Encryption at rest** (if storing sensitive data)
 - [ ] **API rate limiting by endpoint**
   - Stricter limits on sensitive endpoints
@@ -181,9 +198,10 @@
 
 ---
 
-## 🚀 **PRIORITY 6: New Features**
+## 🚀 PRIORITY 6: New Features
 
-### **6.1 Chat Enhancements**
+### 6.1 Chat Enhancements
+
 - [ ] **Message editing**
   - Edit sent messages (time-limited)
   - Show "edited" indicator
@@ -200,6 +218,7 @@
   - Video compression
 
 ### **6.2 Search Improvements**
+
 - [ ] **Full-text search**
   - Implement Elasticsearch or MongoDB Atlas Search
   - Search posts, users, messages
@@ -210,6 +229,7 @@
   - Hashtag autocomplete
 
 ### **6.3 Notifications**
+
 - [ ] **Push notifications**
   - Web Push API
   - Mobile push (Firebase/OneSignal)
@@ -220,6 +240,7 @@
   - Customizable frequency
 
 ### **6.4 User Experience**
+
 - [ ] **Onboarding flow**
   - Guided tour for new users
   - Tooltips for features
@@ -235,6 +256,7 @@
 ## 📱 **PRIORITY 7: Mobile App**
 
 ### **7.1 React Native Updates**
+
 - [ ] **Expo SDK update**
   - Current: Expo 54
   - Check for latest version
@@ -251,6 +273,7 @@
 ## 🧪 **PRIORITY 8: Testing & Quality**
 
 ### **8.1 Testing Setup**
+
 - [ ] **Unit tests**
   - Jest for backend
   - Vitest for frontend
@@ -265,6 +288,7 @@
   - Cross-browser testing
 
 ### **8.2 Code Quality**
+
 - [ ] **TypeScript migration** (optional)
   - Gradual migration
   - Start with new files
@@ -283,6 +307,7 @@
 ## 📚 **PRIORITY 9: Documentation**
 
 ### **9.1 API Documentation**
+
 - [ ] **OpenAPI/Swagger**
   - API endpoint documentation
   - Request/response schemas
@@ -290,6 +315,7 @@
   - Interactive API explorer
 
 ### **9.2 Code Documentation**
+
 - [ ] **JSDoc comments**
   - Function documentation
   - Parameter descriptions
@@ -301,6 +327,7 @@
   - Architecture overview
 
 ### **9.3 User Documentation**
+
 - [ ] **User guide**
   - Feature tutorials
   - FAQ
@@ -315,6 +342,7 @@
 ## 🏗️ **PRIORITY 10: Infrastructure**
 
 ### **10.1 CI/CD Pipeline**
+
 - [ ] **GitHub Actions** or similar
   - Automated testing
   - Linting
@@ -326,6 +354,7 @@
   - Rollback strategy
 
 ### **10.2 Database Backups**
+
 - [ ] **Automated backups**
   - Daily backups
   - Retention policy
@@ -336,6 +365,7 @@
   - Migration testing
 
 ### **10.3 Scaling Infrastructure**
+
 - [ ] **Load balancing**
   - Multiple backend instances
   - Health checks
@@ -374,6 +404,7 @@
 ## 📈 **Success Metrics**
 
 Track these metrics to measure improvements:
+
 - **Performance**: Response time (p50, p95, p99)
 - **Reliability**: Error rate, uptime
 - **User Experience**: Page load time, time to interactive

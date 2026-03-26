@@ -43,7 +43,7 @@
 
 ### 6. **UI Fixes**
 
-- ✅ Fixed "Text strings must be rendered within <Text> component" error in DiscoverScreen
+- ✅ Fixed incorrect text rendering in DiscoverScreen
 - ✅ Replaced Fragment (`<>`) with View wrapper for message button layout
 
 ## Files Modified
@@ -158,20 +158,20 @@
 
 ## Troubleshooting
 
-### If messages don't appear in real-time:
+### If messages don't appear in real-time
 
 1. Check socket connection in console (look for "✅ Socket connected")
 2. Verify transport type (should be "websocket" or fallback to "polling")
 3. Check if user joined room (look for "🟢 Joined chat room")
 4. Verify backend is running and accessible
 
-### If typing indicator doesn't work:
+### If typing indicator doesn't work
 
 1. Ensure both users are in the same chat room
 2. Check socket events in console
 3. Verify `handleTextChange` is being called
 
-### If notifications don't appear:
+### If notifications don't appear
 
 1. Check if `markUserOnline()` was called successfully
 2. Verify backend emits to correct room: `user:${userId}`
