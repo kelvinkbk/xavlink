@@ -1,4 +1,5 @@
 const prisma = require("../config/prismaClient");
+const PostService = require("../services/postService");
 const {
   notifyPostLike,
   notifyPostComment,
@@ -11,57 +12,20 @@ const likeStore = {}; // { postId: [userId1, userId2, ...] }
 
 exports.createPost = async (req, res, next) => {
   try {
-    console.log("📌 createPost called with body:", req.body);
     const { content, image } = req.body;
     if (!content) {
       return res.status(400).json({ message: "content is required" });
     }
 
-    console.log("📌 Creating post for user:", req.user.id);
-
-    // Try to create with image field, fallback if column doesn't exist
-    let post;
-    try {
-      post = await prisma.post.create({
-        data: {
-          content,
-          image: image || null,
-          userId: req.user.id,
-        },
-        include: {
-          user: {
-            select: { id: true, name: true, profilePic: true, course: true },
-          },
-        },
-      });
-    } catch (err) {
-      // If image column doesn't exist, create without it
-      if (
-        err.code === "P2010" ||
-        err.message.includes("image") ||
-        err.message.includes("Image") ||
-        err.message.includes("does not exist")
-      ) {
-        console.log("⚠️ Image column not found, creating post without image");
-        post = await prisma.post.create({
-          data: {
-            content,
-            userId: req.user.id,
-          },
-          include: {
-            user: {
-              select: { id: true, name: true, profilePic: true, course: true },
-            },
-          },
-        });
-      } else {
-        throw err;
-      }
-    }
+    const post = await PostService.createPost({
+      content,
+      image,
+      userId: req.user.id,
+    });
 
     console.log("✅ Post created:", post.id);
 
-    // Initialize empty comment and like stores for this post
+    // Initialize empty comment and like stores for this post (legacy fallback)
     commentStore[post.id] = [];
     likeStore[post.id] = [];
 
@@ -78,7 +42,6 @@ exports.createPost = async (req, res, next) => {
       });
     }
 
-    // Return post with same structure as socket emission
     res.status(201).json({
       ...post,
       likesCount: 0,
@@ -88,78 +51,27 @@ exports.createPost = async (req, res, next) => {
     });
   } catch (err) {
     console.error("❌ createPost error:", err.message);
-    console.error("❌ Full error:", err);
     next(err);
   }
 };
 
 exports.getAllPosts = async (req, res, next) => {
   try {
-    console.log("📌 getAllPosts called");
     const userId = req.user?.id;
+    const result = await PostService.getAllPosts(userId);
 
-    // MongoDB query - replace raw SQL with Prisma query
-    const posts = await prisma.post.findMany({
-      where: {
-        isScheduled: { not: true },
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, profilePic: true, course: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    });
-
-    console.log("✅ Retrieved", posts?.length, "posts from MongoDB");
-
-    // Enrich posts with like/comment counts from database
-    const postsWithCounts = await Promise.all(
-      posts.map(async (post) => {
-        try {
-          // Promise.all for parallel like/liked checks
-          const [likesCount, existingLike] = await Promise.all([
-            prisma.like.count({ where: { postId: post.id } }),
-            userId
-              ? prisma.like.findUnique({
-                  where: { postId_userId: { userId, postId: post.id } },
-                })
-              : null,
-          ]);
-
-          return {
-            ...post,
-            likesCount: likesCount || 0,
-            commentsCount: commentStore[post.id]?.length || 0,
-            isLiked: !!existingLike,
-            isBookmarked: false,
-          };
-        } catch (err) {
-          console.error(`Error enriching post ${post.id}:`, err.message);
-          return {
-            ...post,
-            likesCount: 0,
-            commentsCount: commentStore[post.id]?.length || 0,
-            isLiked: false,
-            isBookmarked: false,
-          };
-        }
-      }),
-    );
+    // Merge with legacy in-memory store if DB comment count is missing from prisma mock
+    const mergedPosts = result.posts.map((p) => ({
+      ...p,
+      commentsCount: Math.max(p.commentsCount, commentStore[p.id]?.length || 0),
+    }));
 
     res.json({
-      posts: postsWithCounts,
-      pagination: {
-        currentPage: 1,
-        totalPages: 1,
-        totalCount: posts?.length || 0,
-        hasMore: false,
-      },
+      posts: mergedPosts,
+      pagination: result.pagination,
     });
   } catch (err) {
     console.error("❌ getAllPosts error:", err.message);
-    console.error("❌ Stack:", err.stack);
     res.status(500).json({ message: "Failed to load posts: " + err.message });
   }
 };

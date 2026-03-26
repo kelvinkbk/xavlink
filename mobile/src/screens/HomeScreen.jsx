@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -22,201 +22,220 @@ import {
 } from "../utils/animations";
 import ReportModal from "../components/ReportModal";
 
-const PostCard = ({ post, onLike, onComment, onReport, onReportComment }) => {
-  const { colors } = useTheme();
-  const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState("");
-  const [loadingComments, setLoadingComments] = useState(false);
-  const fadeAnim = useFadeInAnimation(400);
-  const {
-    scaleAnim: likeScale,
-    onPressIn: onLikePressIn,
-    onPressOut: onLikePressOut,
-  } = useScalePressAnimation();
+const PostCard = React.memo(
+  ({ post, onLike, onComment, onReport, onReportComment }) => {
+    const { colors } = useTheme();
+    const [showComments, setShowComments] = useState(false);
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState("");
+    const [loadingComments, setLoadingComments] = useState(false);
+    const fadeAnim = useFadeInAnimation(400);
+    const {
+      scaleAnim: likeScale,
+      onPressIn: onLikePressIn,
+      onPressOut: onLikePressOut,
+    } = useScalePressAnimation();
 
-  const handleToggleComments = async () => {
-    if (!showComments) {
-      setLoadingComments(true);
-      try {
-        const { data } = await postService.getComments(post.id);
-        setComments(data);
-      } catch (e) {
-        console.warn("Error loading comments:", e);
-      } finally {
-        setLoadingComments(false);
+    const handleToggleComments = async () => {
+      if (!showComments) {
+        setLoadingComments(true);
+        try {
+          const { data } = await postService.getComments(post.id);
+          setComments(data);
+        } catch (e) {
+          console.warn("Error loading comments:", e);
+        } finally {
+          setLoadingComments(false);
+        }
       }
-    }
-    setShowComments(!showComments);
-  };
+      setShowComments(!showComments);
+    };
 
-  const handleAddComment = async () => {
-    if (!newComment.trim()) return;
-    try {
-      const { data } = await postService.addComment(post.id, newComment.trim());
-      setComments([...comments, data]);
-      setNewComment("");
-      onComment(post.id);
-    } catch (e) {
-      console.warn("Error adding comment:", e);
-    }
-  };
+    const handleAddComment = async () => {
+      if (!newComment.trim()) return;
+      try {
+        const { data } = await postService.addComment(
+          post.id,
+          newComment.trim(),
+        );
+        setComments([...comments, data]);
+        setNewComment("");
+        onComment(post.id);
+      } catch (e) {
+        console.warn("Error adding comment:", e);
+      }
+    };
 
-  const handlePostMenu = () => {
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ["Cancel", "Report Post"],
-          cancelButtonIndex: 0,
-          destructiveButtonIndex: 1,
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 1) {
-            onReport(post);
-          }
-        },
-      );
-    } else {
-      Alert.alert("Post Options", "What would you like to do?", [
-        {
-          text: "Report Post",
-          onPress: () => onReport(post),
-          style: "destructive",
-        },
-        { text: "Cancel", style: "cancel" },
-      ]);
-    }
-  };
+    const handlePostMenu = () => {
+      if (Platform.OS === "ios") {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ["Cancel", "Report Post"],
+            cancelButtonIndex: 0,
+            destructiveButtonIndex: 1,
+          },
+          (buttonIndex) => {
+            if (buttonIndex === 1) {
+              onReport(post);
+            }
+          },
+        );
+      } else {
+        Alert.alert("Post Options", "What would you like to do?", [
+          {
+            text: "Report Post",
+            onPress: () => onReport(post),
+            style: "destructive",
+          },
+          { text: "Cancel", style: "cancel" },
+        ]);
+      }
+    };
 
-  return (
-    <Animated.View
-      style={[
-        styles.card,
-        { backgroundColor: colors.surface, opacity: fadeAnim },
-      ]}
-    >
-      <View style={styles.cardHeader}>
-        <View>
-          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-            {String(post.user?.name || "Student")}
-          </Text>
-          <Text style={[styles.cardSub, { color: colors.textSecondary }]}>
-            {String(post.user?.course || "")}
-          </Text>
+    return (
+      <Animated.View
+        style={[
+          styles.card,
+          { backgroundColor: colors.surface, opacity: fadeAnim },
+        ]}
+      >
+        <View style={styles.cardHeader}>
+          <View>
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+              {String(post.user?.name || "Student")}
+            </Text>
+            <Text style={[styles.cardSub, { color: colors.textSecondary }]}>
+              {String(post.user?.course || "")}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={handlePostMenu}>
+            <Text style={[styles.menuDots, { color: colors.textSecondary }]}>
+              ⋮
+            </Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={handlePostMenu}>
-          <Text style={[styles.menuDots, { color: colors.textSecondary }]}>
-            ⋮
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <Text style={[styles.cardBody, { color: colors.textPrimary }]}>
-        {String(post.content || "")}
-      </Text>
-      {post.image && (
-        <Image
-          source={{ uri: post.image }}
-          style={styles.postImage}
-          resizeMode="cover"
-        />
-      )}
-      {post.createdAt && (
-        <Text style={[styles.cardFoot, { color: colors.textMuted }]}>
-          {new Date(post.createdAt).toLocaleString()}
+        <Text style={[styles.cardBody, { color: colors.textPrimary }]}>
+          {String(post.content || "")}
         </Text>
-      )}
+        {post.image && (
+          <Image
+            source={{ uri: post.image }}
+            style={styles.postImage}
+            resizeMode="cover"
+          />
+        )}
+        {post.createdAt && (
+          <Text style={[styles.cardFoot, { color: colors.textMuted }]}>
+            {new Date(post.createdAt).toLocaleString()}
+          </Text>
+        )}
 
-      <View style={[styles.actions, { borderTopColor: colors.border }]}>
-        <Animated.View style={[{ transform: [{ scale: likeScale }] }]}>
+        <View style={[styles.actions, { borderTopColor: colors.border }]}>
+          <Animated.View style={[{ transform: [{ scale: likeScale }] }]}>
+            <TouchableOpacity
+              onPress={() => onLike(post.id)}
+              onPressIn={onLikePressIn}
+              onPressOut={onLikePressOut}
+              style={styles.actionBtn}
+            >
+              <Text
+                style={[styles.actionText, { color: colors.textSecondary }]}
+              >
+                {post.isLiked ? "❤️" : "🤍"} {String(post.likesCount || 0)}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
           <TouchableOpacity
-            onPress={() => onLike(post.id)}
-            onPressIn={onLikePressIn}
-            onPressOut={onLikePressOut}
+            onPress={handleToggleComments}
             style={styles.actionBtn}
           >
             <Text style={[styles.actionText, { color: colors.textSecondary }]}>
-              {post.isLiked ? "❤️" : "🤍"} {String(post.likesCount || 0)}
+              💬 {String(post.commentsCount || 0)}
             </Text>
           </TouchableOpacity>
-        </Animated.View>
-        <TouchableOpacity
-          onPress={handleToggleComments}
-          style={styles.actionBtn}
-        >
-          <Text style={[styles.actionText, { color: colors.textSecondary }]}>
-            💬 {String(post.commentsCount || 0)}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {showComments && (
-        <View style={styles.commentsSection}>
-          {loadingComments ? (
-            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-              Loading...
-            </Text>
-          ) : (
-            comments.map((comment) => (
-              <View key={comment.id} style={styles.comment}>
-                <View style={styles.commentHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[
-                        styles.commentUser,
-                        { color: colors.textPrimary },
-                      ]}
-                    >
-                      {String(comment.user?.name || "User")}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.commentText,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {String(comment.text || "")}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => onReportComment(comment, post)}
-                  >
-                    <Text
-                      style={[styles.reportFlag, { color: colors.textMuted }]}
-                    >
-                      🚩
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          )}
-          <View style={styles.commentInput}>
-            <TextInput
-              value={newComment}
-              onChangeText={setNewComment}
-              placeholder="Add a comment..."
-              style={[
-                styles.input,
-                {
-                  borderColor: colors.border,
-                  backgroundColor: colors.surface,
-                  color: colors.textPrimary,
-                },
-              ]}
-              placeholderTextColor={colors.textMuted}
-            />
-            <TouchableOpacity
-              onPress={handleAddComment}
-              style={[styles.sendBtn, { backgroundColor: colors.primary }]}
-            >
-              <Text style={styles.sendText}>Send</Text>
-            </TouchableOpacity>
-          </View>
         </View>
-      )}
-    </Animated.View>
-  );
-};
+
+        {showComments && (
+          <View style={styles.commentsSection}>
+            {loadingComments ? (
+              <Text
+                style={[styles.loadingText, { color: colors.textSecondary }]}
+              >
+                Loading...
+              </Text>
+            ) : (
+              comments.map((comment) => (
+                <View key={comment.id} style={styles.comment}>
+                  <View style={styles.commentHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.commentUser,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
+                        {String(comment.user?.name || "User")}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.commentText,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {String(comment.text || "")}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => onReportComment(comment, post)}
+                    >
+                      <Text
+                        style={[styles.reportFlag, { color: colors.textMuted }]}
+                      >
+                        🚩
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+            <View style={styles.commentInput}>
+              <TextInput
+                value={newComment}
+                onChangeText={setNewComment}
+                placeholder="Add a comment..."
+                style={[
+                  styles.input,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                    color: colors.textPrimary,
+                  },
+                ]}
+                placeholderTextColor={colors.textMuted}
+              />
+              <TouchableOpacity
+                onPress={handleAddComment}
+                style={[styles.sendBtn, { backgroundColor: colors.primary }]}
+              >
+                <Text style={styles.sendText}>Send</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </Animated.View>
+    );
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.post.id === nextProps.post.id &&
+      prevProps.post.likesCount === nextProps.post.likesCount &&
+      prevProps.post.isLiked === nextProps.post.isLiked &&
+      prevProps.post.commentsCount === nextProps.post.commentsCount &&
+      prevProps.post.content === nextProps.post.content &&
+      prevProps.post.image === nextProps.post.image
+    );
+  },
+);
 
 const HomeScreen = () => {
   const { colors } = useTheme();
@@ -334,69 +353,93 @@ const HomeScreen = () => {
     }
   }, [syncEvents.postUpdated]);
 
-  const handleLike = async (postId) => {
-    const post = posts.find((p) => p.id === postId);
-    if (!post) return;
+  const handleLike = useCallback(async (postId) => {
+    setPosts((prevPosts) => {
+      const post = prevPosts.find((p) => p.id === postId);
+      if (!post) return prevPosts;
 
-    const wasLiked = post.isLiked;
-    setPosts(
-      posts.map((p) =>
+      const wasLiked = post.isLiked;
+
+      // Optimistic update
+      const updatedPosts = prevPosts.map((p) =>
         p.id === postId
           ? {
               ...p,
               isLiked: !wasLiked,
-              likesCount: p.likesCount + (wasLiked ? -1 : 1),
+              likesCount: Math.max(0, p.likesCount + (wasLiked ? -1 : 1)),
             }
+          : p,
+      );
+
+      // Perform network request in background
+      const doRequest = async () => {
+        try {
+          if (wasLiked) {
+            await postService.unlikePost(postId);
+          } else {
+            await postService.likePost(postId);
+          }
+        } catch (e) {
+          // Revert optimistic update on error
+          setPosts((currentPosts) =>
+            currentPosts.map((p) =>
+              p.id === postId
+                ? {
+                    ...p,
+                    isLiked: wasLiked,
+                    likesCount: Math.max(0, p.likesCount + (wasLiked ? 1 : -1)),
+                  }
+                : p,
+            ),
+          );
+        }
+      };
+
+      doRequest();
+      return updatedPosts;
+    });
+  }, []);
+
+  const handleComment = useCallback((postId) => {
+    setPosts((prevPosts) =>
+      prevPosts.map((p) =>
+        p.id === postId
+          ? { ...p, commentsCount: (p.commentsCount || 0) + 1 }
           : p,
       ),
     );
+  }, []);
 
-    try {
-      if (wasLiked) {
-        await postService.unlikePost(postId);
-      } else {
-        await postService.likePost(postId);
-      }
-    } catch (e) {
-      setPosts(
-        posts.map((p) =>
-          p.id === postId
-            ? {
-                ...p,
-                isLiked: wasLiked,
-                likesCount: p.likesCount + (wasLiked ? 1 : -1),
-              }
-            : p,
-        ),
-      );
-    }
-  };
-
-  const handleComment = (postId) => {
-    setPosts(
-      posts.map((p) =>
-        p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p,
-      ),
-    );
-  };
-
-  const handleReportPost = (post) => {
+  const handleReportPost = useCallback((post) => {
     setReportModal({
       visible: true,
       targetType: "Post",
       targetId: post.id,
-      targetName: post.content.substring(0, 50) + "...",
+      targetName: post.content ? post.content.substring(0, 50) + "..." : "Post",
     });
-  };
+  }, []);
 
-  const handleReportComment = (comment, post) => {
+  const handleReportComment = useCallback((comment, post) => {
     setReportModal({
       visible: true,
       targetType: "Comment",
       targetId: comment.id,
       targetName: `Comment by ${comment.user?.name || "User"}`,
     });
-  };
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item }) => (
+      <PostCard
+        post={item}
+        onLike={handleLike}
+        onComment={handleComment}
+        onReport={handleReportPost}
+        onReportComment={handleReportComment}
+      />
+    ),
+    [handleLike, handleComment, handleReportPost, handleReportComment],
+  );
 
   return (
     <Animated.View
@@ -447,16 +490,11 @@ const HomeScreen = () => {
       </View>
       <FlatList
         data={posts}
-        keyExtractor={(item, index) => item.id || `post-${index}`}
-        renderItem={({ item }) => (
-          <PostCard
-            post={item}
-            onLike={handleLike}
-            onComment={handleComment}
-            onReport={handleReportPost}
-            onReportComment={handleReportComment}
-          />
+        keyExtractor={useCallback(
+          (item, index) => (item.id ? item.id.toString() : `post-${index}`),
+          [],
         )}
+        renderItem={renderItem}
         contentContainerStyle={{ padding: 16 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={load} />
@@ -466,6 +504,11 @@ const HomeScreen = () => {
             No posts yet.
           </Text>
         }
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === "android"}
+        updateCellsBatchingPeriod={50}
       />
       <ReportModal
         visible={reportModal.visible}
