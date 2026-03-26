@@ -32,37 +32,12 @@ const allowedOrigins = process.env.CORS_ORIGIN
       "https://xavlink-28ehhlqb0-kelvins-projects-19ada992.vercel.app",
     ];
 
-console.log("🔧 Allowed Socket.io origins:", allowedOrigins);
-
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, etc.)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        console.log("✅ Socket.IO origin allowed:", origin);
-        return callback(null, true);
-      }
-
-      // Log rejections but still allow in non-production for debugging
-      console.warn("⚠️  Socket.IO origin not in allowlist:", origin);
-
-      // In production, be strict. Otherwise allow for easier debugging
-      if (process.env.NODE_ENV === "production") {
-        return callback(new Error("CORS policy: Origin not allowed"));
-      }
-
-      // Development: log warning but allow
-      console.log(
-        "   (Allowed in development mode - set NODE_ENV=production to enforce)",
-      );
-      callback(null, true);
-    },
+    origin: "*", // Temporarily allow all origins to bypass Render's strict CORS blocks
     credentials: true,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   },
   transports: ["websocket", "polling"], // Allow WebSocket for mobile, polling for fallback
   maxHttpBufferSize: 1e6, // 1MB
