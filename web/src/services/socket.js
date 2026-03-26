@@ -62,14 +62,14 @@ export const reconcileMissedMessages = async (chatId) => {
 
     console.log(
       `🔄 Reconciling messages since ${new Date(
-        lastMessageTimestamp
-      ).toISOString()}`
+        lastMessageTimestamp,
+      ).toISOString()}`,
     );
 
     // Fetch messages since last known timestamp
     const missedMessages = await chatService.getChatMessagesSince(
       chatId,
-      lastMessageTimestamp
+      lastMessageTimestamp,
     );
 
     if (missedMessages.length > 0) {
