@@ -9,7 +9,8 @@ const baseURL =
 export const socket = io(baseURL, {
   withCredentials: true,
   autoConnect: true, // Auto-connect on initialization
-  transports: ["polling"], // Use polling only for Render compatibility
+  transports: ["websocket", "polling"], // Allow WebSocket with polling fallback
+  timeout: 60000, // Increase timeout to 60 seconds (useful for Render free tier wake-ups)
   reconnectionAttempts: 10,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,

@@ -20,8 +20,7 @@ const initSocket = async () => {
     try {
       console.log("🔌 Initializing socket connection to:", SOCKET_URL);
       const token = await AsyncStorage.getItem("token");
-      const isHttps = SOCKET_URL.startsWith("https");
-      const transports = isHttps ? ["polling"] : ["websocket", "polling"];
+      const transports = ["websocket", "polling"]; // Always prefer websocket
 
       socket = io(SOCKET_URL, {
         transports,
@@ -29,7 +28,7 @@ const initSocket = async () => {
         reconnectionAttempts: 5,
         reconnectionDelay: 1500,
         reconnectionDelayMax: 5000,
-        timeout: 10000,
+        timeout: 60000, // Important on Render: wait 60s for cold starts
         auth: {
           token: token || "",
         },
