@@ -8,6 +8,10 @@ import {
   Text,
   ScrollView,
   Image,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import * as ImagePicker from "expo-image-picker";
@@ -40,7 +44,7 @@ const CreatePostModal = ({ visible, onClose, onSuccess }) => {
     const uri = asset.uri;
     const name = uri.split("/").pop() || "upload.jpg";
     const ext = name.split(".").pop();
-    const type = ext ? `image/${ext}` : "image/jpeg";
+    const type = asset.mimeType || (ext ? `image/${ext}` : "image/jpeg");
 
     const formData = new FormData();
     formData.append("image", { uri, name, type });
@@ -89,100 +93,119 @@ const CreatePostModal = ({ visible, onClose, onSuccess }) => {
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={{ color: colors.primary, fontSize: 16 }}>Cancel</Text>
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Create Post
-          </Text>
-          <TouchableOpacity
-            onPress={handleCreatePost}
-            disabled={loading || !content.trim()}
-          >
-            <Text
-              style={{
-                color: colors.primary,
-                fontSize: 16,
-                fontWeight: "600",
-                opacity: loading || !content.trim() ? 0.5 : 1,
-              }}
-            >
-              Post
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.content}>
-          {error && (
-            <View style={[styles.errorBox, { backgroundColor: colors.error }]}>
-              <Text style={{ color: "white" }}>{error}</Text>
-            </View>
-          )}
-
-          <TextInput
-            style={[
-              styles.contentInput,
-              {
-                color: colors.text,
-                borderColor: colors.border,
-                backgroundColor: colors.surface,
-              },
-            ]}
-            placeholder="What's on your mind?"
-            placeholderTextColor={colors.textSecondary}
-            multiline
-            numberOfLines={6}
-            value={content}
-            onChangeText={setContent}
-            editable={!loading}
-          />
-
-          <View style={styles.uploadRow}>
-            <TouchableOpacity
-              style={[
-                styles.uploadButton,
-                {
-                  borderColor: colors.border,
-                  backgroundColor: colors.surface,
-                },
-              ]}
-              onPress={pickImage}
-              disabled={uploading || loading}
-            >
-              <Text style={{ color: colors.text }}>
-                {uploading ? "Uploading..." : "Pick Image"}
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={{ color: colors.primary, fontSize: 16 }}>
+                Cancel
               </Text>
             </TouchableOpacity>
+            <Text style={[styles.title, { color: colors.text }]}>
+              Create Post
+            </Text>
+            <TouchableOpacity
+              onPress={handleCreatePost}
+              disabled={loading || !content.trim()}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.primary} size="small" />
+              ) : (
+                <Text
+                  style={{
+                    color: colors.primary,
+                    fontSize: 16,
+                    fontWeight: "600",
+                    opacity: !content.trim() ? 0.5 : 1,
+                  }}
+                >
+                  Post
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.content}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            {error && (
+              <View
+                style={[styles.errorBox, { backgroundColor: colors.error }]}
+              >
+                <Text style={{ color: "white" }}>{error}</Text>
+              </View>
+            )}
+
             <TextInput
               style={[
-                styles.input,
+                styles.contentInput,
                 {
-                  flex: 1,
                   color: colors.text,
                   borderColor: colors.border,
                   backgroundColor: colors.surface,
                 },
               ]}
-              placeholder="Image URL (optional)"
+              placeholder="What's on your mind?"
               placeholderTextColor={colors.textSecondary}
-              value={imageUrl}
-              onChangeText={setImageUrl}
+              multiline
+              numberOfLines={6}
+              value={content}
+              onChangeText={setContent}
               editable={!loading}
             />
-          </View>
 
-          {imageUrl.trim() && (
-            <View style={styles.imagePreview}>
-              <Image
-                source={{ uri: imageUrl }}
-                style={{ width: "100%", height: 200, borderRadius: 8 }}
+            <View style={styles.uploadRow}>
+              <TouchableOpacity
+                style={[
+                  styles.uploadButton,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                  },
+                ]}
+                onPress={pickImage}
+                disabled={uploading || loading}
+              >
+                <Text style={{ color: colors.text }}>
+                  {uploading ? "Uploading..." : "Pick Image"}
+                </Text>
+              </TouchableOpacity>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    flex: 1,
+                    color: colors.text,
+                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                  },
+                ]}
+                placeholder="Image URL (optional)"
+                placeholderTextColor={colors.textSecondary}
+                value={imageUrl}
+                onChangeText={setImageUrl}
+                editable={!loading}
               />
             </View>
-          )}
-        </ScrollView>
-      </View>
+
+            {imageUrl.trim() && (
+              <View style={styles.imagePreview}>
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={{ width: "100%", height: 200, borderRadius: 8 }}
+                />
+              </View>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -190,7 +213,6 @@ const CreatePostModal = ({ visible, onClose, onSuccess }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 40,
   },
   header: {
     flexDirection: "row",
