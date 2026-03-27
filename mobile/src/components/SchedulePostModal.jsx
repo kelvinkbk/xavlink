@@ -12,6 +12,7 @@ import {
   Image,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "../context/ThemeContext";
@@ -136,7 +137,7 @@ const SchedulePostModal = ({ visible, onClose, onSuccess }) => {
       transparent={true}
       statusBarTranslucent={Platform.OS === "android"}
     >
-      <View style={styles.modalOverlay}>
+      <SafeAreaView edges={["top", "bottom"]} style={styles.modalOverlay}>
         <View
           style={[styles.modalContent, { backgroundColor: colors.surface }]}
         >
@@ -315,7 +316,7 @@ const SchedulePostModal = ({ visible, onClose, onSuccess }) => {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };

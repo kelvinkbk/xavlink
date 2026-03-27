@@ -95,6 +95,7 @@ const CreatePostModal = ({ visible, onClose, onSuccess }) => {
       statusBarTranslucent={Platform.OS === "android"}
     >
       <SafeAreaView
+        edges={["top", "bottom"]}
         style={[styles.container, { backgroundColor: colors.background }]}
       >
         <KeyboardAvoidingView

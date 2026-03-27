@@ -9,6 +9,7 @@ import {
   ScrollView,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
 import { skillService } from "../services/api";
 
@@ -73,7 +74,10 @@ const AddSkillModal = ({ visible, onClose, onSuccess }) => {
       onRequestClose={onClose}
       statusBarTranslucent={Platform.OS === "android"}
     >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView
+        edges={["top", "bottom"]}
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={onClose}>
             <Text style={{ color: colors.primary, fontSize: 16 }}>Cancel</Text>
@@ -266,7 +270,7 @@ const AddSkillModal = ({ visible, onClose, onSuccess }) => {
             </View>
           </Modal>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };
