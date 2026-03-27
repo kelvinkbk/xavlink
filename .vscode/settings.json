@@ -24,5 +24,5 @@
   "chat.tools.terminal.autoApprove": {
     "eas": true
   },
-  "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "automatic"
 }
