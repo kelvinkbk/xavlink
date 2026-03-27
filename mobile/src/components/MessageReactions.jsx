@@ -67,13 +67,17 @@ const MessageReactions = ({ visible, onSelectReaction, onClose, message }) => {
   }, [visible]);
 
   const handleReactionPress = (emoji) => {
+    console.log("Emoji reaction selected:", emoji);
     // Haptic feedback
     try {
       require("react-native").Vibration.vibrate(50);
     } catch (e) {
       // Fallback if haptics not available
+      console.log("Vibration not available");
     }
+    console.log("Calling onSelectReaction with emoji:", emoji);
     onSelectReaction(emoji);
+    console.log("Calling onClose");
     onClose();
   };
 

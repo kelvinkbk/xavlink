@@ -168,6 +168,49 @@ export const sendStopTyping = (chatId, userId) => {
   }
 };
 
+// Message Reactions
+export const sendReaction = (chatId, messageId, emoji) => {
+  const s = getSocket();
+  if (s?.connected) {
+    console.log("📤 Emitting add_reaction:", { chatId, messageId, emoji });
+    s.emit("add_reaction", { chatId, messageId, emoji }, (response) => {
+      console.log("📥 add_reaction response:", response);
+    });
+  } else {
+    console.error("❌ Socket not connected, cannot send reaction");
+  }
+};
+
+export const removeMessageReaction = (chatId, messageId, emoji) => {
+  const s = getSocket();
+  if (s?.connected) {
+    console.log("📤 Emitting remove_reaction:", { chatId, messageId, emoji });
+    s.emit("remove_reaction", { chatId, messageId, emoji }, (response) => {
+      console.log("📥 remove_reaction response:", response);
+    });
+  }
+};
+
+export const onReaction = (handler) => {
+  const s = getSocket();
+  if (!s) {
+    console.warn("Socket not initialized for reaction listener");
+    return () => {};
+  }
+  s.on("reaction_added", handler);
+  return () => s.off("reaction_added", handler);
+};
+
+export const onReactionRemoved = (handler) => {
+  const s = getSocket();
+  if (!s) {
+    console.warn("Socket not initialized for reaction removed listener");
+    return () => {};
+  }
+  s.on("reaction_removed", handler);
+  return () => s.off("reaction_removed", handler);
+};
+
 export const sendMessage = (payload, callback) => {
   const s = getSocket();
   if (s?.connected) {

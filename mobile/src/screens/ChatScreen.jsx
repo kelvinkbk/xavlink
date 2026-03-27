@@ -25,6 +25,10 @@ import {
   onMessage,
   sendTyping,
   sendStopTyping,
+  sendReaction,
+  onReaction,
+  onReactionRemoved,
+  removeMessageReaction,
 } from "../services/socket";
 import { chatService, uploadService, API_BASE } from "../services/api";
 import { useFABVisibility } from "../context/FABVisibilityContext";
@@ -168,8 +172,43 @@ const ChatScreen = ({ route }) => {
       setTypingUsers((prev) => prev.filter((u) => u.userId !== userId));
     };
 
+    // Listen for reactions from other users
+    const handleReactionAdded = ({ messageId, emoji, userId }) => {
+      console.log("📥 Reaction added by user:", { messageId, emoji, userId });
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.id === messageId) {
+            return {
+              ...msg,
+              reactions: [...(msg.reactions || []), { emoji, userId }],
+            };
+          }
+          return msg;
+        }),
+      );
+    };
+
+    const handleReactionRemoved = ({ messageId, emoji, userId }) => {
+      console.log("📥 Reaction removed by user:", { messageId, emoji, userId });
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.id === messageId) {
+            return {
+              ...msg,
+              reactions: (msg.reactions || []).filter(
+                (r) => !(r.emoji === emoji && r.userId === userId),
+              ),
+            };
+          }
+          return msg;
+        }),
+      );
+    };
+
     socket.on("user_typing", handleUserTyping);
     socket.on("user_stopped_typing", handleUserStoppedTyping);
+    socket.on("reaction_added", handleReactionAdded);
+    socket.on("reaction_removed", handleReactionRemoved);
 
     // Mark chat as read when entering
     chatService.markChatAsRead(chatId).catch(console.error);
@@ -178,6 +217,8 @@ const ChatScreen = ({ route }) => {
       off();
       socket.off("user_typing", handleUserTyping);
       socket.off("user_stopped_typing", handleUserStoppedTyping);
+      socket.off("reaction_added", handleReactionAdded);
+      socket.off("reaction_removed", handleReactionRemoved);
     };
   }, [chatId, user?.id]);
 
@@ -263,13 +304,25 @@ const ChatScreen = ({ route }) => {
     }
   };
 
-  const handleMessageReaction = (emoji) => {
-    if (!selectedMessageForReaction) return;
+  const handleMessageReaction = async (emoji) => {
+    console.log(
+      "Reaction pressed:",
+      emoji,
+      "Message:",
+      selectedMessageForReaction,
+    );
+    if (!selectedMessageForReaction) {
+      console.warn("No message selected for reaction");
+      return;
+    }
 
-    // Update message with reaction
+    const messageId = selectedMessageForReaction.id;
+
+    // Optimistic update - add reaction to local state immediately
     setMessages((prev) =>
       prev.map((msg) => {
-        if (msg.id === selectedMessageForReaction.id) {
+        if (msg.id === messageId) {
+          console.log("Adding reaction to message:", msg.id);
           return {
             ...msg,
             reactions: [...(msg.reactions || []), { emoji, userId: user?.id }],
@@ -282,6 +335,37 @@ const ChatScreen = ({ route }) => {
     // Clear selection
     setSelectedMessageForReaction(null);
     setShowReactionPicker(false);
+
+    // Persist to backend
+    try {
+      console.log("📤 Saving reaction to backend:", {
+        chatId,
+        messageId,
+        emoji,
+      });
+      await chatService.addReaction(chatId, messageId, emoji);
+      console.log("✅ Reaction saved to backend");
+    } catch (error) {
+      console.error("❌ Failed to save reaction:", error);
+      // Revert optimistic update on error
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.id === messageId) {
+            return {
+              ...msg,
+              reactions: (msg.reactions || []).filter(
+                (r) => r.emoji !== emoji || r.userId !== user?.id,
+              ),
+            };
+          }
+          return msg;
+        }),
+      );
+      Alert.alert("Error", "Failed to add reaction. Please try again.");
+    }
+
+    // Broadcast to other users via socket
+    sendReaction(chatId, messageId, emoji);
   };
 
   const handleSend = () => {
@@ -509,6 +593,10 @@ const ChatScreen = ({ route }) => {
                         : styles.reactionButtonOther,
                     ]}
                     onPress={() => {
+                      console.log(
+                        "Reaction button pressed for message:",
+                        item.id,
+                      );
                       setSelectedMessageForReaction(item);
                       setShowReactionPicker(true);
                     }}
@@ -516,6 +604,20 @@ const ChatScreen = ({ route }) => {
                     <Text style={styles.reactionButtonText}>😊</Text>
                   </TouchableOpacity>
                 </View>
+                {/* Display reactions if they exist */}
+                {item.reactions && item.reactions.length > 0 && (
+                  <View style={styles.reactionsContainer}>
+                    <View style={styles.reactionsList}>
+                      {item.reactions.map((reaction, idx) => (
+                        <View key={idx} style={styles.reactionBubble}>
+                          <Text style={styles.reactionEmoji}>
+                            {reaction.emoji}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </View>
             );
           }}
@@ -745,6 +847,26 @@ const styles = StyleSheet.create({
   },
   reactionButtonText: {
     fontSize: 16,
+  },
+  reactionsContainer: {
+    marginTop: 4,
+    marginHorizontal: 12,
+  },
+  reactionsList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+  },
+  reactionBubble: {
+    backgroundColor: "#f0f0f0",
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  reactionEmoji: {
+    fontSize: 14,
   },
 });
 

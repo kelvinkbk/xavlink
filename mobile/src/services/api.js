@@ -256,6 +256,10 @@ export const chatService = {
   createGroupChat: (participantIds, name) =>
     api.post("/chats/group", { participantIds, name }),
   markChatAsRead: (chatId) => api.post(`/chats/${chatId}/read`),
+  addReaction: (chatId, messageId, emoji) =>
+    api.post(`/chats/${chatId}/messages/${messageId}/reactions`, { emoji }),
+  removeReaction: (chatId, messageId, emoji) =>
+    api.delete(`/chats/${chatId}/messages/${messageId}/reactions/${emoji}`),
 };
 
 export const notificationService = {

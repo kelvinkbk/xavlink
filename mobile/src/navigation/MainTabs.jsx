@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Text, Animated, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Text, Animated, View, Platform } from "react-native";
+import {
+  useSafeAreaInsets,
+  SafeAreaView,
+} from "react-native-safe-area-context";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
@@ -218,7 +221,10 @@ const MainTabs = () => {
   }, [user?.id]);
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      edges={["top", "bottom"]}
+    >
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
@@ -335,7 +341,7 @@ const MainTabs = () => {
           console.log("Skill added successfully");
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
