@@ -7,13 +7,21 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useSyncContext } from "../context/SyncContext";
-import { chatService } from "../services/api";
+import { chatService, API_BASE } from "../services/api";
 import { getSocket } from "../services/socket";
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  const baseUrl = API_BASE.replace(/\/api$/, "");
+  return `${baseUrl}${url}`;
+};
 
 const ChatListScreen = () => {
   const navigation = useNavigation();
@@ -164,34 +172,50 @@ const ChatListScreen = () => {
     return "now";
   };
 
-  const renderChat = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.chatItem, { backgroundColor: colors.surface }]}
-      onPress={() => navigation.navigate("Chat", { chatId: item.id })}
-    >
-      <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-        <Text style={styles.avatarText}>{getChatAvatar(item)}</Text>
-      </View>
-      <View style={styles.chatInfo}>
-        <View style={styles.chatHeader}>
-          <Text style={[styles.chatName, { color: colors.textPrimary }]}>
-            {getChatName(item)}
-          </Text>
-          {item.messages[0] && (
-            <Text style={[styles.time, { color: colors.textMuted }]}>
-              {formatTime(item.messages[0].timestamp)}
+  const renderChat = ({ item }) => {
+    const otherParticipant = item.participants.find(
+      (p) => p.user.id !== user.id,
+    );
+    const profilePic = otherParticipant?.user?.profilePic;
+    const avatarText =
+      otherParticipant?.user?.name?.charAt(0).toUpperCase() || "?";
+
+    return (
+      <TouchableOpacity
+        style={[styles.chatItem, { backgroundColor: colors.surface }]}
+        onPress={() => navigation.navigate("Chat", { chatId: item.id })}
+      >
+        {profilePic ? (
+          <Image
+            source={{ uri: toAbsoluteUrl(profilePic) }}
+            style={[styles.avatar, { backgroundColor: colors.primary }]}
+          />
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+            <Text style={styles.avatarText}>{avatarText}</Text>
+          </View>
+        )}
+        <View style={styles.chatInfo}>
+          <View style={styles.chatHeader}>
+            <Text style={[styles.chatName, { color: colors.textPrimary }]}>
+              {getChatName(item)}
             </Text>
-          )}
+            {item.messages[0] && (
+              <Text style={[styles.time, { color: colors.textMuted }]}>
+                {formatTime(item.messages[0].timestamp)}
+              </Text>
+            )}
+          </View>
+          <Text
+            style={[styles.lastMessage, { color: colors.textSecondary }]}
+            numberOfLines={1}
+          >
+            {getLastMessage(item)}
+          </Text>
         </View>
-        <Text
-          style={[styles.lastMessage, { color: colors.textSecondary }]}
-          numberOfLines={1}
-        >
-          {getLastMessage(item)}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (

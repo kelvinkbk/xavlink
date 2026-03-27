@@ -7,9 +7,17 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Image,
 } from "react-native";
-import { requestService } from "../services/api";
+import { requestService, API_BASE } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  const baseUrl = API_BASE.replace(/\/api$/, "");
+  return `${baseUrl}${url}`;
+};
 
 const RequestsScreen = () => {
   const { user } = useAuth();
@@ -44,16 +52,26 @@ const RequestsScreen = () => {
 
   const renderRequest = ({ item }) => (
     <View style={styles.card}>
-      <Text style={styles.title}>
-        {item.fromUser?.name || "Unknown requester"}
-      </Text>
-      {item.skill?.title && (
-        <Text style={styles.meta}>Skill: {item.skill.title}</Text>
-      )}
-      <Text style={styles.meta}>Status: {item.status}</Text>
-      <Text style={styles.meta}>
-        {new Date(item.createdAt).toLocaleString()}
-      </Text>
+      <View style={styles.cardHeader}>
+        {item.fromUser?.profilePic && (
+          <Image
+            source={{ uri: toAbsoluteUrl(item.fromUser.profilePic) }}
+            style={styles.profilePic}
+          />
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>
+            {item.fromUser?.name || "Unknown requester"}
+          </Text>
+          {item.skill?.title && (
+            <Text style={styles.meta}>Skill: {item.skill.title}</Text>
+          )}
+          <Text style={styles.meta}>Status: {item.status}</Text>
+          <Text style={styles.meta}>
+            {new Date(item.createdAt).toLocaleString()}
+          </Text>
+        </View>
+      </View>
       {item.status === "pending" && (
         <View style={styles.actions}>
           <TouchableOpacity
@@ -103,6 +121,18 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 10,
+  },
+  profilePic: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#e2e8f0",
   },
   title: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
   meta: { fontSize: 12, color: "#475569", marginTop: 4 },

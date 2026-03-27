@@ -385,9 +385,13 @@ const ChatScreen = ({ route }) => {
           }
           renderItem={({ item }) => {
             const isOwn = item.senderId === user?.id;
-            const senderName =
-              item.sender?.name ||
-              (isOwn ? "You" : chat?.participants?.find((p) => p.user?.id === item.senderId)?.user?.name || "Unknown");
+            const senderData = isOwn
+              ? user
+              : item.sender ||
+                chat?.participants?.find((p) => p.user?.id === item.senderId)
+                  ?.user;
+            const senderName = senderData?.name || (isOwn ? "You" : "Unknown");
+            const senderProfilePic = senderData?.profilePic;
             const timestamp = item.createdAt || item.timestamp;
             const formattedTime = timestamp
               ? new Date(timestamp).toLocaleTimeString("en-US", {
@@ -401,19 +405,37 @@ const ChatScreen = ({ route }) => {
               <View
                 style={[
                   styles.messageContainer,
-                  isOwn ? styles.messageContainerOwn : styles.messageContainerOther,
+                  isOwn
+                    ? styles.messageContainerOwn
+                    : styles.messageContainerOther,
                 ]}
               >
                 {!isOwn && (
-                  <Text style={[styles.senderName, { color: colors.textSecondary }]}>
-                    {senderName}
-                  </Text>
+                  <View style={styles.senderSection}>
+                    {senderProfilePic && (
+                      <Image
+                        source={{ uri: toAbsoluteUrl(senderProfilePic) }}
+                        style={styles.senderAvatar}
+                      />
+                    )}
+                    <Text
+                      style={[
+                        styles.senderName,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {senderName}
+                    </Text>
+                  </View>
                 )}
                 <View
                   style={[
                     styles.bubble,
                     isOwn
-                      ? { backgroundColor: colors.primary, alignSelf: "flex-end" }
+                      ? {
+                          backgroundColor: colors.primary,
+                          alignSelf: "flex-end",
+                        }
                       : {
                           backgroundColor: colors.surface,
                           alignSelf: "flex-start",
@@ -429,9 +451,7 @@ const ChatScreen = ({ route }) => {
                   <Text
                     style={[
                       styles.messageText,
-                      isOwn
-                        ? { color: "#fff" }
-                        : { color: colors.textPrimary },
+                      isOwn ? { color: "#fff" } : { color: colors.textPrimary },
                     ]}
                   >
                     {item.text}
@@ -564,6 +584,18 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 4,
     marginLeft: 4,
+  },
+  senderSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  senderAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 6,
+    backgroundColor: "#e2e8f0",
   },
   bubble: {
     paddingHorizontal: 12,

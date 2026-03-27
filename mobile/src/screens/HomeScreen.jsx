@@ -13,7 +13,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { postService } from "../services/api";
+import { postService, API_BASE } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
 import { useSyncContext } from "../context/SyncContext";
 import {
@@ -21,6 +21,20 @@ import {
   useScalePressAnimation,
 } from "../utils/animations";
 import ReportModal from "../components/ReportModal";
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  const baseUrl = API_BASE.replace(/\/api$/, "");
+  return `${baseUrl}${url}`;
+};
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  const baseUrl = API_BASE.replace(/\/api$/, "");
+  return `${baseUrl}${url}`;
+};
 
 const PostCard = React.memo(
   ({ post, onLike, onComment, onReport, onReportComment }) => {
@@ -100,7 +114,13 @@ const PostCard = React.memo(
         ]}
       >
         <View style={styles.cardHeader}>
-          <View>
+          {post.user?.profilePic && (
+            <Image
+              source={{ uri: toAbsoluteUrl(post.user.profilePic) }}
+              style={styles.profilePic}
+            />
+          )}
+          <View style={{ flex: 1 }}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
               {String(post.user?.name || "Student")}
             </Text>
@@ -568,8 +588,15 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: 8,
+    gap: 12,
+  },
+  profilePic: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#e2e8f0",
   },
   menuDots: {
     fontSize: 20,

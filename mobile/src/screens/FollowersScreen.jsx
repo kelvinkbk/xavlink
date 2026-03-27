@@ -9,9 +9,16 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { userService } from "../services/api";
+import { userService, API_BASE } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  const baseUrl = API_BASE.replace(/\/api$/, "");
+  return `${baseUrl}${url}`;
+};
 
 const FollowersScreen = ({ route, navigation }) => {
   const { colors } = useTheme();
@@ -54,7 +61,7 @@ const FollowersScreen = ({ route, navigation }) => {
       // Load follow status for each follower
       if (batch.length && user?.id) {
         const results = await Promise.allSettled(
-          batch.map((f) => userService.getFollowStatus(f.id))
+          batch.map((f) => userService.getFollowStatus(f.id)),
         );
         const merged = {};
         results.forEach((res, idx) => {
@@ -103,7 +110,7 @@ const FollowersScreen = ({ route, navigation }) => {
       }));
       Alert.alert(
         "Error",
-        e?.response?.data?.message || "Failed to update follow status"
+        e?.response?.data?.message || "Failed to update follow status",
       );
     }
   };
@@ -124,7 +131,9 @@ const FollowersScreen = ({ route, navigation }) => {
         >
           <Image
             source={{
-              uri: item.profilePic || "https://placehold.co/64x64?text=User",
+              uri:
+                toAbsoluteUrl(item.profilePic) ||
+                "https://placehold.co/64x64?text=User",
             }}
             style={styles.avatar}
           />
