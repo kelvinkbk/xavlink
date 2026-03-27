@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 
@@ -125,6 +126,7 @@ export function RatingModal({
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      statusBarTranslucent={Platform.OS === "android"}
     >
       <View style={styles.centeredView}>
         <View style={styles.modalView}>

@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  Platform,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { reportService } from "../services/api";
@@ -79,6 +80,7 @@ const ReportModal = ({
       transparent
       animationType="fade"
       onRequestClose={handleClose}
+      statusBarTranslucent={Platform.OS === "android"}
     >
       <TouchableOpacity
         activeOpacity={1}

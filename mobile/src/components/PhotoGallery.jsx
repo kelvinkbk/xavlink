@@ -10,7 +10,9 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "../context/ThemeContext";
 import { enhancementService, uploadService } from "../services/api";
@@ -31,9 +33,8 @@ const PhotoGallery = ({ userId, isOwnProfile = false }) => {
 
   const fetchPhotos = async () => {
     try {
-      const { photos: photosData } = await enhancementService.getUserPhotos(
-        userId
-      );
+      const { photos: photosData } =
+        await enhancementService.getUserPhotos(userId);
       setPhotos(photosData || []);
     } catch (error) {
       console.error("Failed to fetch photos:", error);
@@ -69,7 +70,10 @@ const PhotoGallery = ({ userId, isOwnProfile = false }) => {
       });
 
       const { url } = await uploadService.uploadPostImage(formData);
-      const { photo } = await enhancementService.addUserPhoto({ url, caption: "" });
+      const { photo } = await enhancementService.addUserPhoto({
+        url,
+        caption: "",
+      });
       setPhotos((prev) => [...prev, photo]);
       Alert.alert("Success", "Photo added successfully");
     } catch (error) {
@@ -80,27 +84,23 @@ const PhotoGallery = ({ userId, isOwnProfile = false }) => {
   };
 
   const deletePhoto = async (photoId) => {
-    Alert.alert(
-      "Delete Photo",
-      "Are you sure you want to delete this photo?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await enhancementService.deleteUserPhoto(photoId);
-              setPhotos((prev) => prev.filter((p) => p.id !== photoId));
-              setSelectedPhoto(null);
-              Alert.alert("Success", "Photo deleted");
-            } catch (error) {
-              Alert.alert("Error", "Failed to delete photo");
-            }
-          },
+    Alert.alert("Delete Photo", "Are you sure you want to delete this photo?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await enhancementService.deleteUserPhoto(photoId);
+            setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+            setSelectedPhoto(null);
+            Alert.alert("Success", "Photo deleted");
+          } catch (error) {
+            Alert.alert("Error", "Failed to delete photo");
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const renderPhoto = ({ item }) => (
@@ -159,8 +159,9 @@ const PhotoGallery = ({ userId, isOwnProfile = false }) => {
         transparent={true}
         animationType="fade"
         onRequestClose={() => setSelectedPhoto(null)}
+        statusBarTranslucent={Platform.OS === "android"}
       >
-        <View style={styles.modalOverlay}>
+        <SafeAreaView style={styles.modalOverlay} edges={["top", "bottom"]}>
           <TouchableOpacity
             style={styles.modalBackground}
             activeOpacity={1}
@@ -180,7 +181,12 @@ const PhotoGallery = ({ userId, isOwnProfile = false }) => {
                   { backgroundColor: colors.surface },
                 ]}
               >
-                <Text style={[styles.modalButtonText, { color: colors.textPrimary }]}>
+                <Text
+                  style={[
+                    styles.modalButtonText,
+                    { color: colors.textPrimary },
+                  ]}
+                >
                   Close
                 </Text>
               </TouchableOpacity>
@@ -196,7 +202,7 @@ const PhotoGallery = ({ userId, isOwnProfile = false }) => {
               )}
             </View>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
     </View>
   );

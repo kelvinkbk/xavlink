@@ -92,6 +92,7 @@ const CreatePostModal = ({ visible, onClose, onSuccess }) => {
       transparent
       animationType="slide"
       onRequestClose={onClose}
+      statusBarTranslucent={Platform.OS === "android"}
     >
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}

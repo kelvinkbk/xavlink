@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   ScrollView,
+  Platform,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import { skillService } from "../services/api";
@@ -70,6 +71,7 @@ const AddSkillModal = ({ visible, onClose, onSuccess }) => {
       transparent
       animationType="slide"
       onRequestClose={onClose}
+      statusBarTranslucent={Platform.OS === "android"}
     >
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -132,6 +134,7 @@ const AddSkillModal = ({ visible, onClose, onSuccess }) => {
             transparent
             animationType="fade"
             onRequestClose={() => setShowCategoryDropdown(false)}
+            statusBarTranslucent={Platform.OS === "android"}
           >
             <View style={styles.dropdownOverlay}>
               <TouchableOpacity
@@ -214,6 +217,7 @@ const AddSkillModal = ({ visible, onClose, onSuccess }) => {
             transparent
             animationType="fade"
             onRequestClose={() => setShowProficiencyDropdown(false)}
+            statusBarTranslucent={Platform.OS === "android"}
           >
             <View style={styles.dropdownOverlay}>
               <TouchableOpacity
@@ -256,7 +260,7 @@ const AddSkillModal = ({ visible, onClose, onSuccess }) => {
                         {level.charAt(0).toUpperCase() + level.slice(1)}
                       </Text>
                     </TouchableOpacity>
-                  )
+                  ),
                 )}
               </View>
             </View>
