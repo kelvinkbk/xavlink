@@ -155,7 +155,8 @@ exports.createPost = async (req, res) => {
 1. Build mobile APK: `npx expo build:android --type apk`
 2. Install APK on Android device
 3. Open app - check backend logs for:
-   ```
+
+   ```text
    ✅ Device token saved for user [userId]
    ```
 
