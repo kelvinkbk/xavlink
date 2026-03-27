@@ -138,6 +138,7 @@ const FloatingActionButton = ({
     <View style={dynamicStyles.container} pointerEvents="box-none">
       {/* Create Post Option */}
       <Animated.View
+        pointerEvents={isExpanded ? "auto" : "none"}
         style={[
           styles.optionContainer,
           {
@@ -147,10 +148,7 @@ const FloatingActionButton = ({
         ]}
       >
         <TouchableOpacity
-          style={[
-            styles.optionLabel,
-            { backgroundColor: colors.primary },
-          ]}
+          style={[styles.optionLabel, { backgroundColor: colors.primary }]}
           onPress={handleCreatePost}
           activeOpacity={0.8}
         >
@@ -162,6 +160,7 @@ const FloatingActionButton = ({
 
       {/* Schedule Post Option */}
       <Animated.View
+        pointerEvents={isExpanded ? "auto" : "none"}
         style={[
           styles.optionContainer,
           {
@@ -171,10 +170,7 @@ const FloatingActionButton = ({
         ]}
       >
         <TouchableOpacity
-          style={[
-            styles.optionLabel,
-            { backgroundColor: colors.primary },
-          ]}
+          style={[styles.optionLabel, { backgroundColor: colors.primary }]}
           onPress={handleSchedulePost}
           activeOpacity={0.8}
         >
@@ -186,6 +182,7 @@ const FloatingActionButton = ({
 
       {/* Add Skill Option */}
       <Animated.View
+        pointerEvents={isExpanded ? "auto" : "none"}
         style={[
           styles.optionContainer,
           {
@@ -195,10 +192,7 @@ const FloatingActionButton = ({
         ]}
       >
         <TouchableOpacity
-          style={[
-            styles.optionLabel,
-            { backgroundColor: colors.primary },
-          ]}
+          style={[styles.optionLabel, { backgroundColor: colors.primary }]}
           onPress={handleAddSkill}
           activeOpacity={0.8}
         >

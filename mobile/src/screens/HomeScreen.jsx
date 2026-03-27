@@ -29,13 +29,6 @@ const toAbsoluteUrl = (url) => {
   return `${baseUrl}${url}`;
 };
 
-const toAbsoluteUrl = (url) => {
-  if (!url) return url;
-  if (/^https?:\/\//i.test(url)) return url;
-  const baseUrl = API_BASE.replace(/\/api$/, "");
-  return `${baseUrl}${url}`;
-};
-
 const PostCard = React.memo(
   ({ post, onLike, onComment, onReport, onReportComment }) => {
     const { colors } = useTheme();
