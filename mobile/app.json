@@ -50,11 +50,18 @@
     },
     "plugins": [
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableNetworkModule": true
+          }
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#ffffff",
-          "modes": ["backgroundDark"]
+          "color": "#ffffff"
         }
       ]
     ]
