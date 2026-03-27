@@ -88,6 +88,7 @@ model User {
   portfolioVerified       Boolean            @default(false)
   profileViews            Int                @default(0)
   lastActiveAt            DateTime?
+  deviceTokens            String[]           @default([])
   skills                  Skill[]
   posts                   Post[]
   sentRequests            Request[]          @relation("RequestsSent")

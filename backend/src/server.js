@@ -2,6 +2,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const app = require("./app");
 const prisma = require("./config/prismaClient");
+const { initializeFirebase } = require("./config/firebase");
 const {
   startScheduledPostsPublisher,
 } = require("./utils/scheduledPostsPublisher");
@@ -66,6 +67,44 @@ io.on("connection", (socket) => {
       userId,
       status: "online",
     });
+  });
+
+  socket.on("save_device_token", async ({ userId, token }) => {
+    if (!userId || !token) {
+      console.warn("❌ save_device_token: Missing userId or token");
+      return;
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { deviceTokens: true },
+      });
+
+      if (!user) {
+        console.warn(`❌ User ${userId} not found`);
+        return;
+      }
+
+      // Add token if it doesn't already exist
+      const updatedTokens = Array.isArray(user.deviceTokens)
+        ? user.deviceTokens
+        : [];
+      if (!updatedTokens.includes(token)) {
+        updatedTokens.push(token);
+
+        await prisma.user.update({
+          where: { id: userId },
+          data: { deviceTokens: updatedTokens },
+        });
+
+        console.log(`✅ Device token saved for user ${userId}`);
+      } else {
+        console.log(`ℹ️  Device token already registered for user ${userId}`);
+      }
+    } catch (error) {
+      console.error("❌ Error saving device token:", error);
+    }
   });
 
   socket.on("disconnect", () => {
@@ -210,6 +249,9 @@ async function startServer() {
     await prisma.$connect();
     const userCount = await prisma.user.count();
     console.log(`✅ Database connected successfully (${userCount} users)`);
+
+    // Initialize Firebase
+    initializeFirebase();
 
     server.listen(PORT, () => {
       console.log(`🚀 XavLink backend running on port ${PORT}`);

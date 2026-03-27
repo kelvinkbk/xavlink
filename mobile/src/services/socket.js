@@ -1,6 +1,7 @@
 import { io } from "socket.io-client";
 import { API_BASE } from "./api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
 
 // Remove /api suffix from API_BASE to get socket server URL
 const SOCKET_URL = API_BASE
@@ -37,6 +38,9 @@ const initSocket = async () => {
       socket.on("connect", () => {
         console.log("✅ Socket connected:", socket.id);
         console.log("🔗 Transport:", socket.io.engine.transport.name);
+        
+        // Send device token to backend when socket connects
+        sendDeviceTokenToBackend();
       });
 
       socket.on("connect_error", (err) => {
@@ -86,6 +90,34 @@ export const joinUserRoom = (userId) => {
   const s = getSocket();
   if (userId && s?.connected) {
     s.emit("join_user_room", { userId });
+  }
+};
+
+// Send device token to backend for push notifications
+const sendDeviceTokenToBackend = async () => {
+  try {
+    const userId = await AsyncStorage.getItem("userId");
+    if (!userId) {
+      console.warn("⚠️ No userId found, cannot send device token");
+      return;
+    }
+
+    const token = await Notifications.getExpoPushTokenAsync();
+    if (!token?.data) {
+      console.warn("⚠️ Failed to get Expo push token");
+      return;
+    }
+
+    const s = getSocket();
+    if (s?.connected) {
+      s.emit("save_device_token", {
+        userId,
+        token: token.data,
+      });
+      console.log("📱 Device token sent to backend");
+    }
+  } catch (error) {
+    console.error("❌ Error sending device token:", error);
   }
 };
 
