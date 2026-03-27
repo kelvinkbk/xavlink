@@ -24,7 +24,7 @@ Click "Add Environment Variable" for each:
 |-----|-------|
 | `VAPID_PUBLIC_KEY` | `BDfVIjnra5oYREaTmfxe7oj5P0E_PAEx1RJ6yLAG-K7a6VvG82OqPNWaQsm1gVKiQID1Z0YUGyeCPj_iSgx3QXY` |
 | `VAPID_PRIVATE_KEY` | `5u52dN0d6pSl6cYUFQwkvQ-xWjgTFGkzml-O18bufIM` |
-| `VAPID_SUBJECT` | `mailto:support@xavlink.com` |
+| `VAPID_SUBJECT` | `mailto:notifications@xavlink.com` |
 
 ### 4. Verify Other Variables (if missing)
 Ensure these are also set:
