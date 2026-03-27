@@ -70,10 +70,9 @@ The file content will look like:
 4. Add new variable:
    - **Name:** `FIREBASE_SERVICE_ACCOUNT`
    - **Value:** Paste the entire JSON content from Step 1
+5. Click **Save Changes** (backend will auto-redeploy)
 
 ⚠️ **Important:** Copy the ENTIRE JSON as a single line (Render handles the formatting)
-
-5. Click **Save Changes** (backend will auto-redeploy)
 
 ### Step 3: Run Database Migration on Render
 
@@ -239,7 +238,7 @@ messaging
 
 The backend logs show:
 
-```
+```text
 ✅ Push notification sent to user [userId]: X succeeded, Y failed
 🗑️ Removed X invalid tokens for user [userId]
 📤 Bulk push notification: X/Y users notified
@@ -249,7 +248,7 @@ The backend logs show:
 
 The mobile app logs:
 
-```
+```text
 📱 Device token sent to backend
 ✅ Local notification sent
 ```

@@ -82,7 +82,7 @@ npm run prisma:migrate:deploy
 
 ### Device Token Flow
 
-```
+```text
 Mobile App
   ↓
 Reports Expo Push Token to Backend via Socket.IO
@@ -96,7 +96,7 @@ Ready for push notifications
 
 ### Send Notification Flow
 
-```
+```text
 Backend Controller/Service
   ↓
 Call sendPushNotification(userId, title, body, data)
@@ -185,7 +185,7 @@ await sendPushNotification(
 
 ### Required Environment Variables (Render)
 
-```
+```bash
 FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"xavlink-6182e",...}
 ```
 
