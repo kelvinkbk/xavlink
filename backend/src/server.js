@@ -222,6 +222,9 @@ io.on("connection", (socket) => {
           chatId,
           senderId,
           senderName: message.sender.name,
+          messagePreview: message.text
+            ? message.text.substring(0, 60)
+            : "Message",
           io,
         });
       } catch (notifErr) {

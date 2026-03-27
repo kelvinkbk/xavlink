@@ -1,4 +1,9 @@
 const prisma = require("../config/prismaClient");
+const {
+  sendNotificationPush,
+  sendMessagePushNotification,
+} = require("./expoPushService");
+const { sendWebPushNotification } = require("./webPushService");
 
 /**
  * Create and emit a real-time notification
@@ -78,6 +83,32 @@ exports.createNotification = async ({
         unreadCount,
       });
     }
+
+    // Send push notification (async - don't await to avoid delays)
+    sendNotificationPush({
+      userId,
+      type,
+      title,
+      message,
+      relatedId,
+      actionUrl,
+    }).catch((err) => {
+      console.error("Error sending mobile push notification:", err);
+    });
+
+    // Send web push notification
+    sendWebPushNotification({
+      userId,
+      title,
+      body: message,
+      data: {
+        type,
+        relatedId,
+        actionUrl,
+      },
+    }).catch((err) => {
+      console.error("Error sending web push notification:", err);
+    });
 
     console.log(`✉️ Notification created for user ${userId}: ${type}`);
     return notification;
@@ -170,7 +201,13 @@ exports.notifyPostComment = async ({ postId, commenterId, io }) => {
 /**
  * Create message notification
  */
-exports.notifyMessage = async ({ chatId, senderId, senderName, io }) => {
+exports.notifyMessage = async ({
+  chatId,
+  senderId,
+  senderName,
+  messagePreview,
+  io,
+}) => {
   // Get all participants in the chat
   const participants = await prisma.chatParticipant.findMany({
     where: { chatId },
@@ -181,6 +218,7 @@ exports.notifyMessage = async ({ chatId, senderId, senderName, io }) => {
     // Don't notify the sender
     if (participant.userId === senderId) continue;
 
+    // Create in-app notification
     await exports.createNotification({
       userId: participant.userId,
       type: "message_received",
@@ -189,6 +227,30 @@ exports.notifyMessage = async ({ chatId, senderId, senderName, io }) => {
       relatedId: chatId,
       actionUrl: `/chat/${chatId}`,
       io,
+    });
+
+    // Send mobile push notification with message preview
+    sendMessagePushNotification({
+      userId: participant.userId,
+      senderName,
+      messagePreview: messagePreview || "You have a new message",
+      chatId,
+    }).catch((err) => {
+      console.error("Error sending message mobile push:", err);
+    });
+
+    // Send web push notification
+    sendWebPushNotification({
+      userId: participant.userId,
+      title: `Message from ${senderName}`,
+      body: messagePreview || "You have a new message",
+      data: {
+        type: "message",
+        chatId,
+        action: "open_chat",
+      },
+    }).catch((err) => {
+      console.error("Error sending message web push:", err);
     });
   }
 };

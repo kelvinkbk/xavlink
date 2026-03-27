@@ -5,6 +5,8 @@ const {
   markAllAsRead,
   deleteNotification,
   getUnreadCount,
+  savePushSubscription,
+  getVapidPublicKey,
 } = require("../controllers/notificationController");
 const authMiddleware = require("../middleware/authMiddleware");
 
@@ -18,5 +20,9 @@ router.get("/unread-count", getUnreadCount);
 router.put("/:id/read", markAsRead);
 router.put("/read-all", markAllAsRead);
 router.delete("/:id", deleteNotification);
+
+// Web push subscription endpoints
+router.post("/subscribe", savePushSubscription);
+router.get("/vapid-key", getVapidPublicKey);
 
 module.exports = router;

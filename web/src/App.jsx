@@ -15,6 +15,7 @@ import CreatePostModal from "./components/CreatePostModal";
 import AddSkillModal from "./components/AddSkillModal";
 import MainLayout from "./components/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import useWebPush from "./hooks/useWebPush";
 
 // Lazy-loaded pages for optimized code splitting
 const Login = lazy(() => import("./pages/Login"));
@@ -49,6 +50,9 @@ function AppContent() {
     showAddSkillModal,
     setShowAddSkillModal,
   } = useModal();
+
+  // Initialize web push notifications
+  useWebPush();
 
   return (
     <>

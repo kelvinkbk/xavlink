@@ -118,3 +118,53 @@ exports.createNotification = async ({
     console.error("Failed to create notification:", error);
   }
 };
+
+// Save web push subscription
+exports.savePushSubscription = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { subscription } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ error: "Invalid subscription" });
+    }
+
+    const { saveWebPushSubscription } = require("../services/webPushService");
+    const success = await saveWebPushSubscription(userId, subscription);
+
+    if (success) {
+      res.json({ message: "Subscription saved", success: true });
+    } else {
+      res.status(500).json({ error: "Failed to save subscription" });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to save push subscription",
+      error: error.message,
+    });
+  }
+};
+
+// Get VAPID public key for web push
+exports.getVapidPublicKey = async (req, res) => {
+  try {
+    const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+
+    if (!vapidPublicKey) {
+      return res.status(500).json({
+        error: "Web Push not configured",
+      });
+    }
+
+    res.json({ vapidPublicKey });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to get VAPID key",
+      error: error.message,
+    });
+  }
+};
