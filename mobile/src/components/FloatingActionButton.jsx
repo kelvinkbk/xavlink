@@ -22,6 +22,7 @@ const FloatingActionButton = ({
 
   // Animation values
   const rotation = useRef(new Animated.Value(0)).current;
+  const scaleButton = useRef(new Animated.Value(1)).current;
   const scaleOption1 = useRef(new Animated.Value(0)).current;
   const scaleOption2 = useRef(new Animated.Value(0)).current;
   const scaleOption3 = useRef(new Animated.Value(0)).current;
@@ -33,10 +34,16 @@ const FloatingActionButton = ({
     const toValue = isExpanded ? 0 : 1;
 
     Animated.parallel([
-      // Rotate main button
+      // Rotate and scale main button
       Animated.timing(rotation, {
         toValue,
-        duration: 300,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleButton, {
+        toValue: toValue === 0 ? 1 : 1.15,
+        tension: 50,
+        friction: 8,
         useNativeDriver: true,
       }),
       // Animate first option (Create Post)
@@ -45,13 +52,13 @@ const FloatingActionButton = ({
         Animated.parallel([
           Animated.spring(scaleOption1, {
             toValue,
-            tension: 40,
-            friction: 7,
+            tension: 50,
+            friction: 8,
             useNativeDriver: true,
           }),
           Animated.timing(opacityOption1, {
             toValue,
-            duration: 200,
+            duration: 250,
             useNativeDriver: true,
           }),
         ]),
@@ -62,13 +69,13 @@ const FloatingActionButton = ({
         Animated.parallel([
           Animated.spring(scaleOption2, {
             toValue,
-            tension: 40,
-            friction: 7,
+            tension: 50,
+            friction: 8,
             useNativeDriver: true,
           }),
           Animated.timing(opacityOption2, {
             toValue,
-            duration: 200,
+            duration: 250,
             useNativeDriver: true,
           }),
         ]),
@@ -79,13 +86,13 @@ const FloatingActionButton = ({
         Animated.parallel([
           Animated.spring(scaleOption3, {
             toValue,
-            tension: 40,
-            friction: 7,
+            tension: 50,
+            friction: 8,
             useNativeDriver: true,
           }),
           Animated.timing(opacityOption3, {
             toValue,
-            duration: 200,
+            duration: 250,
             useNativeDriver: true,
           }),
         ]),
@@ -121,7 +128,7 @@ const FloatingActionButton = ({
 
   const rotateInterpolate = rotation.interpolate({
     inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
+    outputRange: ["0deg", "405deg"],
   });
 
   const dynamicStyles = {
@@ -136,76 +143,79 @@ const FloatingActionButton = ({
 
   return (
     <View style={dynamicStyles.container} pointerEvents="box-none">
-      {/* Create Post Option */}
-      <Animated.View
+      {/* Options wrapper - vertically stacked */}
+      <View
+        style={styles.optionsWrapper}
         pointerEvents={isExpanded ? "auto" : "none"}
-        style={[
-          styles.optionContainer,
-          {
-            transform: [{ scale: scaleOption1 }],
-            opacity: opacityOption1,
-          },
-        ]}
       >
-        <TouchableOpacity
-          style={[styles.optionLabel, { backgroundColor: colors.primary }]}
-          onPress={handleCreatePost}
-          activeOpacity={0.8}
+        {/* Create Post Option */}
+        <Animated.View
+          style={[
+            styles.optionContainer,
+            {
+              transform: [{ scale: scaleOption1 }],
+              opacity: opacityOption1,
+            },
+          ]}
         >
-          <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
-            Create Post
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
+          <TouchableOpacity
+            style={[styles.optionLabel, { backgroundColor: colors.primary }]}
+            onPress={handleCreatePost}
+            activeOpacity={0.8}
+          >
+            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
+              Create Post
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
 
-      {/* Schedule Post Option */}
-      <Animated.View
-        pointerEvents={isExpanded ? "auto" : "none"}
-        style={[
-          styles.optionContainer,
-          {
-            transform: [{ scale: scaleOption2 }],
-            opacity: opacityOption2,
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={[styles.optionLabel, { backgroundColor: colors.primary }]}
-          onPress={handleSchedulePost}
-          activeOpacity={0.8}
+        {/* Schedule Post Option */}
+        <Animated.View
+          style={[
+            styles.optionContainer,
+            {
+              transform: [{ scale: scaleOption2 }],
+              opacity: opacityOption2,
+            },
+          ]}
         >
-          <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
-            Schedule Post
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
+          <TouchableOpacity
+            style={[styles.optionLabel, { backgroundColor: colors.primary }]}
+            onPress={handleSchedulePost}
+            activeOpacity={0.8}
+          >
+            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
+              Schedule Post
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
 
-      {/* Add Skill Option */}
-      <Animated.View
-        pointerEvents={isExpanded ? "auto" : "none"}
-        style={[
-          styles.optionContainer,
-          {
-            transform: [{ scale: scaleOption3 }],
-            opacity: opacityOption3,
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={[styles.optionLabel, { backgroundColor: colors.primary }]}
-          onPress={handleAddSkill}
-          activeOpacity={0.8}
+        {/* Add Skill Option */}
+        <Animated.View
+          style={[
+            styles.optionContainer,
+            {
+              transform: [{ scale: scaleOption3 }],
+              opacity: opacityOption3,
+            },
+          ]}
         >
-          <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
-            Add Skill
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
+          <TouchableOpacity
+            style={[styles.optionLabel, { backgroundColor: colors.primary }]}
+            onPress={handleAddSkill}
+            activeOpacity={0.8}
+          >
+            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
+              Add Skill
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
 
       {/* Main FAB Button */}
       <Animated.View
         style={{
-          transform: [{ rotate: rotateInterpolate }],
+          transform: [{ rotate: rotateInterpolate }, { scale: scaleButton }],
         }}
       >
         <TouchableOpacity
@@ -228,6 +238,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 999,
   },
+  optionsWrapper: {
+    flexDirection: "column-reverse",
+    alignItems: "center",
+    marginBottom: 10,
+    gap: 8,
+  },
   fab: {
     width: 60,
     height: 60,
@@ -248,7 +264,6 @@ const styles = StyleSheet.create({
   optionContainer: {
     flexDirection: "row-reverse",
     alignItems: "center",
-    marginBottom: 15,
   },
   optionButton: {
     width: 50,
