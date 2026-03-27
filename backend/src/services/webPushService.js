@@ -9,7 +9,8 @@ const prisma = require("../config/prismaClient");
 // Configure web push (should be set from environment)
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-const vapidSubject = process.env.VAPID_SUBJECT || "mailto:notifications@xavlink.com";
+const vapidSubject =
+  process.env.VAPID_SUBJECT || "mailto:notifications@xavlink.com";
 
 if (vapidPrivateKey && vapidPublicKey) {
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
