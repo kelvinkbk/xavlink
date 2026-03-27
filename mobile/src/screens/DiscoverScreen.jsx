@@ -54,8 +54,17 @@ const DiscoverScreen = () => {
         users = response.data;
       }
 
-      console.log("Extracted users:", users.length);
-      setSuggestedUsers(users);
+      // Deduplicate users by ID to avoid duplicate key errors
+      const uniqueUsersMap = new Map();
+      users.forEach((user) => {
+        if (user.id && !uniqueUsersMap.has(user.id)) {
+          uniqueUsersMap.set(user.id, user);
+        }
+      });
+      const uniqueUsers = Array.from(uniqueUsersMap.values());
+
+      console.log("Extracted users:", uniqueUsers.length);
+      setSuggestedUsers(uniqueUsers);
     } catch (error) {
       console.error("Failed to fetch suggested users:", error);
       setSuggestedUsers([]);

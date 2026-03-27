@@ -88,12 +88,19 @@ export const SyncProvider = ({ children }) => {
         console.log("🔔 New notification:", data);
         setSyncEvents((prev) => ({ ...prev, newNotification: data }));
 
-        // Send local notification to user
+        // Send local notification to user (works even when app is backgrounded)
         try {
           await Notifications.scheduleNotificationAsync({
             content: {
-              title: data.title || "New Notification",
-              body: data.message || data.description || "",
+              title: data.title || "XavLink Notification",
+              body:
+                data.message ||
+                data.description ||
+                "You have a new notification",
+              sound: data.sound || "default",
+              vibrate: [0, 250, 250, 250],
+              badge: 1,
+              categoryId: "notification",
               data: data,
             },
             trigger: null, // Show immediately
@@ -104,13 +111,57 @@ export const SyncProvider = ({ children }) => {
         }
       };
 
+      // New post notification
+      const handleNewPostNotification = async (data) => {
+        console.log("📝 New post notification:", data);
+        try {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `${data.userName || "Someone"} posted`,
+              body: data.content?.substring(0, 80) || "Check out the new post",
+              sound: "default",
+              vibrate: [0, 250, 250, 250],
+              badge: 1,
+              data: { type: "post", ...data },
+            },
+            trigger: null,
+          });
+        } catch (error) {
+          console.error("Error sending post notification:", error);
+        }
+      };
+
+      // Message notification
+      const handleNewMessageNotification = async (data) => {
+        console.log("💬 New message notification:", data);
+        try {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `Message from ${data.senderName || "Unknown"}`,
+              body: data.text?.substring(0, 80) || "You have a new message",
+              sound: "default",
+              vibrate: [0, 250, 250, 250],
+              badge: 1,
+              data: { type: "message", ...data },
+            },
+            trigger: null,
+          });
+        } catch (error) {
+          console.error("Error sending message notification:", error);
+        }
+      };
+
       const handleUnreadCount = (data) => {
         console.log("🔢 Unread count:", data);
         setSyncEvents((prev) => ({ ...prev, unreadCount: data }));
       };
 
       // Register listeners
-      s.on("new_post", handleNewPost);
+      s.on("new_post", (data) => {
+        handleNewPost(data);
+        // Send notification for new post
+        handleNewPostNotification(data);
+      });
       s.on("post_liked", handlePostLiked);
       s.on("post_unliked", handlePostUnliked);
       s.on("new_comment", handleNewComment);
@@ -121,10 +172,14 @@ export const SyncProvider = ({ children }) => {
       s.on("user_unfollowed", handleUserUnfollowed);
       s.on("new_notification", handleNewNotification);
       s.on("notification:unread-count", handleUnreadCount);
+      s.on("send_message", (data) => {
+        // Send notification for new message
+        handleNewMessageNotification(data);
+      });
 
       // Cleanup function
       return () => {
-        s.off("new_post", handleNewPost);
+        s.off("new_post");
         s.off("post_liked", handlePostLiked);
         s.off("post_unliked", handlePostUnliked);
         s.off("new_comment", handleNewComment);
@@ -135,6 +190,7 @@ export const SyncProvider = ({ children }) => {
         s.off("user_unfollowed", handleUserUnfollowed);
         s.off("new_notification", handleNewNotification);
         s.off("notification:unread-count", handleUnreadCount);
+        s.off("send_message");
       };
     };
 

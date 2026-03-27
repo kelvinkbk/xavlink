@@ -25,7 +25,11 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.kelvinkbk.xavlinkmonorepo"
+      "package": "com.kelvinkbk.xavlinkmonorepo",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "com.google.android.c2dm.permission.RECEIVE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -43,6 +47,17 @@
       "eas": {
         "projectId": "656df391-5e12-40de-baef-e3dc148f3307"
       }
-    }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff",
+          "sounds": ["default"],
+          "modes": ["backgroundDark"]
+        }
+      ]
+    ]
   }
 }
