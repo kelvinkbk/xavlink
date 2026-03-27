@@ -38,7 +38,7 @@ const initSocket = async () => {
       socket.on("connect", () => {
         console.log("✅ Socket connected:", socket.id);
         console.log("🔗 Transport:", socket.io.engine.transport.name);
-        
+
         // Send device token to backend when socket connects
         sendDeviceTokenToBackend();
       });

@@ -1,12 +1,15 @@
 /**
  * Example: How to integrate push notifications into XavLink features
- * 
+ *
  * This file shows practical examples of sending push notifications
  * for common features: posts, messages, follows, likes, comments
  */
 
-const { sendPushNotification, sendBulkPushNotification } = require('./pushNotificationService');
-const prisma = require('../config/prismaClient');
+const {
+  sendPushNotification,
+  sendBulkPushNotification,
+} = require("./pushNotificationService");
+const prisma = require("../config/prismaClient");
 
 // ============================================
 // 1. NEW POST NOTIFICATION
@@ -21,8 +24,8 @@ const notifyNewPost = async (userId, post) => {
       select: { followerId: true },
     });
 
-    const followerIds = followers.map(f => f.followerId);
-    
+    const followerIds = followers.map((f) => f.followerId);
+
     if (followerIds.length === 0) return;
 
     // Get user details
@@ -35,18 +38,20 @@ const notifyNewPost = async (userId, post) => {
     await sendBulkPushNotification(
       followerIds,
       `${user.name} posted`,
-      post.content.substring(0, 80) + '...',
+      post.content.substring(0, 80) + "...",
       {
-        type: 'post',
+        type: "post",
         postId: post.id,
         authorId: userId,
         authorName: user.name,
-      }
+      },
     );
 
-    console.log(`📮 New post notification sent to ${followerIds.length} followers`);
+    console.log(
+      `📮 New post notification sent to ${followerIds.length} followers`,
+    );
   } catch (error) {
-    console.error('❌ Failed to notify new post:', error);
+    console.error("❌ Failed to notify new post:", error);
   }
 };
 
@@ -71,16 +76,16 @@ const notifyNewMessage = async (chatId, senderId, recipientId, messageText) => {
       `Message from ${sender.name}`,
       messageText.substring(0, 80),
       {
-        type: 'message',
+        type: "message",
         chatId: chatId,
         senderId: senderId,
         senderName: sender.name,
-      }
+      },
     );
 
     console.log(`💬 Message notification sent to user ${recipientId}`);
   } catch (error) {
-    console.error('❌ Failed to notify new message:', error);
+    console.error("❌ Failed to notify new message:", error);
   }
 };
 
@@ -112,18 +117,18 @@ const notifyPostLiked = async (postId, likerId) => {
     await sendPushNotification(
       post.userId,
       `${liker.name} liked your post`,
-      post.content.substring(0, 60) + '...',
+      post.content.substring(0, 60) + "...",
       {
-        type: 'like',
+        type: "like",
         postId: postId,
         likerId: likerId,
         likerName: liker.name,
-      }
+      },
     );
 
     console.log(`❤️ Like notification sent to post author`);
   } catch (error) {
-    console.error('❌ Failed to notify post liked:', error);
+    console.error("❌ Failed to notify post liked:", error);
   }
 };
 
@@ -152,7 +157,7 @@ const notifyNewComment = async (postId, commenterId, commentText) => {
 
     const notifyUserIds = new Set([
       post.userId,
-      ...comments.map(c => c.userId),
+      ...comments.map((c) => c.userId),
     ]);
 
     const commenter = await prisma.user.findUnique({
@@ -164,18 +169,18 @@ const notifyNewComment = async (postId, commenterId, commentText) => {
     await sendBulkPushNotification(
       Array.from(notifyUserIds),
       `${commenter.name} commented`,
-      commentText.substring(0, 60) + '...',
+      commentText.substring(0, 60) + "...",
       {
-        type: 'comment',
+        type: "comment",
         postId: postId,
         commenterId: commenterId,
         commenterName: commenter.name,
-      }
+      },
     );
 
     console.log(`💬 Comment notification sent to ${notifyUserIds.size} users`);
   } catch (error) {
-    console.error('❌ Failed to notify new comment:', error);
+    console.error("❌ Failed to notify new comment:", error);
   }
 };
 
@@ -198,18 +203,18 @@ const notifyNewFollower = async (followerId, followingId) => {
     await sendPushNotification(
       followingId,
       `${follower.name} followed you`,
-      'Check out their profile',
+      "Check out their profile",
       {
-        type: 'follow',
+        type: "follow",
         followerId: followerId,
         followerName: follower.name,
         followerAvatar: follower.profilePic,
-      }
+      },
     );
 
     console.log(`➕ Follow notification sent to user ${followingId}`);
   } catch (error) {
-    console.error('❌ Failed to notify new follower:', error);
+    console.error("❌ Failed to notify new follower:", error);
   }
 };
 
@@ -221,7 +226,11 @@ const notifyNewFollower = async (followerId, followingId) => {
 // 6. SKILL ENDORSEMENT NOTIFICATION
 // ============================================
 
-const notifySkillEndorsement = async (endorserId, endorsedUserId, skillName) => {
+const notifySkillEndorsement = async (
+  endorserId,
+  endorsedUserId,
+  skillName,
+) => {
   try {
     const endorser = await prisma.user.findUnique({
       where: { id: endorserId },
@@ -233,16 +242,16 @@ const notifySkillEndorsement = async (endorserId, endorsedUserId, skillName) => 
       `${endorser.name} endorsed your skill`,
       `${skillName} skill`,
       {
-        type: 'endorsement',
+        type: "endorsement",
         endorserId: endorserId,
         endorserName: endorser.name,
         skillName: skillName,
-      }
+      },
     );
 
     console.log(`⭐ Endorsement notification sent`);
   } catch (error) {
-    console.error('❌ Failed to notify endorsement:', error);
+    console.error("❌ Failed to notify endorsement:", error);
   }
 };
 
@@ -251,7 +260,12 @@ const notifySkillEndorsement = async (endorserId, endorsedUserId, skillName) => 
 // ============================================
 // Send notification to all users or specific group
 
-const broadcastNotification = async (title, body, data = {}, userIds = null) => {
+const broadcastNotification = async (
+  title,
+  body,
+  data = {},
+  userIds = null,
+) => {
   try {
     let targetUserIds = userIds;
 
@@ -260,20 +274,20 @@ const broadcastNotification = async (title, body, data = {}, userIds = null) => 
       const users = await prisma.user.findMany({
         select: { id: true },
       });
-      targetUserIds = users.map(u => u.id);
+      targetUserIds = users.map((u) => u.id);
     }
 
     const sent = await sendBulkPushNotification(
       targetUserIds,
       title,
       body,
-      data
+      data,
     );
 
     console.log(`📢 Broadcast notification sent to ${sent} users`);
     return sent;
   } catch (error) {
-    console.error('❌ Failed to broadcast notification:', error);
+    console.error("❌ Failed to broadcast notification:", error);
     return 0;
   }
 };

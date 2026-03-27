@@ -1,6 +1,7 @@
 # Firebase Cloud Messaging Integration - Setup Guide
 
 ## Overview
+
 The backend and mobile app are now configured to support Firebase push notifications. This guide walks through the remaining steps to complete the integration.
 
 ## Implementation Summary
@@ -47,6 +48,7 @@ The backend and mobile app are now configured to support Firebase push notificat
 6. Save the downloaded JSON file
 
 The file content will look like:
+
 ```json
 {
   "type": "service_account",
@@ -68,7 +70,7 @@ The file content will look like:
 4. Add new variable:
    - **Name:** `FIREBASE_SERVICE_ACCOUNT`
    - **Value:** Paste the entire JSON content from Step 1
-   
+
 ⚠️ **Important:** Copy the ENTIRE JSON as a single line (Render handles the formatting)
 
 5. Click **Save Changes** (backend will auto-redeploy)
@@ -91,33 +93,37 @@ This adds the `deviceTokens` field to all existing User documents.
 After setup, use the push notification service in your controllers:
 
 ### Single User Notification
+
 ```javascript
-const { sendPushNotification } = require('../utils/pushNotificationService');
+const { sendPushNotification } = require("../utils/pushNotificationService");
 
 // Send notification
 await sendPushNotification(
   userId,
-  'New Post from John',
+  "New Post from John",
   'John posted: "Check out my new project"',
   {
-    type: 'post',
+    type: "post",
     postId: post.id,
-    authorId: post.userId
-  }
+    authorId: post.userId,
+  },
 );
 ```
 
 ### Bulk Notifications
+
 ```javascript
-const { sendBulkPushNotification } = require('../utils/pushNotificationService');
+const {
+  sendBulkPushNotification,
+} = require("../utils/pushNotificationService");
 
 // Send to multiple users (e.g., all followers)
-const followerIds = followers.map(f => f.id);
+const followerIds = followers.map((f) => f.id);
 await sendBulkPushNotification(
   followerIds,
-  'New Post from Someone You Follow',
-  'Check out their latest post!',
-  { type: 'post', postId: post.id }
+  "New Post from Someone You Follow",
+  "Check out their latest post!",
+  { type: "post", postId: post.id },
 );
 ```
 
@@ -130,37 +136,42 @@ await sendBulkPushNotification(
 Use the `sendPushNotification` function in your notification-triggering endpoints:
 
 #### Example: New Post Notification
+
 ```javascript
 // In postController.js
-const { sendPushNotification, sendBulkPushNotification } = require('../utils/pushNotificationService');
+const {
+  sendPushNotification,
+  sendBulkPushNotification,
+} = require("../utils/pushNotificationService");
 
 exports.createPost = async (req, res) => {
   // ... create post logic ...
-  
+
   // Get user's followers
   const followers = await prisma.follow.findMany({
     where: { followingId: userId },
   });
-  
-  const followerIds = followers.map(f => f.followerId);
-  
+
+  const followerIds = followers.map((f) => f.followerId);
+
   // Send push notifications to all followers
   await sendBulkPushNotification(
     followerIds,
     `${user.name} posted`,
     post.content.substring(0, 80),
     {
-      type: 'post',
+      type: "post",
       postId: post.id,
-      authorName: user.name
-    }
+      authorName: user.name,
+    },
   );
-  
+
   res.json(post);
 };
 ```
 
 #### Example: Message Notification
+
 ```javascript
 // In messageController.js or via Socket.IO
 await sendPushNotification(
@@ -168,11 +179,11 @@ await sendPushNotification(
   `Message from ${senderName}`,
   message.text.substring(0, 80),
   {
-    type: 'message',
+    type: "message",
     chatId: chatId,
     senderId: senderId,
-    senderName: senderName
-  }
+    senderName: senderName,
+  },
 );
 ```
 
@@ -181,17 +192,19 @@ await sendPushNotification(
 ## 🧪 Testing Push Notifications
 
 ### 1. Test on Mobile App
+
 - Build and run the Android APK
 - App will automatically register device token when Socket.IO connects
 - Check backend logs for: `✅ Device token saved for user [userId]`
 
 ### 2. Test Sending Notifications
+
 Use this Node.js script to test:
 
 ```javascript
 // test-push.js
-const admin = require('firebase-admin');
-const serviceAccount = require('./firebase-service-account.json');
+const admin = require("firebase-admin");
+const serviceAccount = require("./firebase-service-account.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -200,19 +213,22 @@ admin.initializeApp({
 const messaging = admin.messaging();
 
 // Get a test token from your app logs
-const testToken = 'YOUR_EXPO_PUSH_TOKEN';
+const testToken = "YOUR_EXPO_PUSH_TOKEN";
 
-messaging.send({
-  notification: {
-    title: 'Test Notification',
-    body: 'This is a test',
-  },
-  token: testToken,
-}).then(response => {
-  console.log('✅ Notification sent:', response);
-}).catch(error => {
-  console.error('❌ Error sending notification:', error);
-});
+messaging
+  .send({
+    notification: {
+      title: "Test Notification",
+      body: "This is a test",
+    },
+    token: testToken,
+  })
+  .then((response) => {
+    console.log("✅ Notification sent:", response);
+  })
+  .catch((error) => {
+    console.error("❌ Error sending notification:", error);
+  });
 ```
 
 ---
@@ -220,7 +236,9 @@ messaging.send({
 ## 📊 Monitoring
 
 ### Backend Logs
+
 The backend logs show:
+
 ```
 ✅ Push notification sent to user [userId]: X succeeded, Y failed
 🗑️ Removed X invalid tokens for user [userId]
@@ -228,7 +246,9 @@ The backend logs show:
 ```
 
 ### Mobile Logs
+
 The mobile app logs:
+
 ```
 📱 Device token sent to backend
 ✅ Local notification sent
@@ -256,16 +276,19 @@ The mobile app logs:
 ## ❌ Troubleshooting
 
 ### "Firebase not initialized" warning
+
 - ✅ Check `FIREBASE_SERVICE_ACCOUNT` is set in Render
 - ✅ Verify JSON is properly formatted (single line in Render UI)
 - ✅ Restart backend service after adding environment variable
 
 ### Device tokens not saving
+
 - Check mobile app logs for "Device token sent to backend"
 - Verify userId is being sent correctly
 - Check backend Socket.IO handler logs
 
 ### Notifications not arriving
+
 - Verify notification channels are created on Android
 - Check Android Settings → Apps → XavLink → Notifications is enabled
 - Verify device token is still valid in database
