@@ -29,7 +29,7 @@ const paletteNames = {
   gold: "1️⃣2️⃣ Gold (Black × Gold)",
 };
 
-const SettingsScreen = () => {
+const SettingsScreen = ({ navigation }) => {
   const { logout } = useAuth();
   const { colors, colorPalette, colorPalettes, setPalette } = useTheme();
   const [notifications, setNotifications] = useState(true);
@@ -75,28 +75,24 @@ const SettingsScreen = () => {
         </Text>
       </View>
 
-      {/* Notifications */}
-      <View
+      {/* Notifications Settings */}
+      <TouchableOpacity
         style={[
           styles.row,
           { backgroundColor: colors.surface, borderColor: colors.border },
         ]}
+        onPress={() => navigation.navigate("NotificationSettings")}
       >
         <View style={styles.rowContent}>
           <Text style={[styles.label, { color: colors.textPrimary }]}>
-            Notifications
+            Notification Settings
           </Text>
           <Text style={[styles.subLabel, { color: colors.textMuted }]}>
-            Receive push notifications
+            Manage notification preferences
           </Text>
         </View>
-        <Switch
-          value={notifications}
-          onValueChange={setNotifications}
-          trackColor={{ false: colors.border, true: colors.primary }}
-          thumbColor={notifications ? colors.accent : colors.textMuted}
-        />
-      </View>
+        <Text style={[styles.chevron, { color: colors.textMuted }]}>›</Text>
+      </TouchableOpacity>
 
       {/* App Updates */}
       <View
@@ -134,6 +130,25 @@ const SettingsScreen = () => {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Device Management */}
+      <TouchableOpacity
+        style={[
+          styles.row,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+        onPress={() => navigation.navigate("DeviceManagement")}
+      >
+        <View style={styles.rowContent}>
+          <Text style={[styles.label, { color: colors.textPrimary }]}>
+            Active Sessions
+          </Text>
+          <Text style={[styles.subLabel, { color: colors.textMuted }]}>
+            Manage logged-in devices
+          </Text>
+        </View>
+        <Text style={[styles.chevron, { color: colors.textMuted }]}>›</Text>
+      </TouchableOpacity>
 
       {/* Logout */}
       <TouchableOpacity

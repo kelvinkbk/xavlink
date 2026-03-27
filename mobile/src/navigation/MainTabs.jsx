@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Text, Animated, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
@@ -15,6 +16,8 @@ import FollowersScreen from "../screens/FollowersScreen";
 import FollowingScreen from "../screens/FollowingScreen";
 import SkillsScreen from "../screens/SkillsScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import NotificationSettingsScreen from "../screens/NotificationSettingsScreen";
+import DeviceManagementScreen from "../screens/DeviceManagementScreen";
 import InboxScreen from "../screens/InboxScreen";
 import AdminDashboardScreen from "../screens/AdminDashboardScreen";
 import DiscoverScreen from "../screens/DiscoverScreen";
@@ -113,6 +116,16 @@ const ProfileStackNavigator = () => {
         options={{ title: "Settings" }}
       />
       <ProfileStack.Screen
+        name="NotificationSettings"
+        component={NotificationSettingsScreen}
+        options={{ title: "Notification Settings" }}
+      />
+      <ProfileStack.Screen
+        name="DeviceManagement"
+        component={DeviceManagementScreen}
+        options={{ title: "Active Sessions" }}
+      />
+      <ProfileStack.Screen
         name="AdminDashboard"
         component={AdminDashboardScreen}
         options={{ title: "Admin Dashboard" }}
@@ -150,6 +163,7 @@ const MainTabs = () => {
   const { user } = useAuth();
   const { colors } = useTheme();
   const { isVisible: isFABVisible } = useFABVisibility();
+  const insets = useSafeAreaInsets();
   const [badge, setBadge] = useState(0);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [showAddSkillModal, setShowAddSkillModal] = useState(false);
@@ -211,9 +225,15 @@ const MainTabs = () => {
           tabBarStyle: {
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
+            borderTopWidth: 0.5,
             height: 60,
-            paddingBottom: 8,
+            paddingBottom: Math.max(8, insets.bottom),
             paddingTop: 8,
+            elevation: 8,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
           },
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textSecondary,
@@ -221,8 +241,13 @@ const MainTabs = () => {
             backgroundColor: colors.primary,
             color: "#fff",
             fontSize: 10,
+            fontWeight: "600",
           },
-          tabBarLabelStyle: { fontSize: 11, fontWeight: "500", marginTop: -2 },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: "500",
+            marginTop: -2,
+          },
         }}
       >
         <Tab.Screen

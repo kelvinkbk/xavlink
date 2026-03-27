@@ -1,0 +1,98 @@
+# Don't include these files in the EAS Build archive to reduce upload/download times
+
+# Build artifacts
+node_modules
+build
+dist
+.next
+out
+.nuxt
+.cache
+.vuepress/dist
+**/.turbo
+**/dist
+**/build
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Environment files (don't include local env vars)
+.env
+.env.local
+.env.*.local
+.env.test
+.env.development.local
+.env.production.local
+
+# IDE and editor config
+.vscode
+.idea
+.DS_Store
+.AppleDouble
+.LSOverride
+.env.*.example
+.prettierignore
+.eslintignore
+*.sublime-project
+*.sublime-workspace
+.idea/
+.vscode/
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
+Jenkinsfile
+
+# Documentation
+docs/
+*.md
+README.md
+CHANGELOG.md
+LICENSE
+
+# Package manager lock files (optional - uncomment if needed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Dependencies in backend folder are not needed for mobile build
+backend/node_modules
+web/node_modules
+
+# Database and data files
+*.db
+*.sqlite
+*.sql
+postgres_json_export/
+render_postgres_backup.sql
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+.DS_Store
+Thumbs.db
+
+# Platform specific
+android/.gradle
+android/build/
+android/local.properties
+ios/Pods
+ios/Podfile.lock
+
+# Uncommented build files
+scripts/
+*.sh
+*.ps1
+
+# Upload folders
+mobile/uploads/
+backend/uploads/
+
+# Test coverage
+coverage/
+.nyc_output

@@ -28,6 +28,7 @@ import {
 } from "../services/socket";
 import { chatService, uploadService, API_BASE } from "../services/api";
 import { useFABVisibility } from "../context/FABVisibilityContext";
+import { MessageReactions } from "../components/MessageReactions";
 
 const toAbsoluteUrl = (url) => {
   if (!url) return url;
@@ -56,6 +57,9 @@ const ChatScreen = ({ route }) => {
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [attachmentUrl, setAttachmentUrl] = useState("");
   const [typingUsers, setTypingUsers] = useState([]);
+  const [selectedMessageForReaction, setSelectedMessageForReaction] =
+    useState(null);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const listRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -259,6 +263,27 @@ const ChatScreen = ({ route }) => {
     }
   };
 
+  const handleMessageReaction = (emoji) => {
+    if (!selectedMessageForReaction) return;
+
+    // Update message with reaction
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.id === selectedMessageForReaction.id) {
+          return {
+            ...msg,
+            reactions: [...(msg.reactions || []), { emoji, userId: user?.id }],
+          };
+        }
+        return msg;
+      }),
+    );
+
+    // Clear selection
+    setSelectedMessageForReaction(null);
+    setShowReactionPicker(false);
+  };
+
   const handleSend = () => {
     if ((!text.trim() && !attachmentUrl) || !chatId) return;
 
@@ -428,46 +453,68 @@ const ChatScreen = ({ route }) => {
                     </Text>
                   </View>
                 )}
-                <View
-                  style={[
-                    styles.bubble,
-                    isOwn
-                      ? {
-                          backgroundColor: colors.primary,
-                          alignSelf: "flex-end",
-                        }
-                      : {
-                          backgroundColor: colors.surface,
-                          alignSelf: "flex-start",
-                        },
-                  ]}
-                >
-                  {item.attachmentUrl && (
-                    <Image
-                      source={{ uri: toAbsoluteUrl(item.attachmentUrl) }}
-                      style={styles.attachmentImage}
-                    />
-                  )}
-                  <Text
+                <View style={styles.messageWithReaction}>
+                  <View
                     style={[
-                      styles.messageText,
-                      isOwn ? { color: "#fff" } : { color: colors.textPrimary },
+                      styles.bubble,
+                      isOwn
+                        ? {
+                            backgroundColor: colors.primary,
+                            alignSelf: "flex-end",
+                          }
+                        : {
+                            backgroundColor: colors.surface,
+                            alignSelf: "flex-start",
+                          },
                     ]}
+                    onLongPress={() => {
+                      setSelectedMessageForReaction(item);
+                      setShowReactionPicker(true);
+                    }}
                   >
-                    {item.text}
-                  </Text>
-                  {formattedTime && (
+                    {item.attachmentUrl && (
+                      <Image
+                        source={{ uri: toAbsoluteUrl(item.attachmentUrl) }}
+                        style={styles.attachmentImage}
+                      />
+                    )}
                     <Text
                       style={[
-                        styles.timestamp,
+                        styles.messageText,
                         isOwn
-                          ? { color: "rgba(255,255,255,0.7)" }
-                          : { color: colors.textMuted },
+                          ? { color: "#fff" }
+                          : { color: colors.textPrimary },
                       ]}
                     >
-                      {formattedTime}
+                      {item.text}
                     </Text>
-                  )}
+                    {formattedTime && (
+                      <Text
+                        style={[
+                          styles.timestamp,
+                          isOwn
+                            ? { color: "rgba(255,255,255,0.7)" }
+                            : { color: colors.textMuted },
+                        ]}
+                      >
+                        {formattedTime}
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.reactionButton,
+                      isOwn
+                        ? styles.reactionButtonOwn
+                        : styles.reactionButtonOther,
+                    ]}
+                    onPress={() => {
+                      setSelectedMessageForReaction(item);
+                      setShowReactionPicker(true);
+                    }}
+                  >
+                    <Text style={styles.reactionButtonText}>😊</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             );
@@ -559,6 +606,17 @@ const ChatScreen = ({ route }) => {
             </Animated.View>
           </View>
         </View>
+
+        {/* Message Reactions Modal */}
+        <MessageReactions
+          visible={showReactionPicker}
+          onSelectReaction={handleMessageReaction}
+          onClose={() => {
+            setShowReactionPicker(false);
+            setSelectedMessageForReaction(null);
+          }}
+          message={selectedMessageForReaction}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -663,6 +721,30 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: "#e2e8f0",
+  },
+  messageWithReaction: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginHorizontal: 4,
+  },
+  reactionButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 6,
+    marginVertical: 4,
+  },
+  reactionButtonOwn: {
+    marginLeft: 8,
+  },
+  reactionButtonOther: {
+    marginRight: 8,
+  },
+  reactionButtonText: {
+    fontSize: 16,
   },
 });
 
