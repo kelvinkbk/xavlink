@@ -21,26 +21,30 @@ const initializeFirebase = () => {
       serviceAccount.private_key &&
       typeof serviceAccount.private_key === "string"
     ) {
-      console.log(
-        `🔑 Before: private_key contains literal \\n: ${serviceAccount.private_key.includes("\\n")}`,
-      );
-      console.log(
-        `🔑 Before: key length=${serviceAccount.private_key.length}, starts with: ${serviceAccount.private_key.substring(0, 50)}`,
-      );
-      console.log(
-        `🔑 Before: key ends with: ${serviceAccount.private_key.substring(serviceAccount.private_key.length - 50)}`,
-      );
-
       // Replace escaped newlines with actual newlines
       serviceAccount.private_key = serviceAccount.private_key.replace(
         /\\n/g,
         "\n",
       );
+
+      // Debug: inspect the key structure
+      const lines = serviceAccount.private_key.split("\n");
       console.log(
-        `🔑 After: private_key contains actual newlines: ${serviceAccount.private_key.includes("\n")}`,
+        `🔑 Key structure: ${lines.length} lines, total length: ${serviceAccount.private_key.length}`,
       );
+      console.log(`🔑 First line: ${lines[0]}`);
+      console.log(`🔑 Last line: ${lines[lines.length - 1]}`);
+
+      // Clean the key: remove any whitespace issues but preserve the PEM structure
+      const header = lines[0]; // -----BEGIN PRIVATE KEY-----
+      const footer = lines[lines.length - 1]; // -----END PRIVATE KEY-----
+      const body = lines.slice(1, -1); // All the base64 content
+
+      // Reconstruct the key with clean newlines
+      serviceAccount.private_key = [header, ...body, footer].join("\n");
+
       console.log(
-        `🔑 After: key length=${serviceAccount.private_key.length}, line count: ${serviceAccount.private_key.split("\n").length}`,
+        `🔑 Reconstructed key length: ${serviceAccount.private_key.length}`,
       );
     }
 
