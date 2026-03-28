@@ -1,6 +1,7 @@
 # XavLink - Quick Setup Checklist
 
 ## ✅ Pre-Setup Checklist
+
 - [ ] Node.js 16+ installed (`node --version`)
 - [ ] npm installed (`npm --version`)
 - [ ] Git installed (`git --version`)
@@ -13,12 +14,14 @@
 ## 🚀 Step-by-Step Setup (15 minutes)
 
 ### Step 1: Clone & Navigate (1 min)
+
 ```bash
 git clone https://github.com/kelvinkbk/xavlink.git
 cd xavlink
 ```
 
 ### Step 2: Backend Setup (5 min)
+
 ```bash
 cd backend
 npm install
@@ -35,6 +38,7 @@ npm run dev
 ```
 
 ### Step 3: Web Setup (5 min)
+
 ```bash
 # In a NEW terminal window
 cd web
@@ -48,6 +52,7 @@ npm run dev
 ```
 
 ### Step 4: Mobile Setup (4 min)
+
 ```bash
 # In a NEW terminal window
 cd mobile
@@ -65,6 +70,7 @@ npx expo start
 ## 🧪 Test Email Verification (3 min)
 
 ### Development Mode
+
 1. Go to `http://localhost:5173/register`
 2. Fill in form and click Register
 3. Check **backend terminal** - you should see:
@@ -82,6 +88,7 @@ npx expo start
 ## 📝 Environment Variables Reference
 
 ### Backend `.env`
+
 ```env
 # Required
 PORT=5000
@@ -100,11 +107,13 @@ CLOUDINARY_API_SECRET=
 ```
 
 ### Web `.env.local`
+
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
 ### Mobile `.env`
+
 ```env
 EXPO_PUBLIC_API_URL=http://localhost:5000/api
 ```
@@ -113,18 +122,19 @@ EXPO_PUBLIC_API_URL=http://localhost:5000/api
 
 ## 🔧 Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Port 5000 already in use | `lsof -i :5000` then `kill -9 <PID>` or use `PORT=3000 npm run dev` |
-| Can't connect to database | Verify PostgreSQL is running and DATABASE_URL is correct |
-| `npm install` fails | Delete `node_modules` and `package-lock.json`, then `npm install` again |
-| Expo won't scan QR | Make sure phone and laptop are on same WiFi network |
-| Email not sending | Check EMAIL_PROVIDER is set correctly in .env (leave empty for dev) |
+| Issue                          | Solution                                                                           |
+| ------------------------------ | ---------------------------------------------------------------------------------- |
+| Port 5000 already in use       | `lsof -i :5000` then `kill -9 <PID>` or use `PORT=3000 npm run dev`                |
+| Can't connect to database      | Verify PostgreSQL is running and DATABASE_URL is correct                           |
+| `npm install` fails            | Delete `node_modules` and `package-lock.json`, then `npm install` again            |
+| Expo won't scan QR             | Make sure phone and laptop are on same WiFi network                                |
+| Email not sending              | Check EMAIL_PROVIDER is set correctly in .env (leave empty for dev)                |
 | Can't login after verification | Check emailVerified is true in database: `SELECT email, emailVerified FROM users;` |
 
 ---
 
 ## 📂 Folder Structure
+
 ```
 xavlink/
 ├── backend/    → API server (Node.js + Express)
@@ -139,10 +149,10 @@ xavlink/
 
 After setup, open these in your browser:
 
-| App | URL | Purpose |
-|-----|-----|---------|
-| Web App | http://localhost:5173 | Main web interface |
-| API | http://localhost:5000 | Backend API server |
+| App             | URL                            | Purpose            |
+| --------------- | ------------------------------ | ------------------ |
+| Web App         | http://localhost:5173          | Main web interface |
+| API             | http://localhost:5000          | Backend API server |
 | Backend Console | Terminal running `npm run dev` | View logs & emails |
 
 ---
@@ -150,6 +160,7 @@ After setup, open these in your browser:
 ## 📧 Email Flows Explained
 
 ### Registration & Verification
+
 ```
 1. User registers at /register
 2. Backend creates account with emailVerified = false
@@ -161,6 +172,7 @@ After setup, open these in your browser:
 ```
 
 ### Password Reset
+
 ```
 1. User clicks "Forgot Password"
 2. Enters email at /forgot-password
@@ -208,6 +220,7 @@ See SETUP_GUIDE.md for detailed production instructions.
 ## ❓ Questions?
 
 Check these files for more info:
+
 - `SETUP_GUIDE.md` - Complete setup with all options
 - `EMAIL_VERIFICATION_SETUP.md` - Email system details
 - `EMAIL_VERIFICATION_TESTING.md` - Test scenarios
