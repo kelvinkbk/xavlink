@@ -27,21 +27,19 @@ const initializeFirebase = () => {
         "\n",
       );
 
-      // Debug: inspect the key structure
-      const lines = serviceAccount.private_key.split("\n");
+      // Clean up the key: split and filter out empty lines from splitting
+      let lines = serviceAccount.private_key
+        .split("\n")
+        .filter((line) => line.length > 0);
+
       console.log(
-        `🔑 Key structure: ${lines.length} lines, total length: ${serviceAccount.private_key.length}`,
+        `🔑 Key structure: ${lines.length} content lines (filtered)`,
       );
       console.log(`🔑 First line: ${lines[0]}`);
       console.log(`🔑 Last line: ${lines[lines.length - 1]}`);
 
-      // Clean the key: remove any whitespace issues but preserve the PEM structure
-      const header = lines[0]; // -----BEGIN PRIVATE KEY-----
-      const footer = lines[lines.length - 1]; // -----END PRIVATE KEY-----
-      const body = lines.slice(1, -1); // All the base64 content
-
-      // Reconstruct the key with clean newlines
-      serviceAccount.private_key = [header, ...body, footer].join("\n");
+      // Reconstruct without trailing empty lines
+      serviceAccount.private_key = lines.join("\n");
 
       console.log(
         `🔑 Reconstructed key length: ${serviceAccount.private_key.length}`,
