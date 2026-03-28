@@ -260,6 +260,10 @@ export const chatService = {
     api.post(`/chats/${chatId}/messages/${messageId}/react`, { emoji }),
   removeReaction: (chatId, messageId, emoji) =>
     api.delete(`/chats/${chatId}/messages/${messageId}/reactions/${emoji}`),
+  deleteMessage: (chatId, messageId) =>
+    api.delete(`/chats/${chatId}/messages/${messageId}`),
+  editMessage: (chatId, messageId, text) =>
+    api.patch(`/chats/${chatId}/messages/${messageId}`, { text }),
 };
 
 export const notificationService = {

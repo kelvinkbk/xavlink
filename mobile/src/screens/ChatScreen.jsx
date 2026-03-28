@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Share,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
@@ -70,6 +71,9 @@ const ChatScreen = ({ route }) => {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [playingMessageId, setPlayingMessageId] = useState(null);
   const [currentSound, setCurrentSound] = useState(null);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingText, setEditingText] = useState("");
+  const [messageContextMenu, setMessageContextMenu] = useState(null);
   const listRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const recordingDurationRef = useRef(null);
@@ -597,6 +601,77 @@ const ChatScreen = ({ route }) => {
     }
   };
 
+  const copyToClipboard = async (text) => {
+    try {
+      await Share.share({
+        message: text,
+        url: undefined,
+      });
+      Alert.alert("Success", "Message copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      Alert.alert("Error", "Failed to copy message");
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    Alert.alert(
+      "Delete Message",
+      "Are you sure you want to delete this message?",
+      [
+        {
+          text: "Cancel",
+          onPress: () => setMessageContextMenu(null),
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              await chatService.deleteMessage(chatId, messageId);
+              setMessages((prev) => prev.filter((m) => m.id !== messageId));
+              setMessageContextMenu(null);
+              Alert.alert("Success", "Message deleted");
+            } catch (error) {
+              console.error("Failed to delete message:", error);
+              Alert.alert(
+                "Error",
+                error?.response?.data?.message || "Failed to delete message",
+              );
+            }
+          },
+          style: "destructive",
+        },
+      ],
+    );
+  };
+
+  const handleEditMessage = async (messageId, newText) => {
+    if (!newText.trim()) {
+      Alert.alert("Error", "Message cannot be empty");
+      return;
+    }
+
+    try {
+      await chatService.editMessage(chatId, messageId, newText.trim());
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId ? { ...m, text: newText.trim() } : m,
+        ),
+      );
+      setEditingMessageId(null);
+      setEditingText("");
+      setMessageContextMenu(null);
+      Alert.alert("Success", "Message updated");
+    } catch (error) {
+      console.error("Failed to edit message:", error);
+      Alert.alert(
+        "Error",
+        error?.response?.data?.message || "Failed to edit message",
+      );
+    }
+  };
+
   const handleSend = () => {
     if ((!text.trim() && !attachmentUrl) || !chatId) return;
 
@@ -714,7 +789,11 @@ const ChatScreen = ({ route }) => {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => setMessageContextMenu(null)}
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
         <FlatList
           ref={listRef}
           data={messages}
@@ -767,7 +846,7 @@ const ChatScreen = ({ route }) => {
                   </View>
                 )}
                 <View style={styles.messageWithReaction}>
-                  <View
+                  <TouchableOpacity
                     style={[
                       styles.bubble,
                       isOwn
@@ -781,114 +860,220 @@ const ChatScreen = ({ route }) => {
                           },
                     ]}
                     onLongPress={() => {
-                      setSelectedMessageForReaction(item);
-                      setShowReactionPicker(true);
+                      setMessageContextMenu(item.id);
                     }}
                   >
-                    {item.voiceMessage && item.attachmentUrl ? (
-                      <TouchableOpacity
-                        style={styles.voiceMessageButton}
-                        onPress={() => {
-                          if (playingMessageId === item.id) {
-                            stopVoicePlayback();
-                          } else {
-                            playVoiceMessage(item.id, item.attachmentUrl);
-                          }
-                        }}
-                      >
-                        <Text style={styles.voicePlayIcon}>
-                          {playingMessageId === item.id ? "⏸️" : "▶️"}
-                        </Text>
-                        <Text
+                    {editingMessageId === item.id ? (
+                      <View style={{ width: "100%" }}>
+                        <TextInput
                           style={[
-                            styles.messageText,
-                            isOwn
-                              ? { color: "#fff" }
-                              : { color: colors.textPrimary },
-                            { marginLeft: 8 },
+                            styles.editInput,
+                            {
+                              color: isOwn
+                                ? "#fff"
+                                : colors.textPrimary,
+                              borderColor: colors.primary,
+                            },
                           ]}
+                          value={editingText}
+                          onChangeText={setEditingText}
+                          multiline
+                          autoFocus
+                        />
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            justifyContent: "flex-end",
+                            marginTop: 8,
+                            gap: 8,
+                          }}
                         >
-                          {item.text}
-                        </Text>
-                      </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setEditingMessageId(null);
+                              setEditingText("");
+                            }}
+                            style={[
+                              styles.editButton,
+                              { backgroundColor: "rgba(0,0,0,0.3)" },
+                            ]}
+                          >
+                            <Text
+                              style={{
+                                color: isOwn ? "#fff" : colors.textPrimary,
+                                fontSize: 12,
+                                fontWeight: "600",
+                              }}
+                            >
+                              Cancel
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() =>
+                              handleEditMessage(item.id, editingText)
+                            }
+                            style={[
+                              styles.editButton,
+                              { backgroundColor: colors.primary },
+                            ]}
+                          >
+                            <Text
+                              style={{
+                                color: "#fff",
+                                fontSize: 12,
+                                fontWeight: "600",
+                              }}
+                            >
+                              Save
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
                     ) : (
                       <>
-                        {item.attachmentUrl && !item.voiceMessage && (
-                          <Image
-                            source={{ uri: toAbsoluteUrl(item.attachmentUrl) }}
-                            style={styles.attachmentImage}
-                          />
+                        {item.voiceMessage && item.attachmentUrl ? (
+                          <TouchableOpacity
+                            style={styles.voiceMessageButton}
+                            onPress={() => {
+                              if (playingMessageId === item.id) {
+                                stopVoicePlayback();
+                              } else {
+                                playVoiceMessage(item.id, item.attachmentUrl);
+                              }
+                            }}
+                          >
+                            <Text style={styles.voicePlayIcon}>
+                              {playingMessageId === item.id ? "⏸️" : "▶️"}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.messageText,
+                                isOwn
+                                  ? { color: "#fff" }
+                                  : { color: colors.textPrimary },
+                                { marginLeft: 8 },
+                              ]}
+                            >
+                              {item.text}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <>
+                            {item.attachmentUrl && !item.voiceMessage && (
+                              <Image
+                                source={{
+                                  uri: toAbsoluteUrl(item.attachmentUrl),
+                                }}
+                                style={styles.attachmentImage}
+                              />
+                            )}
+                            <Text
+                              style={[
+                                styles.messageText,
+                                isOwn
+                                  ? { color: "#fff" }
+                                  : { color: colors.textPrimary },
+                              ]}
+                            >
+                              {item.text}
+                            </Text>
+                          </>
                         )}
-                        <Text
-                          style={[
-                            styles.messageText,
-                            isOwn
-                              ? { color: "#fff" }
-                              : { color: colors.textPrimary },
-                          ]}
-                        >
-                          {item.text}
-                        </Text>
+                        {formattedTime && (
+                          <View style={styles.timelineSection}>
+                            <Text
+                              style={[
+                                styles.timestamp,
+                                isOwn
+                                  ? { color: "rgba(255,255,255,0.7)" }
+                                  : { color: colors.textMuted },
+                              ]}
+                            >
+                              {formattedTime}
+                            </Text>
+                            {isOwn && item.readAt && (
+                              <Text
+                                style={[
+                                  styles.seenStatus,
+                                  { color: "rgba(255,255,255,0.7)" },
+                                ]}
+                              >
+                                ✓✓ Seen{" "}
+                                {new Date(item.readAt).toLocaleTimeString(
+                                  "en-US",
+                                  {
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  },
+                                )}
+                              </Text>
+                            )}
+                            {isOwn && !item.readAt && (
+                              <Text
+                                style={[
+                                  styles.deliveredStatus,
+                                  { color: "rgba(255,255,255,0.6)" },
+                                ]}
+                              >
+                                ✓ Delivered
+                              </Text>
+                            )}
+                          </View>
+                        )}
                       </>
                     )}
-                    {formattedTime && (
-                      <View style={styles.timelineSection}>
-                        <Text
-                          style={[
-                            styles.timestamp,
-                            isOwn
-                              ? { color: "rgba(255,255,255,0.7)" }
-                              : { color: colors.textMuted },
-                          ]}
-                        >
-                          {formattedTime}
-                        </Text>
-                        {isOwn && item.readAt && (
-                          <Text
-                            style={[
-                              styles.seenStatus,
-                              { color: "rgba(255,255,255,0.7)" },
-                            ]}
-                          >
-                            ✓✓ Seen{" "}
-                            {new Date(item.readAt).toLocaleTimeString("en-US", {
-                              hour: "numeric",
-                              minute: "2-digit",
-                              hour12: true,
-                            })}
-                          </Text>
-                        )}
-                        {isOwn && !item.readAt && (
-                          <Text
-                            style={[
-                              styles.deliveredStatus,
-                              { color: "rgba(255,255,255,0.6)" },
-                            ]}
-                          >
-                            ✓ Delivered
-                          </Text>
-                        )}
-                      </View>
-                    )}
-                  </View>
-                  <TouchableOpacity
-                    style={[
-                      styles.reactionButton,
-                      isOwn
-                        ? styles.reactionButtonOwn
-                        : styles.reactionButtonOther,
-                    ]}
-                    onPress={() => {
-                      console.log(
-                        "Reaction button pressed for message:",
-                        item.id,
-                      );
-                      setSelectedMessageForReaction(item);
-                      setShowReactionPicker(true);
-                    }}
-                  >
-                    <Text style={styles.reactionButtonText}>😊</Text>
                   </TouchableOpacity>
+                  {/* Context Menu */}
+                  {messageContextMenu === item.id && (
+                    <View
+                      style={[
+                        styles.contextMenu,
+                        isOwn
+                          ? styles.contextMenuOwn
+                          : styles.contextMenuOther,
+                      ]}
+                    >
+                      <TouchableOpacity
+                        onPress={() => copyToClipboard(item.text)}
+                        style={styles.contextMenuItem}
+                      >
+                        <Text style={styles.contextMenuText}>📋 Copy</Text>
+                      </TouchableOpacity>
+                      {isOwn && !item.voiceMessage && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setEditingMessageId(item.id);
+                            setEditingText(item.text);
+                            setMessageContextMenu(null);
+                          }}
+                          style={styles.contextMenuItem}
+                        >
+                          <Text style={styles.contextMenuText}>✏️ Edit</Text>
+                        </TouchableOpacity>
+                      )}
+                      {isOwn && (
+                        <TouchableOpacity
+                          onPress={() => handleDeleteMessage(item.id)}
+                          style={styles.contextMenuItem}
+                        >
+                          <Text style={[styles.contextMenuText, { color: "red" }]}>
+                            🗑️ Delete
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedMessageForReaction(item);
+                          setShowReactionPicker(true);
+                          setMessageContextMenu(null);
+                        }}
+                        style={styles.contextMenuItem}
+                      >
+                        <Text style={styles.contextMenuText}>😊 React</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
                 {/* Display reactions if they exist */}
                 {item.reactions && item.reactions.length > 0 && (
@@ -1024,7 +1209,7 @@ const ChatScreen = ({ route }) => {
           }}
           message={selectedMessageForReaction}
         />
-      </View>
+      </TouchableOpacity>
     </KeyboardAvoidingView>
   );
 };
@@ -1202,6 +1387,49 @@ const styles = StyleSheet.create({
   voicePlayIcon: {
     fontSize: 18,
     marginRight: 4,
+  },
+  contextMenu: {
+    position: "absolute",
+    top: -10,
+    backgroundColor: "#1f2937",
+    borderRadius: 12,
+    paddingVertical: 8,
+    minWidth: 150,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  contextMenuOwn: {
+    right: 0,
+  },
+  contextMenuOther: {
+    left: 0,
+  },
+  contextMenuItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  contextMenuText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  editInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginVertical: 4,
+    fontSize: 14,
+    minHeight: 40,
+  },
+  editButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
 });
 
