@@ -869,9 +869,7 @@ const ChatScreen = ({ route }) => {
                           style={[
                             styles.editInput,
                             {
-                              color: isOwn
-                                ? "#fff"
-                                : colors.textPrimary,
+                              color: isOwn ? "#fff" : colors.textPrimary,
                               borderColor: colors.primary,
                             },
                           ]}
@@ -1029,9 +1027,7 @@ const ChatScreen = ({ route }) => {
                     <View
                       style={[
                         styles.contextMenu,
-                        isOwn
-                          ? styles.contextMenuOwn
-                          : styles.contextMenuOther,
+                        isOwn ? styles.contextMenuOwn : styles.contextMenuOther,
                       ]}
                     >
                       <TouchableOpacity
@@ -1057,7 +1053,9 @@ const ChatScreen = ({ route }) => {
                           onPress={() => handleDeleteMessage(item.id)}
                           style={styles.contextMenuItem}
                         >
-                          <Text style={[styles.contextMenuText, { color: "red" }]}>
+                          <Text
+                            style={[styles.contextMenuText, { color: "red" }]}
+                          >
                             🗑️ Delete
                           </Text>
                         </TouchableOpacity>
