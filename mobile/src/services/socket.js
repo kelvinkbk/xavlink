@@ -98,7 +98,10 @@ export const joinUserRoom = (userId) => {
 const sendDeviceTokenToBackend = async () => {
   try {
     // Show alert immediately to confirm this function is being called
-    Alert.alert("🔔 Device Token", "Function called! Starting device token send...");
+    Alert.alert(
+      "🔔 Device Token",
+      "Function called! Starting device token send...",
+    );
 
     console.log("🔔 [DeviceToken] Starting device token send...");
 
@@ -137,7 +140,7 @@ const sendDeviceTokenToBackend = async () => {
     // Get Expo push token for this device
     console.log("🔔 [DeviceToken] Getting Expo push token...");
     Alert.alert("⏳ Getting Token", "Requesting Expo push token...");
-    
+
     const token = await Notifications.getExpoPushTokenAsync();
     console.log(
       "🔔 [DeviceToken] Expo token:",
