@@ -17,7 +17,7 @@ Package Name: com.kelvinkbk.xavlinkmonorepo
 ### Step 1: Delete the Exposed Key
 
 1. Go to: https://console.cloud.google.com/apis/credentials?project=xavlink-6182e
-2. Under **API Keys** section, find: `***REMOVED***`
+2. Under **API Keys** section, find: `AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw`
 3. Click the **three dots** menu on the right
 4. Select **Delete**
 5. Confirm deletion
@@ -73,7 +73,7 @@ In the API key settings:
 1. Open: `d:\project\xavlink\mobile\google-services.json`
 2. Find this line:
    ```json
-   "current_key": "***REMOVED***"
+   "current_key": "AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw"
    ```
 3. Replace with your new key:
    ```json

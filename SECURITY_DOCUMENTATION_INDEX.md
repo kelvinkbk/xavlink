@@ -122,7 +122,7 @@ eas build --platform android
 
 | Property              | Value                                                         |
 | --------------------- | ------------------------------------------------------------- |
-| **Exposed Key**       | `***REMOVED***`                     |
+| **Exposed Key**       | `AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw`                     |
 | **File**              | `mobile/google-services.json`                                 |
 | **Status**            | 🔄 Being replaced with new key                                |
 | **Risk Level**        | 🔴 HIGH (public repository)                                   |

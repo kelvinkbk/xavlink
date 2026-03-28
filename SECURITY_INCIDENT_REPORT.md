@@ -11,7 +11,7 @@
 GitHub security scanning detected an exposed Google API Key in the repository:
 
 - **File:** `mobile/google-services.json`
-- **Key:** `***REMOVED***`
+- **Key:** `AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw`
 - **Commit:** `09b23249` (L18)
 - **Detection:** Anyone with read access to this repository can view this exposed secret
 
@@ -27,7 +27,7 @@ This key was committed to a public repository and is potentially compromised.
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Navigate to: **APIs & Services → Credentials**
-3. Find the API key: `***REMOVED***`
+3. Find the API key: `AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw`
 4. **DELETE** this key immediately
 5. Create a new API key and update your Firebase configuration
 

@@ -27,7 +27,7 @@ A critical security vulnerability was detected and a comprehensive remediation s
 
 **1. Security Detection & Analysis**
 
-- Identified exposed API key: `***REMOVED***`
+- Identified exposed API key: `AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw`
 - Analyzed exposure scope and risk level
 - Determined remediation strategy
 
@@ -207,7 +207,7 @@ com.kelvinkbk.xavlinkmonorepo
 ### Old Key (TO DELETE)
 
 ```
-***REMOVED***
+AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw
 ```
 
 ---

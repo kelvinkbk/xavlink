@@ -29,7 +29,7 @@
 ### After key is created:
 
 1. Open: `d:\project\xavlink\mobile\google-services.json`
-2. Find: `"current_key": "***REMOVED***"`
+2. Find: `"current_key": "AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw"`
 3. Replace with: Your new key from clipboard
 4. Save file
 

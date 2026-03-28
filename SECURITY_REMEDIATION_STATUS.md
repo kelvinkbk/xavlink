@@ -17,7 +17,7 @@ A Google API Key was accidentally committed to the public GitHub repository. It 
 ### ✅ COMPLETED (System Actions)
 
 - [x] Detected exposed Google API Key in `mobile/google-services.json`
-  - Key: `***REMOVED***`
+  - Key: `AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw`
   - File: `mobile/google-services.json` (L18)
   - Source: Committed to public repository
 
@@ -105,7 +105,7 @@ git push origin main --force
 **What to do:**
 
 1. Open `d:\project\xavlink\mobile\google-services.json`
-2. Find line with old key: `"current_key": "***REMOVED***"`
+2. Find line with old key: `"current_key": "AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw"`
 3. Replace with new key from Step 1: `"current_key": "AIzaSy_YOUR_NEW_KEY_HERE"`
 4. Save the file
 5. **DO NOT COMMIT** - it's in .gitignore

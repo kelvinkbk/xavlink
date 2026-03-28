@@ -1,6 +1,6 @@
 # 🔐 Exposed API Key Remediation Checklist
 
-**Exposed Key:** `***REMOVED***`  
+**Exposed Key:** `AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw`  
 **File:** `mobile/google-services.json`  
 **Status:** ⏰ AWAITING YOUR ACTION
 
@@ -24,7 +24,7 @@
 
 1. Log in to Google Cloud Console
 2. Select project: `xavlink-6182e`
-3. Find the exposed key: `***REMOVED***`
+3. Find the exposed key: `AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw`
 4. Click **DELETE** button
 5. Create a new API key:
    - Click **+ Create Credentials** → **API Key**
@@ -110,7 +110,7 @@ cd android
 
 **New API Key Location:** [Google Cloud Console - Credentials](https://console.cloud.google.com/apis/credentials)
 
-**Old Key (DELETE):** `***REMOVED***`
+**Old Key (DELETE):** `AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw`
 
 **New Key:** `[PASTE HERE AFTER CREATING]`
 

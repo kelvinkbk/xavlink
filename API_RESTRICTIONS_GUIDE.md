@@ -100,7 +100,7 @@ Find this in your file:
 ```json
 "api_key": [
   {
-    "current_key": "***REMOVED***"
+    "current_key": "AIzaSyD04dbSMES3q5k-DugKBg81caaQusF7aIw"
   }
 ]
 ```
