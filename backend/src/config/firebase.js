@@ -13,8 +13,11 @@ const initializeFirebase = () => {
       return null;
     }
 
-    // Handle escaped newlines in environment variable
-    serviceAccountJson = serviceAccountJson.replace(/\\n/g, "\n");
+    // Handle both escaped newlines and actual newlines in the string
+    // First, remove actual newlines that might be in the middle of JSON strings
+    serviceAccountJson = serviceAccountJson
+      .replace(/\n/g, "\\n") // Convert actual newlines to escaped newlines
+      .replace(/\r/g, "\\r"); // Convert carriage returns too
 
     const serviceAccount = JSON.parse(serviceAccountJson);
 
