@@ -78,12 +78,22 @@ class WebPushService {
       });
 
       if (!response.ok) {
-        console.warn("⚠️ Could not fetch VAPID key");
+        console.warn(
+          `⚠️ Could not fetch VAPID key (${response.status} ${response.statusText})`
+        );
         return null;
       }
 
       const data = await response.json();
-      return data.vapidPublicKey;
+      if (data.vapidPublicKey) {
+        console.log(
+          `✅ VAPID key received from backend (length: ${data.vapidPublicKey.length})`
+        );
+        return data.vapidPublicKey;
+      }
+
+      console.warn("⚠️ No vapidPublicKey in response");
+      return null;
     } catch (error) {
       console.error("Error fetching VAPID key:", error);
       return null;
@@ -114,11 +124,33 @@ class WebPushService {
         return null;
       }
 
+      console.log(
+        `🔑 VAPID key fetched: ${vapidPublicKey.substring(0, 20)}... (length: ${vapidPublicKey.length})`
+      );
+
       // Subscribe to push
-      this.subscription = await this.registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(vapidPublicKey),
-      });
+      try {
+        const keyArray = this.urlBase64ToUint8Array(vapidPublicKey);
+        console.log(
+          `🔑 VAPID key converted to Uint8Array (length: ${keyArray.length})`
+        );
+
+        this.subscription = await this.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: keyArray,
+        });
+
+        console.log(
+          `✅ Push subscription created: ${this.subscription.endpoint.substring(0, 50)}...`
+        );
+      } catch (subError) {
+        console.error("❌ PushManager subscription error:", {
+          message: subError.message,
+          code: subError.code,
+          name: subError.name,
+        });
+        throw subError;
+      }
 
       // Send subscription to backend
       await this.sendSubscriptionToServer(this.subscription);
@@ -127,6 +159,11 @@ class WebPushService {
       return this.subscription;
     } catch (error) {
       console.error("❌ Failed to subscribe to push:", error);
+      console.error("⚠️  Push subscription error details:", {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+      });
       return null;
     }
   }
@@ -199,18 +236,30 @@ class WebPushService {
    * Convert VAPID key from base64 to Uint8Array
    */
   urlBase64ToUint8Array(base64String) {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding)
-      .replace(/\-/g, "+")
-      .replace(/_/g, "/");
+    try {
+      const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding)
+        .replace(/\-/g, "+")
+        .replace(/_/g, "/");
 
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
 
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+
+      console.log(
+        `✅ Base64 converted successfully: ${rawData.length} bytes → Uint8Array of length ${outputArray.length}`
+      );
+      return outputArray;
+    } catch (error) {
+      console.error("❌ Error converting VAPID key from base64:", {
+        message: error.message,
+        inputLength: base64String.length,
+      });
+      throw error;
     }
-    return outputArray;
   }
 
   /**
