@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "752157502087",
+    "firebase_url": "https://xavlink-6182e.firebaseio.com",
+    "project_id": "xavlink-6182e",
+    "storage_bucket": "xavlink-6182e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:752157502087:android:7e8c6b9aaf4d1a0c9dcd3f",
+        "android_client_info": {
+          "package_name": "com.kelvinkbk.xavlinkmonorepo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDummyKeyForExpoNotNeededForDevelopment"
+        }
+      ],
+      "services": {
+        "firebase_messaging": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
