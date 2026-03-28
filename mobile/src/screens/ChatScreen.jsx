@@ -390,12 +390,21 @@ const ChatScreen = ({ route }) => {
 
   const stopVoiceRecording = async () => {
     try {
+      console.log("[Chat] Stopping voice recording...");
+      
       if (recordingDurationRef.current) {
         clearInterval(recordingDurationRef.current);
       }
       setIsRecording(false);
 
-      const voiceData = await VoiceMessageService.stopRecording();
+      // Add timeout to prevent hanging
+      const stopPromise = VoiceMessageService.stopRecording();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Recording stop timeout - please try again")), 8000)
+      );
+
+      const voiceData = await Promise.race([stopPromise, timeoutPromise]);
+      console.log("[Chat] Voice recording stopped, duration:", voiceData.durationSeconds);
 
       // Send voice message
       const tempId = Date.now().toString();
@@ -437,7 +446,8 @@ const ChatScreen = ({ route }) => {
         }
       });
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to stop recording");
+      console.error("[Chat] Failed to stop recording:", error);
+      Alert.alert("Recording Error", error.message || "Failed to stop recording. Please try again.");
       setIsRecording(false);
       setRecordingDuration(0);
     }

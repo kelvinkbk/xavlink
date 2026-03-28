@@ -10,11 +10,15 @@ const VoiceMessageService = {
    */
   startRecording: async () => {
     try {
+      console.log("[VoiceMsg] Starting recording...");
+      
       // Request audio recording permission
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== "granted") {
         throw new Error("Audio recording permission not granted");
       }
+
+      console.log("[VoiceMsg] Permission granted");
 
       // Configure audio mode
       await Audio.setAudioModeAsync({
@@ -26,14 +30,20 @@ const VoiceMessageService = {
 
       // Create and start recording
       recordingObject = new Audio.Recording();
+      console.log("[VoiceMsg] Recording object created");
+      
       await recordingObject.prepareToRecordAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY,
       );
+      console.log("[VoiceMsg] Recording prepared");
+      
       await recordingObject.startAsync();
+      console.log("[VoiceMsg] Recording started");
 
       return recordingObject;
     } catch (error) {
-      console.error("Failed to start recording:", error);
+      console.error("[VoiceMsg] Failed to start recording:", error);
+      recordingObject = null;
       throw error;
     }
   },
@@ -47,14 +57,26 @@ const VoiceMessageService = {
         throw new Error("No active recording");
       }
 
-      await recordingObject.stopAndUnloadAsync();
+      console.log("[VoiceMsg] Stopping recording...");
+      
+      // Add timeout to prevent hanging
+      const stopPromise = recordingObject.stopAndUnloadAsync();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Recording stop timeout")), 5000)
+      );
+
+      await Promise.race([stopPromise, timeoutPromise]);
+      
       const uri = recordingObject.getURI();
+      console.log("[VoiceMsg] Recording stopped, URI:", uri);
 
       // Get file size
       const fileInfo = await FileSystem.getInfoAsync(uri);
       const fileSizeInBytes = fileInfo.size || 0;
       const durationMillis = recordingObject._finalDurationMillis || 0;
       const durationSeconds = Math.round(durationMillis / 1000);
+
+      console.log("[VoiceMsg] Duration:", durationSeconds, "seconds");
 
       // Only allow recordings longer than 1 second
       if (durationSeconds < 1) {
@@ -70,7 +92,7 @@ const VoiceMessageService = {
         fileSizeInBytes,
       };
     } catch (error) {
-      console.error("Failed to stop recording:", error);
+      console.error("[VoiceMsg] Failed to stop recording:", error);
       recordingObject = null;
       throw error;
     }
@@ -82,15 +104,25 @@ const VoiceMessageService = {
   cancelRecording: async () => {
     try {
       if (recordingObject) {
-        await recordingObject.stopAndUnloadAsync();
+        console.log("[VoiceMsg] Cancelling recording...");
+        
+        // Add timeout to prevent hanging
+        const cancelPromise = recordingObject.stopAndUnloadAsync();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Recording cancel timeout")), 5000)
+        );
+
+        await Promise.race([cancelPromise, timeoutPromise]);
+        
         const uri = recordingObject.getURI();
         if (uri) {
           await FileSystem.deleteAsync(uri, { idempotent: true });
+          console.log("[VoiceMsg] Recording cancelled and deleted");
         }
         recordingObject = null;
       }
     } catch (error) {
-      console.error("Failed to cancel recording:", error);
+      console.error("[VoiceMsg] Failed to cancel recording:", error);
       recordingObject = null;
       throw error;
     }
