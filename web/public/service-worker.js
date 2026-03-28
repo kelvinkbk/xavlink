@@ -82,5 +82,3 @@ self.addEventListener("activate", (event) => {
   console.log("✅ Service Worker activated");
   event.waitUntil(clients.claim());
 });
-
-export {}; // Ensure this is treated as a module
