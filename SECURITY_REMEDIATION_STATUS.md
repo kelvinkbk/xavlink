@@ -46,10 +46,12 @@ A Google API Key was accidentally committed to the public GitHub repository. It 
 ### 🟡 IN PROGRESS (User Actions Required NOW)
 
 #### Step 1: Rotate the Exposed API Key ⏳ CURRENTLY HERE
+
 **Target:** Complete immediately  
 **Time:** 5 minutes
 
 **What to do:**
+
 1. You're in Google Cloud Console
 2. Application restrictions: ✅ Android apps configured
 3. Android restrictions: ✅ Package + fingerprint added
@@ -59,6 +61,7 @@ A Google API Key was accidentally committed to the public GitHub repository. It 
 7. ✅ Mark Step 1 complete below
 
 **Status indicator:**
+
 - Waiting for: Google Cloud API key creation
 - Blocker: None - ready to proceed
 - Next: Copy new key to clipboard
@@ -66,10 +69,12 @@ A Google API Key was accidentally committed to the public GitHub repository. It 
 ---
 
 #### Step 2: Remove Exposed Key from Git History ⏳ WAITING FOR STEP 1
+
 **Target:** Complete after Step 1  
 **Time:** 5 minutes
 
 **Commands to run:**
+
 ```powershell
 # Install git-filter-repo (one-time)
 pip install git-filter-repo
@@ -85,6 +90,7 @@ git push origin main --force
 ```
 
 **Critical:** This rewrites git history. After this:
+
 - Google API key will be completely removed from all commits
 - GitHub secret scanning alert should disappear
 - Your local repo will be in sync with cleaned history
@@ -92,10 +98,12 @@ git push origin main --force
 ---
 
 #### Step 3: Update Local Configuration ⏳ WAITING FOR STEP 1
+
 **Target:** Complete after Step 1  
 **Time:** 2 minutes
 
 **What to do:**
+
 1. Open `d:\project\xavlink\mobile\google-services.json`
 2. Find line with old key: `"current_key": "***REMOVED***"`
 3. Replace with new key from Step 1: `"current_key": "AIzaSy_YOUR_NEW_KEY_HERE"`
@@ -105,10 +113,12 @@ git push origin main --force
 ---
 
 #### Step 4: Verify on GitHub ⏳ WAITING FOR STEP 2
+
 **Target:** Complete after Step 2  
 **Time:** 2 minutes
 
 **What to verify:**
+
 1. Go to: https://github.com/kelvinkbk/xavlink/security/secret-scanning
 2. Check that the secret scanning alert is **RESOLVED**
 3. Alert should show old key is no longer in history
@@ -117,10 +127,12 @@ git push origin main --force
 ---
 
 #### Step 5: Rebuild Mobile App ⏳ WAITING FOR STEP 3
+
 **Target:** Complete after Step 3  
 **Time:** 10 minutes
 
 **Commands to run:**
+
 ```powershell
 cd d:\project\xavlink\mobile
 
@@ -141,23 +153,23 @@ cd android
 
 ### Documentation Files Created
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `SECURITY_INCIDENT_REPORT.md` | Detailed incident & remediation steps | ✅ Committed |
-| `EXPOSED_KEY_CHECKLIST.md` | Quick action checklist | ✅ Committed |
-| `API_KEY_CREATION_GUIDE.md` | Google Cloud walkthrough | ✅ Committed |
-| `API_RESTRICTIONS_GUIDE.md` | API restriction options | ✅ Committed |
-| `SECURITY_REMEDIATION_STATUS.md` | This tracking file | ✅ Committed |
+| File                             | Purpose                               | Status       |
+| -------------------------------- | ------------------------------------- | ------------ |
+| `SECURITY_INCIDENT_REPORT.md`    | Detailed incident & remediation steps | ✅ Committed |
+| `EXPOSED_KEY_CHECKLIST.md`       | Quick action checklist                | ✅ Committed |
+| `API_KEY_CREATION_GUIDE.md`      | Google Cloud walkthrough              | ✅ Committed |
+| `API_RESTRICTIONS_GUIDE.md`      | API restriction options               | ✅ Committed |
+| `SECURITY_REMEDIATION_STATUS.md` | This tracking file                    | ✅ Committed |
 
 ### Estimated Times
 
-| Task | Duration | Total Time |
-|------|----------|-----------|
-| Rotate API key | 5 min | 5 min |
-| Remove from git history | 5 min | 10 min |
-| Update configuration | 2 min | 12 min |
-| Verify on GitHub | 2 min | 14 min |
-| Rebuild app | 10 min | 24 min |
+| Task                    | Duration | Total Time |
+| ----------------------- | -------- | ---------- |
+| Rotate API key          | 5 min    | 5 min      |
+| Remove from git history | 5 min    | 10 min     |
+| Update configuration    | 2 min    | 12 min     |
+| Verify on GitHub        | 2 min    | 14 min     |
+| Rebuild app             | 10 min   | 24 min     |
 
 **Total: ~24 minutes to complete all steps**
 
@@ -166,12 +178,14 @@ cd android
 ## Security Impact Assessment
 
 ### Before Remediation
+
 - 🔴 **Risk Level:** CRITICAL
 - 🔴 **Exposure:** Public (anyone with repo access)
 - 🔴 **Impact:** Unauthorized API calls possible
 - 🔴 **Duration:** Key has been exposed for several commits
 
-### After Remediation  
+### After Remediation
+
 - 🟢 **Risk Level:** MINIMAL
 - 🟢 **Exposure:** Removed from history
 - 🟢 **Impact:** Old key is deleted and useless
@@ -182,6 +196,7 @@ cd android
 ## Next Actions
 
 ### Immediate (Next 5 minutes)
+
 1. ✅ You're in Google Cloud Console
 2. ✅ Android restrictions are configured
 3. 🔄 **Click "Create" button** to generate new API key
@@ -189,12 +204,14 @@ cd android
 5. 🔄 Come back here when done
 
 ### Within 30 minutes
+
 1. Update `google-services.json` with new key
 2. Run `git filter-repo` to remove old key from history
 3. Force push to GitHub
 4. Verify alert is resolved
 
 ### Within 1 hour
+
 1. Rebuild mobile app with new credentials
 2. Test that app still works correctly
 3. Mark all steps complete
@@ -240,6 +257,7 @@ A: No - the old key must be removed from history to fully secure the repository.
 ### Need Help?
 
 Refer to these files:
+
 - **Step-by-step:** `EXPOSED_KEY_CHECKLIST.md`
 - **Detailed guide:** `API_KEY_CREATION_GUIDE.md`
 - **Full incident report:** `SECURITY_INCIDENT_REPORT.md`

@@ -1,6 +1,7 @@
 # Email Verification Setup
 
 ## Overview
+
 Email verification has been implemented for both registration and password reset flows in the XavLink application.
 
 ---
@@ -8,6 +9,7 @@ Email verification has been implemented for both registration and password reset
 ## 1. Registration Email Verification
 
 ### Flow
+
 1. **User Registers**
    - Fill registration form (name, email, password, course, year, bio)
    - Click "Register" button
@@ -30,6 +32,7 @@ Email verification has been implemented for both registration and password reset
    - If not verified: show "Please verify your email first"
 
 ### Files Involved
+
 - **Frontend**
   - `web/src/pages/Register.jsx` - Updated to show verification screen after registration
   - `web/src/pages/VerifyEmail.jsx` - Existing page that processes verification token
@@ -41,6 +44,7 @@ Email verification has been implemented for both registration and password reset
   - Database: User model has `emailVerified` boolean field
 
 ### Features
+
 ✅ Send verification email on registration
 ✅ Resend verification email option
 ✅ Token validation (time-limited)
@@ -52,6 +56,7 @@ Email verification has been implemented for both registration and password reset
 ## 2. Password Reset Email Verification
 
 ### Flow
+
 1. **User Forgets Password**
    - Visit `/forgot-password` page
    - Enter email address
@@ -71,6 +76,7 @@ Email verification has been implemented for both registration and password reset
    - User can now login with new password
 
 ### Files Involved
+
 - **Frontend**
   - `web/src/pages/ForgotPassword.jsx` - Sends password reset request
   - `web/src/pages/ResetPassword.jsx` - Exists, handles password reset
@@ -82,6 +88,7 @@ Email verification has been implemented for both registration and password reset
   - Rate limiting on reset attempts (to prevent abuse)
 
 ### Features
+
 ✅ Secure reset token with expiration
 ✅ Rate limiting (passwordResetLimiter)
 ✅ Password validation (6+ characters)
@@ -92,13 +99,17 @@ Email verification has been implemented for both registration and password reset
 ## 3. Email Sending Service
 
 ### Current Implementation
+
 The application uses an email service (backend/src/services/emailService.js) to handle:
+
 - Verification emails (registration)
 - Password reset emails
 - Notification emails
 
 ### Configuration
+
 Email service is configured via environment variables:
+
 ```
 SMTP_host=
 SMTP_port=
@@ -112,16 +123,18 @@ SENDER_email=
 ## 4. API Endpoints
 
 ### Authentication Endpoints
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | `/auth/register` | Register new user |
-| POST | `/auth/verify-email` | Verify email with token |
-| POST | `/auth/resend-verification` | Resend verification email |
-| POST | `/auth/forgot-password` | Request password reset |
-| POST | `/auth/reset-password` | Reset password with token |
-| POST | `/auth/login` | Login (checks emailVerified) |
+
+| Method | Endpoint                    | Purpose                      |
+| ------ | --------------------------- | ---------------------------- |
+| POST   | `/auth/register`            | Register new user            |
+| POST   | `/auth/verify-email`        | Verify email with token      |
+| POST   | `/auth/resend-verification` | Resend verification email    |
+| POST   | `/auth/forgot-password`     | Request password reset       |
+| POST   | `/auth/reset-password`      | Reset password with token    |
+| POST   | `/auth/login`               | Login (checks emailVerified) |
 
 ### Security Features
+
 - ✅ Time-limited tokens (15 min for email verification, varies for password reset)
 - ✅ Rate limiting on sensitive endpoints
 - ✅ Token is single-use
@@ -132,6 +145,7 @@ SENDER_email=
 ## 5. UI/UX Improvements Made
 
 ### Register Page
+
 - ✅ After successful registration, shows verification message instead of auto-login
 - ✅ Displays email address where verification was sent
 - ✅ "Resend Verification Email" button
@@ -139,17 +153,20 @@ SENDER_email=
 - ✅ "Back to Login" button
 
 ### Login Page
+
 - ✅ Checks if email is verified before allowing login
 - ✅ Shows helpful message if email not verified yet
 - ✅ Option to resend verification from login page
 
 ### VerifyEmail Page
+
 - ✅ Automatically processes token from email link
 - ✅ Shows success/error status
 - ✅ Auto-redirects to login on success
 - ✅ Displays helpful error messages
 
 ### ForgotPassword Page
+
 - ✅ Shows "Check your email" confirmation after submitting
 - ✅ User-friendly messages
 - ✅ Link back to login
@@ -161,6 +178,7 @@ SENDER_email=
 ### Test Cases
 
 #### Registration Verification
+
 1. Register new account
 2. Check that user cannot login before verification
 3. Click verification link in email
@@ -168,6 +186,7 @@ SENDER_email=
 5. Login with verified account should work
 
 #### Password Reset
+
 1. Login, then logout
 2. Click "Forgot Password" on login page
 3. Enter email
@@ -176,6 +195,7 @@ SENDER_email=
 6. Login with new password should work
 
 #### Error Cases
+
 - Expired token → Show error message
 - Invalid token → Show error message
 - Resend verification → Should receive new email
@@ -186,7 +206,9 @@ SENDER_email=
 ## 7. Backend Requirements
 
 ### Database
+
 User table must have:
+
 ```
 emailVerified: BOOLEAN (default: false)
 emailVerificationToken: STRING (nullable)
@@ -196,6 +218,7 @@ passwordResetExpires: DATETIME (nullable)
 ```
 
 ### Environment Variables
+
 ```
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -237,15 +260,18 @@ PASSWORD_RESET_EXPIRY=3600000     // 1 hour in ms
 ## Summary
 
 ✅ **Email verification is now implemented for:**
+
 - Registration (requires email verification before login)
 - Password reset (uses email with secure token)
 
 ✅ **User flows are intuitive:**
+
 - Clear messaging about what's happening
 - Easy resend of verification emails
 - Helpful error messages
 
 ✅ **Security is maintained:**
+
 - Time-limited tokens
 - Rate limiting
 - Single-use tokens

@@ -40,15 +40,18 @@ Package Name: com.kelvinkbk.xavlinkmonorepo
 In the API key settings:
 
 **Application restrictions:**
+
 - Select: **Android apps** (radio button)
 
 **Android restrictions:**
+
 - Click **Add an Android app**
 - **Package name:** `com.kelvinkbk.xavlinkmonorepo`
 - **SHA-1 certificate fingerprint:** `4A:15:95:30:D8:2F:6F:6D:30:89:4F:AB:72:0C:F9:5B:14:1D:47:A6`
 - Click **Done**
 
 **API restrictions:**
+
 - Keep as: **Don't restrict key** (or select specific APIs if needed)
 
 ---
@@ -116,15 +119,19 @@ cd android
 ## Troubleshooting
 
 ### "SHA-1 Fingerprint is required"
+
 → You're on the right track! Copy the fingerprint from above and paste it into the field.
 
 ### Can't find fingerprint field
+
 → Make sure you selected **"Android apps"** under Application restrictions.
 
 ### New key not working in app
+
 → Make sure you updated `google-services.json` with the correct new key value.
 
 ### Still getting security alert on GitHub
+
 → After updating, run git-filter-repo to remove old key from history (see Step 2 in main checklist).
 
 ---
@@ -134,7 +141,7 @@ cd android
 ✅ This fingerprint is safe to share - it's public information  
 ✅ The new API key will be restricted to Android apps only  
 ✅ Only your app package can use this key  
-✅ Old key is permanently deleted  
+✅ Old key is permanently deleted
 
 **Keep your new key secret - do NOT commit it to git!**
 

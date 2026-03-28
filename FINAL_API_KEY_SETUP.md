@@ -10,6 +10,7 @@
 You're looking at a dropdown list of available Google Cloud APIs. You need to select the APIs that your XavLink app will use.
 
 ### APIs Already Identified in Your Project:
+
 ```
 ✅ Firebase Cloud Messaging API (selected)
 ```
@@ -20,14 +21,15 @@ You're looking at a dropdown list of available Google Cloud APIs. You need to se
 
 ### Required for Firebase Mobile App:
 
-| API Name | Purpose | Select? |
-|----------|---------|---------|
-| **Firebase Cloud Messaging API** | Push notifications | ✅ YES (already selected) |
-| **Firebase Installations API** | Firebase SDK authentication | ✅ YES (select it) |
-| **Cloud Storage API** | Image/file uploads | ✅ YES (select it) |
-| **Firebase Rules API** | Firestore/RTDB security | ✅ YES (select it) |
+| API Name                         | Purpose                     | Select?                   |
+| -------------------------------- | --------------------------- | ------------------------- |
+| **Firebase Cloud Messaging API** | Push notifications          | ✅ YES (already selected) |
+| **Firebase Installations API**   | Firebase SDK authentication | ✅ YES (select it)        |
+| **Cloud Storage API**            | Image/file uploads          | ✅ YES (select it)        |
+| **Firebase Rules API**           | Firestore/RTDB security     | ✅ YES (select it)        |
 
 ### Optional (Not needed for basic XavLink):
+
 - Cloud Logging API
 - Cloud Monitoring API
 - Firebase Hosting API
@@ -37,31 +39,40 @@ You're looking at a dropdown list of available Google Cloud APIs. You need to se
 ## Step-by-Step: Select the APIs
 
 ### 1. Firebase Cloud Messaging API
+
 **Status:** ✅ Already checked  
 **Action:** Leave as is
 
 ### 2. Firebase Installations API
+
 **How to find:**
+
 - Use the "Filter" box at the top
 - Type: `firebase installations`
 - Click the checkbox next to it
 
 **If you can't find it:**
+
 - Scroll down in the list
 - Look for items starting with "Firebase"
 
 ### 3. Cloud Storage API
+
 **How to find:**
+
 - Use the "Filter" box
 - Type: `cloud storage api`
 - Check the "Cloud Storage API" checkbox (not "Cloud Storage" alone)
 
 **Alternative:**
+
 - Type just: `storage`
 - Select "Cloud Storage API"
 
 ### 4. Firebase Rules API
+
 **How to find:**
+
 - Use the "Filter" box
 - Type: `firebase rules`
 - Check the checkbox
@@ -71,6 +82,7 @@ You're looking at a dropdown list of available Google Cloud APIs. You need to se
 ## Checklist Before Clicking OK
 
 Make sure these are checked (✅):
+
 - [ ] Firebase Cloud Messaging API ✅
 - [ ] Firebase Installations API ✅
 - [ ] Cloud Storage API ✅
@@ -83,11 +95,13 @@ Make sure these are checked (✅):
 ## If You Can't Find an API
 
 **Option 1: Just use Firebase Cloud Messaging**
+
 - Firebase Cloud Messaging API alone is sufficient for basic functionality
 - Click OK with just that selected
 - You can edit the key later to add more APIs
 
 **Option 2: Don't restrict the key**
+
 - Go back and select "Don't restrict key"
 - This is simpler for development
 - Less secure, but acceptable for dev/testing
@@ -144,6 +158,7 @@ TOTAL:      ~22 minutes remaining
 ## Success Indicators
 
 After clicking OK, you should see:
+
 - ✅ Your configuration summary with selected APIs listed
 - ✅ A blue "Create" button ready to click
 - ✅ No error messages
@@ -169,6 +184,7 @@ After clicking OK, you should see:
 ## Right Now:
 
 **Your current action:**
+
 1. Use Filter field (or scroll) to find APIs
 2. Click checkbox for each API
 3. Ensure 4 APIs are selected

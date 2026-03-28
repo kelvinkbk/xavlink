@@ -11,11 +11,13 @@ You're at the final configuration step before your new API key is created.
 ### Option 1: Don't restrict key ✅ RECOMMENDED FOR DEVELOPMENT
 
 **What it means:**
+
 - Key can call ANY Google API
 - Simpler setup
 - Good for testing and development
 
 **Select this if:**
+
 - You're setting up for development/testing
 - You want simplicity and quick setup
 - You'll restrict it later in production
@@ -27,16 +29,19 @@ You're at the final configuration step before your new API key is created.
 ### Option 2: Restrict key
 
 **What it means:**
+
 - Key can ONLY call APIs you specify
 - More secure
 - Requires selecting which APIs you use
 
 **Select this if:**
+
 - Setting up for production
 - You want maximum security
 - You know exactly which APIs you need
 
 **For XavLink, you would select:**
+
 - Firebase Cloud Messaging API (push notifications)
 - Firebase Installations API (required by Firebase SDK)
 - Cloud Storage API (image uploads)
@@ -49,12 +54,16 @@ You're at the final configuration step before your new API key is created.
 ## Decision for XavLink Setup
 
 ### For Now (Development):
-✅ **Select: "Don't restrict key"** 
+
+✅ **Select: "Don't restrict key"**
+
 - Allows quick testing and iteration
 - Android restrictions (package + fingerprint) provide baseline security
 
 ### For Production:
+
 🔒 **Select: "Restrict key"** and add specific Firebase APIs
+
 - Much more secure
 - Prevents unauthorized API usage
 
@@ -73,9 +82,10 @@ You're at the final configuration step before your new API key is created.
 
 ## After Creating the Key
 
-Your new API key will appear in the Credentials list. 
+Your new API key will appear in the Credentials list.
 
 **Important:**
+
 - ✅ Copy it immediately
 - ✅ Do NOT share it publicly
 - ✅ It's restricted to your Android app (package + fingerprint)
@@ -86,6 +96,7 @@ Your new API key will appear in the Credentials list.
 ## Example: google-services.json Update
 
 Find this in your file:
+
 ```json
 "api_key": [
   {
@@ -95,6 +106,7 @@ Find this in your file:
 ```
 
 Replace with your new key:
+
 ```json
 "api_key": [
   {
@@ -107,15 +119,15 @@ Replace with your new key:
 
 ## Summary of Your Security Setup
 
-| Component | Status | Details |
-|-----------|--------|---------|
-| Old API key | 🔴 MUST DELETE | Delete from Google Cloud today |
-| New API key | 🟡 CREATING | Being created now in Google Cloud |
-| Android restrictions | ✅ CONFIGURED | Package + SHA-1 fingerprint set |
-| API restrictions | 🟡 DECIDING | Choose "Don't restrict" for dev |
-| google-services.json | 🟡 READY TO UPDATE | Will update after key created |
-| Git history cleanup | 🟡 NEXT STEP | Run git-filter-repo after updating config |
-| GitHub alert | 🟡 WILL RESOLVE | Disappears after git history cleanup |
+| Component            | Status             | Details                                   |
+| -------------------- | ------------------ | ----------------------------------------- |
+| Old API key          | 🔴 MUST DELETE     | Delete from Google Cloud today            |
+| New API key          | 🟡 CREATING        | Being created now in Google Cloud         |
+| Android restrictions | ✅ CONFIGURED      | Package + SHA-1 fingerprint set           |
+| API restrictions     | 🟡 DECIDING        | Choose "Don't restrict" for dev           |
+| google-services.json | 🟡 READY TO UPDATE | Will update after key created             |
+| Git history cleanup  | 🟡 NEXT STEP       | Run git-filter-repo after updating config |
+| GitHub alert         | 🟡 WILL RESOLVE    | Disappears after git history cleanup      |
 
 ---
 

@@ -1,6 +1,7 @@
 # XavLink - Complete Setup Guide
 
 ## Table of Contents
+
 1. [Quick Start (Development)](#quick-start)
 2. [Backend Setup](#backend-setup)
 3. [Web Setup](#web-setup)
@@ -14,7 +15,8 @@
 ## Quick Start
 
 ### Prerequisites
-- Node.js 16+ 
+
+- Node.js 16+
 - npm or yarn
 - Git
 - Android Studio (for mobile)
@@ -22,6 +24,7 @@
 - PostgreSQL or MongoDB (depending on your setup)
 
 ### 1. Clone Repository
+
 ```bash
 git clone https://github.com/kelvinkbk/xavlink.git
 cd xavlink
@@ -32,12 +35,14 @@ cd xavlink
 ## Backend Setup
 
 ### Step 1: Install Dependencies
+
 ```bash
 cd backend
 npm install
 ```
 
 ### Step 2: Environment Variables
+
 Create `.env` file in backend directory:
 
 ```env
@@ -90,6 +95,7 @@ TOTP_WINDOW=2
 ### Step 3: Database Setup
 
 #### PostgreSQL
+
 ```bash
 # Create database
 createdb xavlink
@@ -102,12 +108,14 @@ npm run seed
 ```
 
 #### MongoDB
+
 ```bash
 # MongoDB should be running on localhost:27017
 # Or update MONGO_URI in .env
 ```
 
 ### Step 4: Start Backend
+
 ```bash
 # Development
 npm run dev
@@ -123,12 +131,14 @@ Backend will run on `http://localhost:5000`
 ## Web Setup
 
 ### Step 1: Install Dependencies
+
 ```bash
 cd web
 npm install
 ```
 
 ### Step 2: Environment Variables
+
 Create `.env.local` file in web directory:
 
 ```env
@@ -138,6 +148,7 @@ VITE_APP_VERSION=1.0.0
 ```
 
 ### Step 3: Start Development Server
+
 ```bash
 npm run dev
 ```
@@ -145,6 +156,7 @@ npm run dev
 Web app will run on `http://localhost:5173`
 
 ### Build for Production
+
 ```bash
 npm run build
 npm run preview
@@ -155,6 +167,7 @@ npm run preview
 ## Mobile Setup
 
 ### Step 1: Install Dependencies
+
 ```bash
 cd mobile
 npm install
@@ -164,6 +177,7 @@ cd ios && pod install && cd ..
 ```
 
 ### Step 2: Environment Variables
+
 Create `.env` file in mobile directory:
 
 ```env
@@ -175,6 +189,7 @@ NODE_ENV=development
 ### Step 3: Run on Device/Emulator
 
 #### Android
+
 ```bash
 # Start Expo
 npx expo start
@@ -186,12 +201,14 @@ cd android
 ```
 
 #### iOS (macOS)
+
 ```bash
 npx expo start
 # Press 'i' to open iOS simulator
 ```
 
 #### Expo Go (Easiest for Testing)
+
 ```bash
 npx expo start
 # Scan QR code with Expo Go app on your phone
@@ -202,12 +219,14 @@ npx expo start
 ## Email Configuration
 
 ### Development Mode (Recommended for Testing)
+
 ```env
 # Leave EMAIL_PROVIDER empty or remove it
 # Emails will log to console instead of sending
 ```
 
 Check server logs for verification emails and password reset links:
+
 ```
 📧 Email (Development Mode): { to: "user@example.com", subject: "...", ... }
 ✅ Verification email sent to user@example.com
@@ -216,15 +235,18 @@ Check server logs for verification emails and password reset links:
 ### Production with Gmail
 
 #### 1. Enable 2-Step Verification
+
 - Go to: https://myaccount.google.com/security
 - Enable "2-Step Verification"
 
 #### 2. Generate App Password
+
 - Go to: https://myaccount.google.com/apppasswords
 - Select "Mail" and "Windows Computer"
 - Copy the generated 16-character password
 
 #### 3. Update .env
+
 ```env
 EMAIL_PROVIDER=gmail
 EMAIL_USER=your-email@gmail.com
@@ -262,18 +284,22 @@ EMAIL_FROM=noreply@yourdomain.com
 ### Prisma (Recommended)
 
 #### 1. Initialize Prisma
+
 ```bash
 cd backend
 npx prisma init
 ```
 
 #### 2. Update DATABASE_URL in .env
+
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/xavlink"
 ```
 
 #### 3. Create Schema
+
 Schema should have:
+
 ```prisma
 model User {
   id String @id @default(cuid())
@@ -290,6 +316,7 @@ model User {
 ```
 
 #### 4. Run Migrations
+
 ```bash
 npx prisma migrate dev --name init
 npx prisma generate
@@ -298,34 +325,35 @@ npx prisma generate
 ### Database Tables Needed
 
 #### Users Table
+
 ```sql
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
-  
+
   -- Email verification
   emailVerified BOOLEAN DEFAULT false,
   verificationToken VARCHAR(255),
   verificationTokenExpiry TIMESTAMP,
-  
+
   -- Password reset
   resetToken VARCHAR(255),
   resetTokenExpiry TIMESTAMP,
-  
+
   -- Profile
   profilePic VARCHAR(255),
   bio TEXT,
   course VARCHAR(255),
   year INTEGER,
-  
+
   -- Account
   role VARCHAR(50) DEFAULT 'user',
   isSuspended BOOLEAN DEFAULT false,
   twoFactorEnabled BOOLEAN DEFAULT false,
   twoFactorSecret VARCHAR(255),
-  
+
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -341,22 +369,26 @@ CREATE INDEX idx_users_resetToken ON users(resetToken);
 ## Verify Installation
 
 ### Backend Check
+
 ```bash
 curl http://localhost:5000/api/health
 # Should return: { "status": "ok" }
 ```
 
 ### Web Check
+
 Open browser: `http://localhost:5173`
 Should see login page
 
 ### Mobile Check
+
 ```bash
 npx expo start
 # Should show QR code to scan
 ```
 
 ### Email Check (Development)
+
 1. Register at `http://localhost:5173/register`
 2. Check server console for verification email
 3. Copy token from console output
@@ -368,6 +400,7 @@ npx expo start
 ## Common Issues
 
 ### Port Already in Use
+
 ```bash
 # Find process using port 5000
 lsof -i :5000
@@ -380,6 +413,7 @@ PORT=3000 npm run dev
 ```
 
 ### Database Connection Error
+
 ```bash
 # Check PostgreSQL is running
 psql -U postgres -d xavlink
@@ -389,6 +423,7 @@ mongo
 ```
 
 ### Email Not Sending
+
 ```bash
 # Check EMAIL_PROVIDER is set correctly
 echo $EMAIL_PROVIDER
@@ -398,6 +433,7 @@ echo $EMAIL_PROVIDER
 ```
 
 ### Mobile Won't Connect
+
 ```bash
 # Make sure device is on same network as dev machine
 # Update EXPO_PUBLIC_API_URL to your machine IP:
@@ -409,6 +445,7 @@ ngrok http 5000
 ```
 
 ### Prisma Issues
+
 ```bash
 # Reset database (warning: deletes data)
 npx prisma migrate reset
@@ -425,18 +462,21 @@ npx prisma studio
 ## Development Workflow
 
 ### 1. Start Backend
+
 ```bash
 cd backend
 npm run dev
 ```
 
 ### 2. Start Web (in another terminal)
+
 ```bash
 cd web
 npm run dev
 ```
 
 ### 3. Start Mobile (in another terminal)
+
 ```bash
 cd mobile
 npx expo start
@@ -446,6 +486,7 @@ npx expo start
 ### 4. Test Email Verification
 
 #### Web
+
 1. Go to `http://localhost:5173/register`
 2. Fill form and submit
 3. Check console for verification link
@@ -453,6 +494,7 @@ npx expo start
 5. Login after verification
 
 #### Mobile
+
 1. Open app on device/emulator
 2. Register account
 3. See VerifyEmailScreen
@@ -464,6 +506,7 @@ npx expo start
 ## Production Deployment
 
 ### Backend (Render.com Example)
+
 ```bash
 # Push to GitHub
 git push origin main
@@ -477,6 +520,7 @@ git push origin main
 ```
 
 ### Web (Vercel/Netlify)
+
 ```bash
 # Vercel
 npm i -g vercel
@@ -489,6 +533,7 @@ vercel
 ```
 
 ### Mobile (EAS Build)
+
 ```bash
 # Install EAS CLI
 npm install -g eas-cli
@@ -531,6 +576,7 @@ eas build --platform ios --type ipa
 ## Useful Commands
 
 ### Backend
+
 ```bash
 npm run dev       # Development
 npm run start     # Production
@@ -541,6 +587,7 @@ npm run lint      # Check code
 ```
 
 ### Web
+
 ```bash
 npm run dev       # Development
 npm run build     # Build for production
@@ -549,6 +596,7 @@ npm run lint      # Check code
 ```
 
 ### Mobile
+
 ```bash
 npx expo start              # Start dev server
 npx expo start --web        # Web version

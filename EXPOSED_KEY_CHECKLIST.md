@@ -53,6 +53,7 @@ git push origin main --force
 ```
 
 **⚠️ Important:** This rewrite history, so:
+
 - All team members need to re-clone the repository
 - Don't skip this step - it's critical for security
 
@@ -96,12 +97,12 @@ cd android
 
 ## 📊 Security Impact
 
-| Exposure Time | Risk Level | Action |
-|---|---|---|
-| Key was committed publicly | 🔴 HIGH | Delete key, remove from history |
-| Anyone could access it | 🔴 HIGH | Create new key with restrictions |
-| Currently still in history | 🔴 HIGH | Run git-filter-repo TODAY |
-| Will be secure after cleanup | ✅ SAFE | Continue normal operations |
+| Exposure Time                | Risk Level | Action                           |
+| ---------------------------- | ---------- | -------------------------------- |
+| Key was committed publicly   | 🔴 HIGH    | Delete key, remove from history  |
+| Anyone could access it       | 🔴 HIGH    | Create new key with restrictions |
+| Currently still in history   | 🔴 HIGH    | Run git-filter-repo TODAY        |
+| Will be secure after cleanup | ✅ SAFE    | Continue normal operations       |
 
 ---
 
@@ -114,6 +115,7 @@ cd android
 **New Key:** `[PASTE HERE AFTER CREATING]`
 
 **Files to Never Commit:**
+
 - `mobile/google-services.json`
 - `mobile/GoogleService-Info.plist`
 - `.env`

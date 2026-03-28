@@ -2,13 +2,14 @@
 
 **Date Detected:** March 28, 2026  
 **Severity:** 🔴 HIGH  
-**Status:** ⚠️ REQUIRES IMMEDIATE ACTION  
+**Status:** ⚠️ REQUIRES IMMEDIATE ACTION
 
 ---
 
 ## 🚨 Summary
 
 GitHub security scanning detected an exposed Google API Key in the repository:
+
 - **File:** `mobile/google-services.json`
 - **Key:** `***REMOVED***`
 - **Commit:** `09b23249` (L18)
@@ -23,6 +24,7 @@ GitHub security scanning detected an exposed Google API Key in the repository:
 This key was committed to a public repository and is potentially compromised.
 
 **Steps:**
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Navigate to: **APIs & Services → Credentials**
 3. Find the API key: `***REMOVED***`
@@ -30,6 +32,7 @@ This key was committed to a public repository and is potentially compromised.
 5. Create a new API key and update your Firebase configuration
 
 **Why:** Anyone who found this key could:
+
 - Make requests to your Firebase backend using your credentials
 - Potentially access your data or incur charges
 - Impersonate your application
@@ -62,6 +65,7 @@ git push origin main --force
 ### 3. **Update .gitignore** ✅ DONE
 
 Added to `mobile/.gitignore`:
+
 ```
 # Firebase & sensitive config files
 google-services.json
@@ -74,26 +78,29 @@ This prevents future commits of these files.
 
 ## 📋 Current Status
 
-| Step | Status | Notes |
-|------|--------|-------|
-| Detect exposed secret | ✅ DONE | Found in mobile/google-services.json |
-| Update .gitignore | ✅ DONE | Added google-services.json |
-| Rotate API key | ⚠️ PENDING | You must do this in Google Cloud Console |
-| Remove from git history | ⚠️ PENDING | Run git-filter-repo command above |
-| Update GitHub | ⚠️ PENDING | After cleanup, GitHub alert should disappear |
+| Step                    | Status     | Notes                                        |
+| ----------------------- | ---------- | -------------------------------------------- |
+| Detect exposed secret   | ✅ DONE    | Found in mobile/google-services.json         |
+| Update .gitignore       | ✅ DONE    | Added google-services.json                   |
+| Rotate API key          | ⚠️ PENDING | You must do this in Google Cloud Console     |
+| Remove from git history | ⚠️ PENDING | Run git-filter-repo command above            |
+| Update GitHub           | ⚠️ PENDING | After cleanup, GitHub alert should disappear |
 
 ---
 
 ## 🔧 Steps to Complete Remediation
 
 ### Step 1: Create New API Key
+
 1. Visit: https://console.cloud.google.com/apis/credentials
 2. Click "Create Credentials" → "API Key"
 3. Restrict it to Android apps and your package name
 4. Copy the new key
 
 ### Step 2: Update google-services.json Locally
+
 Replace the old key with the new one (just locally, don't commit yet):
+
 ```json
 {
   "api_key": [
@@ -105,7 +112,9 @@ Replace the old key with the new one (just locally, don't commit yet):
 ```
 
 ### Step 3: Remove from Git History
+
 In your terminal:
+
 ```bash
 cd d:\project\xavlink
 
@@ -120,12 +129,14 @@ git push origin main --force
 ```
 
 ### Step 4: Verify on GitHub
+
 1. Go to: https://github.com/kelvinkbk/xavlink
 2. Check "Security" tab → "Secret scanning"
 3. The alert should disappear within a few minutes
 4. If not, try: **Settings → Security → Secret scanning → Revoke exposed secrets**
 
 ### Step 5: Update Local Mobile App
+
 ```bash
 cd mobile
 
@@ -140,6 +151,7 @@ eas build
 ## 📧 Next Steps After Remediation
 
 Once you've completed the above steps:
+
 1. ✅ GitHub alert will resolve automatically
 2. ✅ Repository will be secure
 3. ✅ No one can use the old key (it's deleted)
@@ -152,6 +164,7 @@ Once you've completed the above steps:
 **Best practices to prevent this again:**
 
 1. **Use `.gitignore` for sensitive files:**
+
    ```
    google-services.json
    GoogleService-Info.plist
@@ -161,12 +174,14 @@ Once you've completed the above steps:
    ```
 
 2. **Use environment variables instead:**
+
    ```bash
    # Instead of hardcoding in files
    const API_KEY = process.env.GOOGLE_API_KEY
    ```
 
 3. **Check before committing:**
+
    ```bash
    git diff --cached  # Review what you're committing
    ```
@@ -185,6 +200,7 @@ Once you've completed the above steps:
 ## 📞 Questions?
 
 If you need help with any of these steps, refer to:
+
 - [Google Cloud Credentials Docs](https://cloud.google.com/docs/authentication/api-keys)
 - [GitHub Secret Scanning Docs](https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning)
 - [Git Filter Repo Documentation](https://github.com/newren/git-filter-repo)

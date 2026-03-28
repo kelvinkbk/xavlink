@@ -5,6 +5,7 @@
 ### 1. Register a New Account
 
 **Web (http://localhost:5173/register)**
+
 1. Fill in registration form:
    - Name
    - Email
@@ -16,6 +17,7 @@
 3. See "Check your email for verification" message
 
 **Mobile (RegisterScreen)**
+
 1. Fill in registration form
 2. Click "Register"
 3. Navigate to VerifyEmailScreen
@@ -23,12 +25,14 @@
 ### 2. Verify Email
 
 **Via Email Link (Production)**
+
 - Check your email for "XavLink - Verify Your Email" message
 - Click the "Verify Email" button or copy the link
 - Browser redirects to `/verify-email?token=<TOKEN>`
 - Page shows success → auto-redirect to login
 
 **Development Mode (Console)**
+
 - Check server console or email logs
 - Look for verification link in output
 - Copy token from link manually
@@ -44,11 +48,13 @@
 ### 4. Password Reset
 
 **Step 1: Request Reset**
+
 1. Go to `/forgot-password`
 2. Enter email address
 3. See "Check your email" confirmation
 
 **Step 2: Reset Password**
+
 1. Check email for "XavLink - Password Reset Request"
 2. Click "Reset Password" button
 3. Enter new password (6+ characters)
@@ -63,6 +69,7 @@
 ## Testing Scenarios
 
 ### Scenario 1: Successful Registration Flow
+
 ```
 1. Register with new email
    ✓ Account created (emailVerified: false)
@@ -81,6 +88,7 @@
 ```
 
 ### Scenario 2: Login Before Verification
+
 ```
 1. Register account (don't verify)
 2. Try to login
@@ -93,6 +101,7 @@
 ```
 
 ### Scenario 3: Password Reset Flow
+
 ```
 1. Click "Forgot Password"
 2. Enter email
@@ -117,6 +126,7 @@
 ```
 
 ### Scenario 4: Token Expiration
+
 ```
 1. Register account
 2. Wait 24+ hours (or modify DB to expire token)
@@ -130,6 +140,7 @@
 ```
 
 ### Scenario 5: Password Reset Token Expiration
+
 ```
 1. Request password reset
 2. Wait 1+ hour (or modify DB to expire token)
@@ -186,12 +197,14 @@ EMAIL_FROM=noreply@xavlink.com
 ## Email Templates
 
 ### Verification Email
+
 - **Subject**: "XavLink - Verify Your Email"
 - **Expiry**: 24 hours
 - **Contains**: Click here button + Link
 - **On Click**: Redirects to `/verify-email?token=<TOKEN>`
 
 ### Password Reset Email
+
 - **Subject**: "XavLink - Password Reset Request"
 - **Expiry**: 1 hour
 - **Contains**: Click here button + Link
@@ -202,6 +215,7 @@ EMAIL_FROM=noreply@xavlink.com
 ## API Endpoints (Testing with curl/Postman)
 
 ### 1. Register
+
 ```bash
 POST /auth/register
 Content-Type: application/json
@@ -222,6 +236,7 @@ Response:
 ```
 
 ### 2. Verify Email
+
 ```bash
 POST /auth/verify-email
 Content-Type: application/json
@@ -237,6 +252,7 @@ Response:
 ```
 
 ### 3. Resend Verification
+
 ```bash
 POST /auth/resend-verification
 Content-Type: application/json
@@ -252,6 +268,7 @@ Response:
 ```
 
 ### 4. Forgot Password
+
 ```bash
 POST /auth/forgot-password
 Content-Type: application/json
@@ -267,6 +284,7 @@ Response:
 ```
 
 ### 5. Reset Password
+
 ```bash
 POST /auth/reset-password
 Content-Type: application/json
@@ -283,6 +301,7 @@ Response:
 ```
 
 ### 6. Login (with email verification check)
+
 ```bash
 POST /auth/login
 Content-Type: application/json
@@ -309,12 +328,14 @@ Response (if not verified):
 ## Development vs Production
 
 ### Development Mode
+
 - Email service logs to console
 - No actual email sent
 - Verification still works with tokens
 - Useful for testing without email setup
 
 ### Production Mode
+
 - Email service uses SMTP/Gmail
 - Real emails sent to users
 - All verification flows work end-to-end
@@ -325,7 +346,9 @@ Response (if not verified):
 ## Debugging Tips
 
 ### Check Email Service
+
 Look for logs in console:
+
 ```
 📧 Email (Development Mode): { to: "...", subject: "...", ... }
 ✅ Verification email sent to john@example.com
@@ -333,6 +356,7 @@ Look for logs in console:
 ```
 
 ### Check Database
+
 ```sql
 -- View user email verification status
 SELECT id, email, emailVerified, verificationToken, verificationTokenExpiry
@@ -352,18 +376,21 @@ WHERE email = 'john@example.com';
 ### Common Issues
 
 **1. Email Not Sending**
+
 - Check EMAIL_PROVIDER is set
 - Check email credentials are correct
 - For Gmail: use app-specific password
 - Check email service isn't in development mode
 
 **2. Token Not Working**
+
 - Token has expired (24h for verification, 1h for reset)
 - Token doesn't match in database
 - User not found with that token
 - Use GET `/verify-email?token=<TOKEN>` for browser
 
 **3. Login Still Not Working After Verification**
+
 - Check `emailVerified` is true in database
 - Check token was properly cleared
 - Restart login after clearing browser cache
@@ -373,6 +400,7 @@ WHERE email = 'john@example.com';
 ## Monitoring in Production
 
 ### Metrics to Track
+
 - Registration -> Email verification conversion rate
 - Time to verify (how long users take to click)
 - Verification email bounce/fail rate
@@ -380,6 +408,7 @@ WHERE email = 'john@example.com';
 - Token expiration rate
 
 ### Alerts to Set
+
 - High email failure rate
 - Password reset requested multiple times
 - Verification email not clicked (24h+)
@@ -420,6 +449,7 @@ Before reporting issues:
 ## Support
 
 For issues:
+
 1. Check server logs for error messages
 2. Verify environment variables are set
 3. Check token validity in database
