@@ -96,12 +96,20 @@ export const joinUserRoom = (userId) => {
 // Send device token to backend for push notifications
 const sendDeviceTokenToBackend = async () => {
   try {
-    const userId = await AsyncStorage.getItem("userId");
-    if (!userId) {
-      console.warn("⚠️ No userId found, cannot send device token");
+    // Get user from AsyncStorage (saved as JSON string after login)
+    const userJson = await AsyncStorage.getItem("user");
+    if (!userJson) {
+      console.warn("⚠️ No user found in AsyncStorage, cannot send device token");
       return;
     }
 
+    const userId = JSON.parse(userJson).id || JSON.parse(userJson)._id;
+    if (!userId) {
+      console.warn("⚠️ No userId found in user object");
+      return;
+    }
+
+    // Get Expo push token for this device
     const token = await Notifications.getExpoPushTokenAsync();
     if (!token?.data) {
       console.warn("⚠️ Failed to get Expo push token");
@@ -114,7 +122,9 @@ const sendDeviceTokenToBackend = async () => {
         userId,
         token: token.data,
       });
-      console.log("📱 Device token sent to backend");
+      console.log("✅ Device token sent to backend:", token.data.substring(0, 30) + "...");
+    } else {
+      console.warn("⚠️ Socket not connected, cannot send device token");
     }
   } catch (error) {
     console.error("❌ Error sending device token:", error);
