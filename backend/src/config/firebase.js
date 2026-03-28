@@ -13,13 +13,20 @@ const initializeFirebase = () => {
       return null;
     }
 
-    // Handle both escaped newlines and actual newlines in the string
-    // First, remove actual newlines that might be in the middle of JSON strings
-    serviceAccountJson = serviceAccountJson
-      .replace(/\n/g, "\\n") // Convert actual newlines to escaped newlines
-      .replace(/\r/g, "\\r"); // Convert carriage returns too
+    // Debug: log the first 200 chars and length
+    console.log(
+      `📋 Firebase env var length: ${serviceAccountJson.length}, first 100 chars: ${serviceAccountJson.substring(0, 100)}`,
+    );
 
-    const serviceAccount = JSON.parse(serviceAccountJson);
+    // Replace actual newlines/carriage returns with escaped versions
+    let cleanedJson = serviceAccountJson
+      .split("\n")
+      .map((line) => line.trim())
+      .join("")
+      .trim();
+
+    // Now parse the cleaned JSON
+    const serviceAccount = JSON.parse(cleanedJson);
 
     firebaseApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
