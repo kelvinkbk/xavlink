@@ -1,22 +1,52 @@
 const admin = require("firebase-admin");
 
 let firebaseApp;
+let firebaseInitialized = false;
 
 const initializeFirebase = () => {
   try {
-    let serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+    let serviceAccount;
 
-    if (!serviceAccountJson) {
+    // Try method 1: Full JSON in FIREBASE_SERVICE_ACCOUNT
+    const fullJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+    if (fullJson) {
+      serviceAccount = JSON.parse(fullJson);
+    }
+
+    // Try method 2: Individual environment variables
+    if (
+      !serviceAccount &&
+      process.env.FIREBASE_PRIVATE_KEY &&
+      process.env.FIREBASE_PROJECT_ID &&
+      process.env.FIREBASE_CLIENT_EMAIL
+    ) {
+      console.log("📋 Using individual Firebase environment variables...");
+      serviceAccount = {
+        type: "service_account",
+        project_id: process.env.FIREBASE_PROJECT_ID,
+        private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID || "key-id",
+        private_key: process.env.FIREBASE_PRIVATE_KEY,
+        client_email: process.env.FIREBASE_CLIENT_EMAIL,
+        client_id: process.env.FIREBASE_CLIENT_ID || "client-id",
+        auth_uri: "https://accounts.google.com/o/oauth2/auth",
+        token_uri: "https://oauth2.googleapis.com/token",
+        auth_provider_x509_cert_url:
+          "https://www.googleapis.com/oauth2/v1/certs",
+        universe_domain: "googleapis.com",
+      };
+    }
+
+    if (!serviceAccount) {
       console.warn(
-        "⚠️  FIREBASE_SERVICE_ACCOUNT not configured. Push notifications disabled.",
+        "⚠️  No Firebase credentials configured. Push notifications disabled.",
+      );
+      console.warn(
+        "💡 Set either FIREBASE_SERVICE_ACCOUNT (full JSON) or FIREBASE_PRIVATE_KEY + FIREBASE_PROJECT_ID + FIREBASE_CLIENT_EMAIL",
       );
       return null;
     }
 
-    // Parse JSON first
-    let serviceAccount = JSON.parse(serviceAccountJson);
-
-    // The private_key field contains escaped \\n sequences that need to be converted to actual newlines
+    // Fix the private key if it has escaped newlines
     if (
       serviceAccount.private_key &&
       typeof serviceAccount.private_key === "string"
@@ -27,46 +57,39 @@ const initializeFirebase = () => {
         "\n",
       );
 
-      // Clean up the key: split and filter out empty lines from splitting
+      // Clean up the key: split and filter out empty lines
       let lines = serviceAccount.private_key
         .split("\n")
         .filter((line) => line.length > 0);
 
-      console.log(`🔑 Key structure: ${lines.length} content lines (filtered)`);
-      console.log(`🔑 First line: ${lines[0]}`);
-      console.log(`🔑 Last line: ${lines[lines.length - 1]}`);
-
-      // Log sample base64 lines to check for corruption
-      if (lines.length > 2) {
-        console.log(`🔑 Line 2 (sample): ${lines[1]}`);
-        console.log(
-          `🔑 Line 2 length: ${lines[1].length}, has non-base64: ${!/^[A-Za-z0-9+/=]*$/.test(lines[1])}`,
-        );
-      }
-
       // Reconstruct without trailing empty lines
       serviceAccount.private_key = lines.join("\n");
 
-      console.log(
-        `🔑 Reconstructed key length: ${serviceAccount.private_key.length}`,
-      );
+      console.log(`✅ Firebase private key formatted (${lines.length} lines)`);
     }
 
     firebaseApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
 
+    firebaseInitialized = true;
     console.log("✅ Firebase Admin SDK initialized successfully");
     return firebaseApp;
   } catch (error) {
-    console.error("❌ Firebase initialization failed:", error.message);
+    // Firebase is optional - log the error but don't fail the app
+    console.warn(
+      "⚠️  Firebase initialization skipped:",
+      error.message.substring(0, 100),
+    );
+    console.warn(
+      "💡 Tip: Check your Firebase credentials in environment variables",
+    );
     return null;
   }
 };
 
 const getMessagingInstance = () => {
-  if (!firebaseApp) {
-    console.warn("⚠️  Firebase not initialized");
+  if (!firebaseInitialized || !firebaseApp) {
     return null;
   }
   return admin.messaging();
