@@ -79,7 +79,7 @@ class WebPushService {
 
       if (!response.ok) {
         console.warn(
-          `⚠️ Could not fetch VAPID key (${response.status} ${response.statusText})`
+          `⚠️ Could not fetch VAPID key (${response.status} ${response.statusText})`,
         );
         return null;
       }
@@ -87,7 +87,7 @@ class WebPushService {
       const data = await response.json();
       if (data.vapidPublicKey) {
         console.log(
-          `✅ VAPID key received from backend (length: ${data.vapidPublicKey.length})`
+          `✅ VAPID key received from backend (length: ${data.vapidPublicKey.length})`,
         );
         return data.vapidPublicKey;
       }
@@ -125,14 +125,14 @@ class WebPushService {
       }
 
       console.log(
-        `🔑 VAPID key fetched: ${vapidPublicKey.substring(0, 20)}... (length: ${vapidPublicKey.length})`
+        `🔑 VAPID key fetched: ${vapidPublicKey.substring(0, 20)}... (length: ${vapidPublicKey.length})`,
       );
 
       // Subscribe to push
       try {
         const keyArray = this.urlBase64ToUint8Array(vapidPublicKey);
         console.log(
-          `🔑 VAPID key converted to Uint8Array (length: ${keyArray.length})`
+          `🔑 VAPID key converted to Uint8Array (length: ${keyArray.length})`,
         );
 
         this.subscription = await this.registration.pushManager.subscribe({
@@ -141,7 +141,7 @@ class WebPushService {
         });
 
         console.log(
-          `✅ Push subscription created: ${this.subscription.endpoint.substring(0, 50)}...`
+          `✅ Push subscription created: ${this.subscription.endpoint.substring(0, 50)}...`,
         );
       } catch (subError) {
         console.error("❌ PushManager subscription error:", {
@@ -250,7 +250,7 @@ class WebPushService {
       }
 
       console.log(
-        `✅ Base64 converted successfully: ${rawData.length} bytes → Uint8Array of length ${outputArray.length}`
+        `✅ Base64 converted successfully: ${rawData.length} bytes → Uint8Array of length ${outputArray.length}`,
       );
       return outputArray;
     } catch (error) {
