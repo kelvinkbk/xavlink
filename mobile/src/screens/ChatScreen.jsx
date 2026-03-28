@@ -440,9 +440,8 @@ const ChatScreen = ({ route }) => {
           type: "audio/m4a",
         });
 
-        const { url: uploadedUrl } = await uploadService.uploadChatAttachment(
-          formData,
-        );
+        const { url: uploadedUrl } =
+          await uploadService.uploadChatAttachment(formData);
         console.log("[Chat] Voice message uploaded to:", uploadedUrl);
         setUploadingAttachment(false);
 
