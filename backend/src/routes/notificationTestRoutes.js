@@ -12,16 +12,17 @@ const router = express.Router();
 router.post("/test", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { title = "Test Notification", body = "This is a test notification from XavLink" } = req.body;
+    const {
+      title = "Test Notification",
+      body = "This is a test notification from XavLink",
+    } = req.body;
 
     console.log(`🧪 Sending test notification to user ${userId}`);
 
-    const success = await sendPushNotification(
-      userId,
-      title,
-      body,
-      { type: "test", timestamp: new Date().toISOString() }
-    );
+    const success = await sendPushNotification(userId, title, body, {
+      type: "test",
+      timestamp: new Date().toISOString(),
+    });
 
     if (success) {
       return res.status(200).json({
@@ -32,7 +33,8 @@ router.post("/test", authMiddleware, async (req, res) => {
     } else {
       return res.status(400).json({
         success: false,
-        message: "❌ Failed to send notification - no valid device tokens found",
+        message:
+          "❌ Failed to send notification - no valid device tokens found",
         userId,
       });
     }

@@ -40,7 +40,7 @@ app.use(
   helmet({
     contentSecurityPolicy: false, // Disable CSP for API (can be enabled for web)
     crossOriginEmbedderPolicy: false,
-  })
+  }),
 );
 
 // Trust proxy (important for rate limiting behind reverse proxy)
@@ -76,7 +76,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     exposedHeaders: ["Content-Range", "X-Content-Range"],
     maxAge: 600, // Cache preflight requests for 10 minutes
-  })
+  }),
 );
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
