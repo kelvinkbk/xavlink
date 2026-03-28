@@ -24,6 +24,13 @@ const initializeFirebase = () => {
       console.log(
         `🔑 Before: private_key contains literal \\n: ${serviceAccount.private_key.includes("\\n")}`,
       );
+      console.log(
+        `🔑 Before: key length=${serviceAccount.private_key.length}, starts with: ${serviceAccount.private_key.substring(0, 50)}`,
+      );
+      console.log(
+        `🔑 Before: key ends with: ${serviceAccount.private_key.substring(serviceAccount.private_key.length - 50)}`,
+      );
+
       // Replace escaped newlines with actual newlines
       serviceAccount.private_key = serviceAccount.private_key.replace(
         /\\n/g,
@@ -31,6 +38,9 @@ const initializeFirebase = () => {
       );
       console.log(
         `🔑 After: private_key contains actual newlines: ${serviceAccount.private_key.includes("\n")}`,
+      );
+      console.log(
+        `🔑 After: key length=${serviceAccount.private_key.length}, line count: ${serviceAccount.private_key.split("\n").length}`,
       );
     }
 
