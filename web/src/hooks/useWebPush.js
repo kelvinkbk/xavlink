@@ -25,7 +25,7 @@ export const useWebPush = () => {
             console.log("✅ Web Push initialized successfully");
           } else {
             console.warn(
-              "⚠️ Web Push subscription failed - notifications won't work in this browser"
+              "⚠️ Web Push subscription failed - notifications won't work in this browser",
             );
           }
         } else {
@@ -35,7 +35,7 @@ export const useWebPush = () => {
         // Web push failures are not critical
         console.warn(
           "⚠️ Web Push initialization failed, but app will continue working:",
-          error.message
+          error.message,
         );
         console.warn("💡 Tip: Mobile notifications will still work");
       }
