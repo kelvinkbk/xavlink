@@ -97,11 +97,14 @@ export const joinUserRoom = (userId) => {
 const sendDeviceTokenToBackend = async () => {
   try {
     console.log("🔔 [DeviceToken] Starting device token send...");
-    
+
     // Get user from AsyncStorage (saved as JSON string after login)
     const userJson = await AsyncStorage.getItem("user");
-    console.log("🔔 [DeviceToken] User from storage:", userJson ? "✅ Found" : "❌ Not found");
-    
+    console.log(
+      "🔔 [DeviceToken] User from storage:",
+      userJson ? "✅ Found" : "❌ Not found",
+    );
+
     if (!userJson) {
       console.warn(
         "⚠️ [DeviceToken] No user found in AsyncStorage, cannot send device token",
@@ -111,8 +114,11 @@ const sendDeviceTokenToBackend = async () => {
 
     const userObj = JSON.parse(userJson);
     const userId = userObj.id || userObj._id;
-    console.log("🔔 [DeviceToken] userId:", userId ? "✅ Found" : "❌ Not found");
-    
+    console.log(
+      "🔔 [DeviceToken] userId:",
+      userId ? "✅ Found" : "❌ Not found",
+    );
+
     if (!userId) {
       console.warn("⚠️ [DeviceToken] No userId found in user object");
       return;
@@ -121,16 +127,22 @@ const sendDeviceTokenToBackend = async () => {
     // Get Expo push token for this device
     console.log("🔔 [DeviceToken] Getting Expo push token...");
     const token = await Notifications.getExpoPushTokenAsync();
-    console.log("🔔 [DeviceToken] Expo token:", token?.data ? "✅ Got token" : "❌ Failed");
-    
+    console.log(
+      "🔔 [DeviceToken] Expo token:",
+      token?.data ? "✅ Got token" : "❌ Failed",
+    );
+
     if (!token?.data) {
       console.warn("⚠️ [DeviceToken] Failed to get Expo push token");
       return;
     }
 
     const s = getSocket();
-    console.log("🔔 [DeviceToken] Socket connected:", s?.connected ? "✅ Yes" : "❌ No");
-    
+    console.log(
+      "🔔 [DeviceToken] Socket connected:",
+      s?.connected ? "✅ Yes" : "❌ No",
+    );
+
     if (s?.connected) {
       console.log("🔔 [DeviceToken] Emitting save_device_token...");
       s.emit("save_device_token", {
@@ -142,10 +154,15 @@ const sendDeviceTokenToBackend = async () => {
         token.data.substring(0, 30) + "...",
       );
     } else {
-      console.warn("⚠️ [DeviceToken] Socket not connected, cannot send device token");
+      console.warn(
+        "⚠️ [DeviceToken] Socket not connected, cannot send device token",
+      );
     }
   } catch (error) {
-    console.error("❌ [DeviceToken] Error sending device token:", error.message || error);
+    console.error(
+      "❌ [DeviceToken] Error sending device token:",
+      error.message || error,
+    );
   }
 };
 
