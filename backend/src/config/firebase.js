@@ -16,10 +16,17 @@ const initializeFirebase = () => {
     // Fix newlines in the private_key field specifically
     // The private_key value contains actual newlines that need to be escaped
     serviceAccountJson = serviceAccountJson.replace(
-      /("private_key":\s*")([^"]*)(")/,
+      /("private_key":\s*")([^"]*)(")/s,
       (match, prefix, keyContent, suffix) => {
+        // Debug: show what we're working with
+        console.log(
+          `🔑 Private key before fix - length: ${keyContent.length}, has newlines: ${keyContent.includes("\n")}`,
+        );
         // Escape any unescaped newlines within the private key
         const fixed = keyContent.replace(/\n/g, "\\n").replace(/\r/g, "");
+        console.log(
+          `🔑 Private key after fix - length: ${fixed.length}, first 50 chars: ${fixed.substring(0, 50)}`,
+        );
         return prefix + fixed + suffix;
       },
     );
