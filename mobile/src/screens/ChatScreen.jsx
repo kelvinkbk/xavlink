@@ -433,15 +433,33 @@ const ChatScreen = ({ route }) => {
       try {
         // Upload voice message file to server
         console.log("[Chat] Uploading voice message file...");
+
+        // Create FormData with proper file structure for React Native
         const formData = new FormData();
+        const fileName = `voice-message-${Date.now()}.m4a`;
+
+        // Append file with explicit URI
         formData.append("file", {
           uri: voiceData.uri,
-          name: `voice-message-${Date.now()}.m4a`,
           type: "audio/m4a",
+          name: fileName,
         });
 
-        const { url: uploadedUrl } =
+        console.log("[Chat] FormData created, uploading to server");
+
+        // Upload using chat attachment endpoint
+        const uploadResponse =
           await uploadService.uploadChatAttachment(formData);
+        const uploadedUrl =
+          uploadResponse.url ||
+          uploadResponse?.attachmentUrl ||
+          uploadResponse?.media_url;
+
+        if (!uploadedUrl) {
+          console.error("[Chat] No URL in upload response:", uploadResponse);
+          throw new Error("Upload succeeded but no URL returned");
+        }
+
         console.log("[Chat] Voice message uploaded to:", uploadedUrl);
         setUploadingAttachment(false);
 

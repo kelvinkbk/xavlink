@@ -37,9 +37,12 @@ const chatFileFilter = (req, file, cb) => {
     ".pptx", // Documents
     ".mp3",
     ".wav",
+    ".m4a",
+    ".aac",
+    ".flac", // Audio
     ".mp4",
     ".mov",
-    ".avi", // Media
+    ".avi", // Video
   ];
   const ext = path.extname(file.originalname).toLowerCase();
   if (!allowed.includes(ext)) {
