@@ -1,7 +1,7 @@
 # Remove Exposed Key from Git History - Alternative Methods
 
 **Status:** 95% Complete - Just need to clean git history  
-**Current Progress:** ✅ New API key created and configured  
+**Current Progress:** ✅ New API key created and configured
 
 ---
 
@@ -17,6 +17,7 @@
 ## Method 1: Use BFG Repo-Cleaner (Recommended - Easiest)
 
 ### Step 1: Download BFG Repo-Cleaner
+
 1. Go to: https://rtyley.github.io/bfg-repo-cleaner/
 2. Download the latest `bfg.jar` file
 3. Save it somewhere convenient (e.g., `C:\Tools\` or `d:\project\bfg.jar`)
@@ -103,6 +104,7 @@ git branch -m clean-main main
 ## Why This Matters (But Is Less Critical Now)
 
 **Good News:** The old key in your git history is ALREADY USELESS because:
+
 1. ✅ Old key has been deleted from Google Cloud Console
 2. ✅ Even if someone finds it in git history, they can't use it
 3. ✅ GitHub will show the alert as "resolved" automatically
@@ -115,17 +117,20 @@ git branch -m clean-main main
 ## Quickest Path Forward
 
 ### Option A: Use BFG (Fastest - 5 minutes)
+
 1. Download BFG JAR file
 2. Create `exposed-keys.txt` with the old key
 3. Run BFG command
 4. Force push
 
 ### Option B: Wait for GitHub Auto-Resolution
+
 1. GitHub's secret scanner will automatically mark alert as "revoked" when it detects the old key is deleted
 2. New key is already restricted and secure
 3. Continue with app rebuild
 
 ### Option C: Do Nothing (Least Preferred)
+
 - The old key is useless (deleted from Google Cloud)
 - New key is secure and working
 - Just rebuild the app and move on
@@ -134,15 +139,15 @@ git branch -m clean-main main
 
 ## Current Status Summary
 
-| Item | Status | Details |
-|------|--------|---------|
-| New API key created | ✅ DONE | `AIzaSyAsD7vwsIaY9l6pK35...` |
-| google-services.json updated | ✅ DONE | Using new key |
-| Old key deleted from Google Cloud | ✅ DONE | No longer usable |
-| .gitignore updated | ✅ DONE | Prevents future commits |
-| Old key removed from git history | ⏳ TODO | Choose method above |
-| GitHub alert resolved | ⏳ AUTO | Will resolve when old key removed |
-| App rebuilt with new credentials | ⏳ TODO | Next step after history cleanup |
+| Item                              | Status  | Details                           |
+| --------------------------------- | ------- | --------------------------------- |
+| New API key created               | ✅ DONE | `AIzaSyAsD7vwsIaY9l6pK35...`      |
+| google-services.json updated      | ✅ DONE | Using new key                     |
+| Old key deleted from Google Cloud | ✅ DONE | No longer usable                  |
+| .gitignore updated                | ✅ DONE | Prevents future commits           |
+| Old key removed from git history  | ⏳ TODO | Choose method above               |
+| GitHub alert resolved             | ⏳ AUTO | Will resolve when old key removed |
+| App rebuilt with new credentials  | ⏳ TODO | Next step after history cleanup   |
 
 ---
 
@@ -151,7 +156,7 @@ git branch -m clean-main main
 **Go with Method 2 (BFG)** - It's the easiest and most reliable option:
 
 1. Download BFG JAR (3 min)
-2. Run the command (2 min)  
+2. Run the command (2 min)
 3. Force push (1 min)
 4. GitHub alert resolves automatically (instant)
 
@@ -164,11 +169,13 @@ Then proceed with rebuilding the app.
 ## If You Get Stuck
 
 The absolutely critical parts are DONE:
+
 - ✅ Old key deleted from Google Cloud
 - ✅ New key created and configured
 - ✅ App can use the new key
 
 The history cleanup is ideal but not critical since the old key is useless. You can:
+
 1. Continue to rebuild the app now
 2. Come back to history cleanup later if needed
 
@@ -179,6 +186,7 @@ The history cleanup is ideal but not critical since the old key is useless. You 
 ## Next Steps
 
 1. **Immediate:** Rebuild the mobile app with the new credentials
+
    ```powershell
    cd d:\project\xavlink\mobile
    npm install
