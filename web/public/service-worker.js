@@ -3,6 +3,8 @@
  * Handles push events and notification interactions
  */
 
+/* global clients, self */
+
 // Handle push events
 self.addEventListener("push", (event) => {
   console.log("🔔 Push notification received:", event);
@@ -69,6 +71,7 @@ self.addEventListener("notificationclick", (event) => {
 // Handle notification close
 self.addEventListener("notificationclose", (event) => {
   console.log("❌ Notification closed:", event.notification.tag);
+  // event used for accessing notification data
 });
 
 // Handle service worker installation
