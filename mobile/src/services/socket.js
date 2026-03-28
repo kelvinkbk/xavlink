@@ -2,7 +2,6 @@ import { io } from "socket.io-client";
 import { API_BASE } from "./api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
-import { Alert } from "react-native";
 
 // Remove /api suffix from API_BASE to get socket server URL
 const SOCKET_URL = API_BASE
@@ -97,12 +96,6 @@ export const joinUserRoom = (userId) => {
 // Send device token to backend for push notifications
 const sendDeviceTokenToBackend = async () => {
   try {
-    // Show alert immediately to confirm this function is being called
-    Alert.alert(
-      "🔔 Device Token",
-      "Function called! Starting device token send...",
-    );
-
     console.log("🔔 [DeviceToken] Starting device token send...");
 
     // Get user from AsyncStorage (saved as JSON string after login)
@@ -113,14 +106,11 @@ const sendDeviceTokenToBackend = async () => {
     );
 
     if (!userJson) {
-      Alert.alert("❌ Error", "No user found in AsyncStorage");
       console.warn(
         "⚠️ [DeviceToken] No user found in AsyncStorage, cannot send device token",
       );
       return;
     }
-
-    Alert.alert("✅ User Found", "Retrieved user from storage");
 
     const userObj = JSON.parse(userJson);
     const userId = userObj.id || userObj._id;
@@ -130,62 +120,60 @@ const sendDeviceTokenToBackend = async () => {
     );
 
     if (!userId) {
-      Alert.alert("❌ Error", "No userId found in user object");
       console.warn("⚠️ [DeviceToken] No userId found in user object");
       return;
     }
 
-    Alert.alert("✅ UserId Found", `userId: ${userId}`);
-
     // Get Expo push token for this device
     console.log("🔔 [DeviceToken] Getting Expo push token...");
-    Alert.alert("⏳ Getting Token", "Requesting Expo push token...");
-
-    const token = await Notifications.getExpoPushTokenAsync();
-    console.log(
-      "🔔 [DeviceToken] Expo token:",
-      token?.data ? "✅ Got token" : "❌ Failed",
-    );
-
-    if (!token?.data) {
-      Alert.alert("❌ Error", "Failed to get Expo push token");
-      console.warn("⚠️ [DeviceToken] Failed to get Expo push token");
-      return;
-    }
-
-    Alert.alert("✅ Expo Token", `Token: ${token.data.substring(0, 20)}...`);
-
-    const s = getSocket();
-    console.log(
-      "🔔 [DeviceToken] Socket connected:",
-      s?.connected ? "✅ Yes" : "❌ No",
-    );
-
-    if (!s?.connected) {
-      Alert.alert("❌ Error", "Socket not connected");
-      console.warn(
-        "⚠️ [DeviceToken] Socket not connected, cannot send device token",
+    
+    try {
+      const token = await Notifications.getExpoPushTokenAsync();
+      console.log(
+        "🔔 [DeviceToken] Expo token:",
+        token?.data ? "✅ Got token" : "❌ Failed",
       );
+
+      if (!token?.data) {
+        console.warn("⚠️ [DeviceToken] Failed to get Expo push token - no data");
+        return;
+      }
+
+      const s = getSocket();
+      console.log(
+        "🔔 [DeviceToken] Socket connected:",
+        s?.connected ? "✅ Yes" : "❌ No",
+      );
+
+      if (!s?.connected) {
+        console.warn(
+          "⚠️ [DeviceToken] Socket not connected, cannot send device token",
+        );
+        return;
+      }
+
+      console.log("🔔 [DeviceToken] Emitting save_device_token...");
+      s.emit("save_device_token", {
+        userId,
+        token: token.data,
+      });
+      console.log(
+        "✅ Device token sent to backend:",
+        token.data.substring(0, 30) + "...",
+      );
+    } catch (tokenError) {
+      console.error(
+        "❌ [DeviceToken] Error getting Expo token:",
+        tokenError.message || tokenError,
+      );
+      // Don't crash if we can't get token - call again later
       return;
     }
-
-    Alert.alert("✅ Socket Connected", "Emitting device token to backend...");
-    console.log("🔔 [DeviceToken] Emitting save_device_token...");
-    s.emit("save_device_token", {
-      userId,
-      token: token.data,
-    });
-    console.log(
-      "✅ Device token sent to backend:",
-      token.data.substring(0, 30) + "...",
-    );
-    Alert.alert("✅ Success!", "Device token sent to backend");
   } catch (error) {
     console.error(
       "❌ [DeviceToken] Error sending device token:",
       error.message || error,
     );
-    Alert.alert("❌ Exception Error", error.message || "Unknown error");
   }
 };
 
