@@ -4,7 +4,7 @@ let firebaseApp;
 
 const initializeFirebase = () => {
   try {
-    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+    let serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
 
     if (!serviceAccountJson) {
       console.warn(
@@ -12,6 +12,9 @@ const initializeFirebase = () => {
       );
       return null;
     }
+
+    // Handle escaped newlines in environment variable
+    serviceAccountJson = serviceAccountJson.replace(/\\n/g, "\n");
 
     const serviceAccount = JSON.parse(serviceAccountJson);
 
