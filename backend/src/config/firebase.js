@@ -32,9 +32,7 @@ const initializeFirebase = () => {
         .split("\n")
         .filter((line) => line.length > 0);
 
-      console.log(
-        `🔑 Key structure: ${lines.length} content lines (filtered)`,
-      );
+      console.log(`🔑 Key structure: ${lines.length} content lines (filtered)`);
       console.log(`🔑 First line: ${lines[0]}`);
       console.log(`🔑 Last line: ${lines[lines.length - 1]}`);
 
