@@ -13,10 +13,8 @@ const router = express.Router();
 router.post("/test", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    const {
-      title = "Test Notification",
-      body = "This is a test notification from XavLink",
-    } = req.body;
+    const title = req.body?.title || "Test Notification";
+    const body = req.body?.body || "This is a test notification from XavLink";
 
     console.log(`🧪 Sending test notification to user ${userId}`);
 
