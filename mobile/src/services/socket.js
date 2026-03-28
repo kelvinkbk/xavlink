@@ -2,6 +2,7 @@ import { io } from "socket.io-client";
 import { API_BASE } from "./api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
+import { Alert } from "react-native";
 
 // Remove /api suffix from API_BASE to get socket server URL
 const SOCKET_URL = API_BASE
@@ -96,6 +97,9 @@ export const joinUserRoom = (userId) => {
 // Send device token to backend for push notifications
 const sendDeviceTokenToBackend = async () => {
   try {
+    // Show alert immediately to confirm this function is being called
+    Alert.alert("🔔 Device Token", "Function called! Starting device token send...");
+
     console.log("🔔 [DeviceToken] Starting device token send...");
 
     // Get user from AsyncStorage (saved as JSON string after login)
