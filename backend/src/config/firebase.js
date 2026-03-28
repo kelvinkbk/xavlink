@@ -36,6 +36,14 @@ const initializeFirebase = () => {
       console.log(`🔑 First line: ${lines[0]}`);
       console.log(`🔑 Last line: ${lines[lines.length - 1]}`);
 
+      // Log sample base64 lines to check for corruption
+      if (lines.length > 2) {
+        console.log(`🔑 Line 2 (sample): ${lines[1]}`);
+        console.log(
+          `🔑 Line 2 length: ${lines[1].length}, has non-base64: ${!/^[A-Za-z0-9+/=]*$/.test(lines[1])}`,
+        );
+      }
+
       // Reconstruct without trailing empty lines
       serviceAccount.private_key = lines.join("\n");
 
