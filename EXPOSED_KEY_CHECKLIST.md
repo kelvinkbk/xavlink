@@ -30,7 +30,9 @@
    - Click **+ Create Credentials** → **API Key**
    - Choose **Application restrictions: Android apps**
    - Add your package name: `com.kelvinkbk.xavlinkmonorepo`
-   - Copy the new key that's generated
+   - Add SHA-1 certificate fingerprint: `4A:15:95:30:D8:2F:6F:6D:30:89:4F:AB:72:0C:F9:5B:14:1D:47:A6`
+   - Click **Done**
+   - Copy the new API key that's generated
 
 ### Step 2: Remove Exposed Key from Git History (5 minutes)
 
