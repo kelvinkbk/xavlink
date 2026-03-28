@@ -12,23 +12,6 @@ import { FABVisibilityProvider } from "./src/context/FABVisibilityContext";
 import { SyncProvider } from "./src/context/SyncContext";
 import ErrorBoundary from "./src/components/ErrorBoundary";
 
-// Initialize Firebase for push notifications
-import { initializeApp } from "firebase/app";
-
-const firebaseConfig = {
-  projectId: "xavlink-6182e",
-  appId: "1:752157502087:android:7e8c6b9aaf4d1a0c9dcd3f",
-  messagingSenderId: "752157502087",
-};
-
-// Initialize Firebase - required for Expo push notifications on Android
-try {
-  initializeApp(firebaseConfig);
-  console.log("✅ Firebase initialized for mobile push notifications");
-} catch (error) {
-  console.warn("⚠️ Firebase initialization status:", error.message);
-}
-
 // Create Android notification channel for high-priority notifications
 const createNotificationChannel = async () => {
   if (Platform.OS === "android") {
