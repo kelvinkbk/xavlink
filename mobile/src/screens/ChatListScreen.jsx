@@ -299,7 +299,9 @@ const ChatListScreen = () => {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              {searchQuery ? "No chats match your search" : "No chats yet. Start a conversation!"}
+              {searchQuery
+                ? "No chats match your search"
+                : "No chats yet. Start a conversation!"}
             </Text>
           </View>
         }
