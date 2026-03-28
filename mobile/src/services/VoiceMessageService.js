@@ -59,18 +59,31 @@ const VoiceMessageService = {
 
       console.log("[VoiceMsg] Stopping recording...");
 
-      // Add timeout to prevent hanging
-      const stopPromise = recordingObject.stopAndUnloadAsync();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Recording stop timeout")), 5000),
-      );
-
-      await Promise.race([stopPromise, timeoutPromise]);
+      // Try to stop and unload - handle both success and failure gracefully
+      try {
+        await recordingObject.stopAndUnloadAsync();
+        console.log("[VoiceMsg] Recording stopped successfully");
+      } catch (stopError) {
+        console.warn(
+          "[VoiceMsg] stopAndUnloadAsync failed, attempting recovery:",
+          stopError,
+        );
+        // Try to at least get the URI even if stop failed
+        try {
+          await recordingObject.pauseAsync();
+        } catch (e) {
+          console.warn("[VoiceMsg] pauseAsync also failed:", e);
+        }
+      }
 
       const uri = recordingObject.getURI();
-      console.log("[VoiceMsg] Recording stopped, URI:", uri);
+      console.log("[VoiceMsg] Recording URI:", uri);
 
-      // Get file size
+      if (!uri) {
+        throw new Error("Could not get Recording URI");
+      }
+
+      // Get file size and duration
       const fileInfo = await FileSystem.getInfoAsync(uri);
       const fileSizeInBytes = fileInfo.size || 0;
       const durationMillis = recordingObject._finalDurationMillis || 0;
@@ -80,7 +93,11 @@ const VoiceMessageService = {
 
       // Only allow recordings longer than 1 second
       if (durationSeconds < 1) {
-        await FileSystem.deleteAsync(uri, { idempotent: true });
+        try {
+          await FileSystem.deleteAsync(uri, { idempotent: true });
+        } catch (e) {
+          console.warn("[VoiceMsg] Could not delete short recording:", e);
+        }
         throw new Error("Recording too short - minimum 1 second required");
       }
 

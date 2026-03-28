@@ -70,6 +70,8 @@ const ChatScreen = ({ route }) => {
   const listRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const recordingDurationRef = useRef(null);
+  const recordingPressRef = useRef(false);
+  const recordingTimeoutRef = useRef(null);
 
   // Hide FAB when this screen is active
   useEffect(() => {
@@ -374,6 +376,9 @@ const ChatScreen = ({ route }) => {
 
   const startVoiceRecording = async () => {
     try {
+      console.log("[Chat] Starting voice recording...");
+      recordingPressRef.current = true;
+
       await VoiceMessageService.startRecording();
       setIsRecording(true);
       setRecordingDuration(0);
@@ -382,31 +387,38 @@ const ChatScreen = ({ route }) => {
       recordingDurationRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
+
+      // Auto-cancel after 60 seconds max
+      recordingTimeoutRef.current = setTimeout(() => {
+        console.log("[Chat] Recording exceeded 60 seconds, auto-stopping...");
+        if (recordingPressRef.current) {
+          recordingPressRef.current = false;
+          handleStopRecording();
+        }
+      }, 60000);
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to start recording");
+      console.error("[Chat] Error starting recording:", error);
+      recordingPressRef.current = false;
       setIsRecording(false);
+      Alert.alert("Error", error.message || "Failed to start recording");
     }
   };
 
-  const stopVoiceRecording = async () => {
+  const handleStopRecording = async () => {
     try {
-      console.log("[Chat] Stopping voice recording...");
+      console.log("[Chat] User released mic button, stopping recording...");
 
       if (recordingDurationRef.current) {
         clearInterval(recordingDurationRef.current);
       }
+      if (recordingTimeoutRef.current) {
+        clearTimeout(recordingTimeoutRef.current);
+      }
+
       setIsRecording(false);
+      recordingPressRef.current = false;
 
-      // Add timeout to prevent hanging
-      const stopPromise = VoiceMessageService.stopRecording();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error("Recording stop timeout - please try again")),
-          8000,
-        ),
-      );
-
-      const voiceData = await Promise.race([stopPromise, timeoutPromise]);
+      const voiceData = await VoiceMessageService.stopRecording();
       console.log(
         "[Chat] Voice recording stopped, duration:",
         voiceData.durationSeconds,
@@ -452,13 +464,25 @@ const ChatScreen = ({ route }) => {
         }
       });
     } catch (error) {
-      console.error("[Chat] Failed to stop recording:", error);
-      Alert.alert(
-        "Recording Error",
-        error.message || "Failed to stop recording. Please try again.",
-      );
+      console.error("[Chat] Error stopping recording:", error);
       setIsRecording(false);
       setRecordingDuration(0);
+      recordingPressRef.current = false;
+
+      // Don't alert on timeout - it's expected
+      if (!error.message?.includes("timeout")) {
+        Alert.alert(
+          "Recording Error",
+          error.message || "Failed to stop recording. Please try again.",
+        );
+      }
+    }
+  };
+
+  const stopVoiceRecording = async () => {
+    if (recordingPressRef.current) {
+      recordingPressRef.current = false;
+      await handleStopRecording();
     }
   };
 
@@ -825,9 +849,8 @@ const ChatScreen = ({ route }) => {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onLongPress={startVoiceRecording}
-              onLongPressOut={stopVoiceRecording}
-              delayLongPress={200}
+              onPressIn={startVoiceRecording}
+              onPressOut={stopVoiceRecording}
               disabled={!!text.trim() || isRecording}
               style={[
                 styles.attachBtn,
