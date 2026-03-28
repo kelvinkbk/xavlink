@@ -215,9 +215,8 @@ exports.register = async (req, res, next) => {
     const verificationToken = crypto.randomBytes(32).toString("hex");
     const verificationTokenExpiry = new Date(Date.now() + 24 * 3600000); // 24 hours
 
-    // Auto-verify email temporarily for development
-    // Email verification will be enforced later after domain setup
-    const emailVerified = true;
+    // Email verification required - set to false by default
+    const emailVerified = false;
 
     const user = await prisma.user.create({
       data: {
@@ -235,17 +234,14 @@ exports.register = async (req, res, next) => {
       },
     });
 
-    // Only send verification email if EMAIL_PROVIDER is configured
-    // Always send verification email
+    // Send verification email
     const verificationLink = `${
       process.env.FRONTEND_URL || "http://localhost:5173"
     }/verify-email?token=${verificationToken}`;
     await sendVerificationEmail(user.email, user.name, verificationLink);
 
     res.status(201).json({
-      message: emailVerified
-        ? "Registration successful. Please verify your email."
-        : "Registration successful. Please verify your email.",
+      message: "Registration successful. Please verify your email.",
       user: sanitizeUser(user),
     });
   } catch (err) {
@@ -276,9 +272,8 @@ exports.login = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Skip email verification check during development
-    // Will be re-enabled after domain/sender verification
-    if (false && !user.emailVerified && process.env.EMAIL_PROVIDER) {
+    // Check email verification
+    if (!user.emailVerified) {
       const needsNewToken =
         !user.verificationToken ||
         !user.verificationTokenExpiry ||
