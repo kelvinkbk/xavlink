@@ -126,7 +126,7 @@ const sendDeviceTokenToBackend = async () => {
 
     // Get Expo push token for this device
     console.log("🔔 [DeviceToken] Getting Expo push token...");
-    
+
     try {
       const token = await Notifications.getExpoPushTokenAsync();
       console.log(
@@ -135,7 +135,9 @@ const sendDeviceTokenToBackend = async () => {
       );
 
       if (!token?.data) {
-        console.warn("⚠️ [DeviceToken] Failed to get Expo push token - no data");
+        console.warn(
+          "⚠️ [DeviceToken] Failed to get Expo push token - no data",
+        );
         return;
       }
 

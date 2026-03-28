@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Image,
+  TextInput,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
@@ -31,6 +32,7 @@ const ChatListScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadChats = async () => {
     try {
@@ -179,6 +181,7 @@ const ChatListScreen = () => {
     const profilePic = otherParticipant?.user?.profilePic;
     const avatarText =
       otherParticipant?.user?.name?.charAt(0).toUpperCase() || "?";
+    const unreadCount = item.unreadCount || 0;
 
     return (
       <TouchableOpacity
@@ -195,9 +198,26 @@ const ChatListScreen = () => {
             <Text style={styles.avatarText}>{avatarText}</Text>
           </View>
         )}
+        {unreadCount > 0 && (
+          <View
+            style={[styles.unreadBadge, { backgroundColor: colors.danger }]}
+          >
+            <Text style={styles.unreadBadgeText}>
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </Text>
+          </View>
+        )}
         <View style={styles.chatInfo}>
           <View style={styles.chatHeader}>
-            <Text style={[styles.chatName, { color: colors.textPrimary }]}>
+            <Text
+              style={[
+                styles.chatName,
+                {
+                  color: colors.textPrimary,
+                  fontWeight: unreadCount > 0 ? "600" : "500",
+                },
+              ]}
+            >
               {getChatName(item)}
             </Text>
             {item.messages[0] && (
@@ -207,7 +227,14 @@ const ChatListScreen = () => {
             )}
           </View>
           <Text
-            style={[styles.lastMessage, { color: colors.textSecondary }]}
+            style={[
+              styles.lastMessage,
+              {
+                color:
+                  unreadCount > 0 ? colors.textPrimary : colors.textSecondary,
+                fontWeight: unreadCount > 0 ? "500" : "400",
+              },
+            ]}
             numberOfLines={1}
           >
             {getLastMessage(item)}
@@ -231,6 +258,20 @@ const ChatListScreen = () => {
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
           Messages
         </Text>
+        <TextInput
+          style={[
+            styles.searchInput,
+            {
+              borderColor: colors.border,
+              backgroundColor: colors.background,
+              color: colors.textPrimary,
+            },
+          ]}
+          placeholder="🔍 Search chats..."
+          placeholderTextColor={colors.textMuted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
       </View>
       {!!error && (
         <View style={styles.empty}>
@@ -240,7 +281,12 @@ const ChatListScreen = () => {
         </View>
       )}
       <FlatList
-        data={chats}
+        data={chats.filter((chat) => {
+          const chatName = getChatName(chat).toLowerCase();
+          const lastMessage = getLastMessage(chat).toLowerCase();
+          const query = searchQuery.toLowerCase();
+          return chatName.includes(query) || lastMessage.includes(query);
+        })}
         renderItem={renderChat}
         keyExtractor={(item, index) => `chat-${item?.id ?? index}-${index}`}
         refreshControl={
@@ -253,7 +299,7 @@ const ChatListScreen = () => {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              No chats yet. Start a conversation!
+              {searchQuery ? "No chats match your search" : "No chats yet. Start a conversation!"}
             </Text>
           </View>
         }
@@ -281,6 +327,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
+    marginBottom: 12,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
   },
   chatItem: {
     flexDirection: "row",
@@ -320,6 +374,22 @@ const styles = StyleSheet.create({
   },
   lastMessage: {
     fontSize: 14,
+  },
+  unreadBadge: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 6,
+  },
+  unreadBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
   },
   empty: {
     padding: 32,

@@ -18,6 +18,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useScalePressAnimation } from "../utils/animations";
+import VoiceMessageService from "../services/VoiceMessageService";
 import {
   getSocket,
   joinRoom,
@@ -64,8 +65,11 @@ const ChatScreen = ({ route }) => {
   const [selectedMessageForReaction, setSelectedMessageForReaction] =
     useState(null);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
   const listRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const recordingDurationRef = useRef(null);
 
   // Hide FAB when this screen is active
   useEffect(() => {
@@ -368,6 +372,92 @@ const ChatScreen = ({ route }) => {
     sendReaction(chatId, messageId, emoji);
   };
 
+  const startVoiceRecording = async () => {
+    try {
+      await VoiceMessageService.startRecording();
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      // Update recording duration every second
+      recordingDurationRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to start recording");
+      setIsRecording(false);
+    }
+  };
+
+  const stopVoiceRecording = async () => {
+    try {
+      if (recordingDurationRef.current) {
+        clearInterval(recordingDurationRef.current);
+      }
+      setIsRecording(false);
+
+      const voiceData = await VoiceMessageService.stopRecording();
+
+      // Send voice message
+      const tempId = Date.now().toString();
+      const tempMessage = {
+        id: tempId,
+        chatId,
+        senderId: user?.id,
+        text: `🎙️ Voice message (${voiceData.durationSeconds}s)`,
+        attachmentUrl: voiceData.uri,
+        voiceMessage: true,
+        voiceDuration: voiceData.durationSeconds,
+        createdAt: new Date().toISOString(),
+        pending: true,
+      };
+
+      setMessages((prev) => [...prev, tempMessage]);
+      setRecordingDuration(0);
+
+      const payload = {
+        chatId,
+        senderId: user?.id,
+        text: `🎙️ Voice message (${voiceData.durationSeconds}s)`,
+        attachmentUrl: voiceData.uri,
+        voiceMessage: true,
+        voiceDuration: voiceData.durationSeconds,
+      };
+
+      sendMessage(payload, (response) => {
+        if (response?.success && response?.message) {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === tempId ? response.message : m)),
+          );
+          setTimeout(() => {
+            listRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        } else {
+          Alert.alert("Error", "Failed to send voice message");
+          setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        }
+      });
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to stop recording");
+      setIsRecording(false);
+      setRecordingDuration(0);
+    }
+  };
+
+  const cancelVoiceRecording = async () => {
+    try {
+      if (recordingDurationRef.current) {
+        clearInterval(recordingDurationRef.current);
+      }
+      await VoiceMessageService.cancelRecording();
+      setIsRecording(false);
+      setRecordingDuration(0);
+    } catch (error) {
+      console.error("Failed to cancel recording:", error);
+      setIsRecording(false);
+      setRecordingDuration(0);
+    }
+  };
+
   const handleSend = () => {
     if ((!text.trim() && !attachmentUrl) || !chatId) return;
 
@@ -573,16 +663,43 @@ const ChatScreen = ({ route }) => {
                       {item.text}
                     </Text>
                     {formattedTime && (
-                      <Text
-                        style={[
-                          styles.timestamp,
-                          isOwn
-                            ? { color: "rgba(255,255,255,0.7)" }
-                            : { color: colors.textMuted },
-                        ]}
-                      >
-                        {formattedTime}
-                      </Text>
+                      <View style={styles.timelineSection}>
+                        <Text
+                          style={[
+                            styles.timestamp,
+                            isOwn
+                              ? { color: "rgba(255,255,255,0.7)" }
+                              : { color: colors.textMuted },
+                          ]}
+                        >
+                          {formattedTime}
+                        </Text>
+                        {isOwn && item.readAt && (
+                          <Text
+                            style={[
+                              styles.seenStatus,
+                              { color: "rgba(255,255,255,0.7)" },
+                            ]}
+                          >
+                            ✓✓ Seen{" "}
+                            {new Date(item.readAt).toLocaleTimeString("en-US", {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}
+                          </Text>
+                        )}
+                        {isOwn && !item.readAt && (
+                          <Text
+                            style={[
+                              styles.deliveredStatus,
+                              { color: "rgba(255,255,255,0.6)" },
+                            ]}
+                          >
+                            ✓ Delivered
+                          </Text>
+                        )}
+                      </View>
                     )}
                   </View>
                   <TouchableOpacity
@@ -668,18 +785,37 @@ const ChatScreen = ({ route }) => {
               </TouchableOpacity>
             </View>
           )}
+          {isRecording && (
+            <View style={styles.recordingIndicator}>
+              <Text style={{ color: colors.danger, fontSize: 12 }}>
+                🔴 Recording... {recordingDuration}s
+              </Text>
+            </View>
+          )}
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
               onPress={pickAttachment}
-              disabled={uploadingAttachment}
+              disabled={uploadingAttachment || isRecording}
               style={[
                 styles.attachBtn,
-                { opacity: uploadingAttachment ? 0.5 : 1 },
+                { opacity: uploadingAttachment || isRecording ? 0.5 : 1 },
               ]}
             >
               <Text style={{ fontSize: 20 }}>
                 {uploadingAttachment ? "⏳" : "📎"}
               </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onLongPress={startVoiceRecording}
+              onLongPressOut={stopVoiceRecording}
+              delayLongPress={200}
+              disabled={!!text.trim() || isRecording}
+              style={[
+                styles.attachBtn,
+                { opacity: text.trim() || isRecording ? 0.5 : 1 },
+              ]}
+            >
+              <Text style={{ fontSize: 20 }}>{isRecording ? "🎙️" : "🎤"}</Text>
             </TouchableOpacity>
             <TextInput
               style={[
@@ -694,6 +830,7 @@ const ChatScreen = ({ route }) => {
               value={text}
               onChangeText={handleTextChange}
               placeholderTextColor={colors.textMuted}
+              editable={!isRecording}
             />
             <Animated.View style={{ transform: [{ scale: sendScale }] }}>
               <TouchableOpacity
@@ -701,7 +838,7 @@ const ChatScreen = ({ route }) => {
                 onPress={handleSend}
                 onPressIn={onSendPressIn}
                 onPressOut={onSendPressOut}
-                disabled={!text.trim() && !attachmentUrl}
+                disabled={(!text.trim() && !attachmentUrl) || isRecording}
               >
                 <Text style={[styles.sendText, { color: "#fff" }]}>Send</Text>
               </TouchableOpacity>
@@ -867,6 +1004,26 @@ const styles = StyleSheet.create({
   },
   reactionEmoji: {
     fontSize: 14,
+  },
+  timelineSection: {
+    marginTop: 4,
+    alignSelf: "flex-end",
+  },
+  seenStatus: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  deliveredStatus: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  recordingIndicator: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 8,
+    borderRadius: 8,
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    alignItems: "center",
   },
 });
 
