@@ -37,10 +37,10 @@ You're at the final configuration step before your new API key is created.
 - You know exactly which APIs you need
 
 **For XavLink, you would select:**
-- Firebase Realtime Database API
-- Firebase Cloud Messaging API
-- Firebase Storage API
-- Cloud Messaging API
+- Firebase Cloud Messaging API (push notifications)
+- Firebase Installations API (required by Firebase SDK)
+- Cloud Storage API (image uploads)
+- Firebase Rules API (Firestore/RTDB security)
 
 **Security:** ⭐⭐⭐⭐⭐ (Maximum)
 
