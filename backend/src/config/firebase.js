@@ -13,25 +13,26 @@ const initializeFirebase = () => {
       return null;
     }
 
-    // Fix newlines in the private_key field specifically
-    // The private_key value contains actual newlines that need to be escaped
-    serviceAccountJson = serviceAccountJson.replace(
-      /("private_key":\s*")([^"]*)(")/s,
-      (match, prefix, keyContent, suffix) => {
-        // Debug: show what we're working with
-        console.log(
-          `🔑 Private key before fix - length: ${keyContent.length}, has newlines: ${keyContent.includes("\n")}`,
-        );
-        // Escape any unescaped newlines within the private key
-        const fixed = keyContent.replace(/\n/g, "\\n").replace(/\r/g, "");
-        console.log(
-          `🔑 Private key after fix - length: ${fixed.length}, first 50 chars: ${fixed.substring(0, 50)}`,
-        );
-        return prefix + fixed + suffix;
-      },
-    );
+    // Parse JSON first
+    let serviceAccount = JSON.parse(serviceAccountJson);
 
-    const serviceAccount = JSON.parse(serviceAccountJson);
+    // The private_key field contains escaped \\n sequences that need to be converted to actual newlines
+    if (
+      serviceAccount.private_key &&
+      typeof serviceAccount.private_key === "string"
+    ) {
+      console.log(
+        `🔑 Before: private_key contains literal \\n: ${serviceAccount.private_key.includes("\\n")}`,
+      );
+      // Replace escaped newlines with actual newlines
+      serviceAccount.private_key = serviceAccount.private_key.replace(
+        /\\n/g,
+        "\n",
+      );
+      console.log(
+        `🔑 After: private_key contains actual newlines: ${serviceAccount.private_key.includes("\n")}`,
+      );
+    }
 
     firebaseApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
