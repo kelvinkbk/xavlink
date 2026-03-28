@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
+import { Audio } from "expo-av";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useScalePressAnimation } from "../utils/animations";
@@ -67,6 +68,8 @@ const ChatScreen = ({ route }) => {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [playingMessageId, setPlayingMessageId] = useState(null);
+  const [currentSound, setCurrentSound] = useState(null);
   const listRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const recordingDurationRef = useRef(null);
@@ -424,50 +427,79 @@ const ChatScreen = ({ route }) => {
         voiceData.durationSeconds,
       );
 
-      // Send voice message
-      const tempId = Date.now().toString();
-      const tempMessage = {
-        id: tempId,
-        chatId,
-        senderId: user?.id,
-        text: `🎙️ Voice message (${voiceData.durationSeconds}s)`,
-        attachmentUrl: voiceData.uri,
-        voiceMessage: true,
-        voiceDuration: voiceData.durationSeconds,
-        createdAt: new Date().toISOString(),
-        pending: true,
-      };
+      // Show uploading indicator
+      setUploadingAttachment(true);
 
-      setMessages((prev) => [...prev, tempMessage]);
-      setRecordingDuration(0);
+      try {
+        // Upload voice message file to server
+        console.log("[Chat] Uploading voice message file...");
+        const formData = new FormData();
+        formData.append("file", {
+          uri: voiceData.uri,
+          name: `voice-message-${Date.now()}.m4a`,
+          type: "audio/m4a",
+        });
 
-      const payload = {
-        chatId,
-        senderId: user?.id,
-        text: `🎙️ Voice message (${voiceData.durationSeconds}s)`,
-        attachmentUrl: voiceData.uri,
-        voiceMessage: true,
-        voiceDuration: voiceData.durationSeconds,
-      };
+        const { url: uploadedUrl } = await uploadService.uploadChatAttachment(
+          formData,
+        );
+        console.log("[Chat] Voice message uploaded to:", uploadedUrl);
+        setUploadingAttachment(false);
 
-      sendMessage(payload, (response) => {
-        if (response?.success && response?.message) {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === tempId ? response.message : m)),
-          );
-          setTimeout(() => {
-            listRef.current?.scrollToEnd({ animated: true });
-          }, 100);
-        } else {
-          Alert.alert("Error", "Failed to send voice message");
-          setMessages((prev) => prev.filter((m) => m.id !== tempId));
-        }
-      });
+        // Send voice message with server URL
+        const tempId = Date.now().toString();
+        const tempMessage = {
+          id: tempId,
+          chatId,
+          senderId: user?.id,
+          text: `🎙️ Voice message (${voiceData.durationSeconds}s)`,
+          attachmentUrl: uploadedUrl,
+          voiceMessage: true,
+          voiceDuration: voiceData.durationSeconds,
+          createdAt: new Date().toISOString(),
+          pending: true,
+        };
+
+        setMessages((prev) => [...prev, tempMessage]);
+        setRecordingDuration(0);
+
+        const payload = {
+          chatId,
+          senderId: user?.id,
+          text: `🎙️ Voice message (${voiceData.durationSeconds}s)`,
+          attachmentUrl: uploadedUrl,
+          voiceMessage: true,
+          voiceDuration: voiceData.durationSeconds,
+        };
+
+        sendMessage(payload, (response) => {
+          if (response?.success && response?.message) {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === tempId ? response.message : m)),
+            );
+            setTimeout(() => {
+              listRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+          } else {
+            Alert.alert("Error", "Failed to send voice message");
+            setMessages((prev) => prev.filter((m) => m.id !== tempId));
+          }
+        });
+      } catch (uploadError) {
+        console.error("[Chat] Failed to upload voice message:", uploadError);
+        setUploadingAttachment(false);
+        Alert.alert(
+          "Upload Error",
+          uploadError.message ||
+            "Failed to upload voice message. Please try again.",
+        );
+      }
     } catch (error) {
       console.error("[Chat] Error stopping recording:", error);
       setIsRecording(false);
       setRecordingDuration(0);
       recordingPressRef.current = false;
+      setUploadingAttachment(false);
 
       // Don't alert on timeout - it's expected
       if (!error.message?.includes("timeout")) {
@@ -498,6 +530,53 @@ const ChatScreen = ({ route }) => {
       console.error("Failed to cancel recording:", error);
       setIsRecording(false);
       setRecordingDuration(0);
+    }
+  };
+
+  const playVoiceMessage = async (messageId, audioUrl) => {
+    try {
+      console.log("[Chat] Playing voice message:", audioUrl);
+
+      // Stop currently playing sound
+      if (currentSound) {
+        await currentSound.stopAsync();
+        await currentSound.unloadAsync();
+      }
+
+      // Create and play new sound
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: toAbsoluteUrl(audioUrl) },
+        { shouldPlay: true },
+      );
+
+      setCurrentSound(sound);
+      setPlayingMessageId(messageId);
+
+      // Handle sound finished playing
+      sound.setOnPlaybackStatusUpdate(async (status) => {
+        if (status.didJustFinish) {
+          setPlayingMessageId(null);
+          await sound.unloadAsync();
+          setCurrentSound(null);
+        }
+      });
+    } catch (error) {
+      console.error("[Chat] Failed to play voice message:", error);
+      Alert.alert("Error", "Failed to play voice message");
+      setPlayingMessageId(null);
+    }
+  };
+
+  const stopVoicePlayback = async () => {
+    try {
+      if (currentSound) {
+        await currentSound.stopAsync();
+        await currentSound.unloadAsync();
+        setCurrentSound(null);
+        setPlayingMessageId(null);
+      }
+    } catch (error) {
+      console.error("[Chat] Failed to stop playback:", error);
     }
   };
 
@@ -689,22 +768,52 @@ const ChatScreen = ({ route }) => {
                       setShowReactionPicker(true);
                     }}
                   >
-                    {item.attachmentUrl && (
-                      <Image
-                        source={{ uri: toAbsoluteUrl(item.attachmentUrl) }}
-                        style={styles.attachmentImage}
-                      />
+                    {item.voiceMessage && item.attachmentUrl ? (
+                      <TouchableOpacity
+                        style={styles.voiceMessageButton}
+                        onPress={() => {
+                          if (playingMessageId === item.id) {
+                            stopVoicePlayback();
+                          } else {
+                            playVoiceMessage(item.id, item.attachmentUrl);
+                          }
+                        }}
+                      >
+                        <Text style={styles.voicePlayIcon}>
+                          {playingMessageId === item.id ? "⏸️" : "▶️"}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.messageText,
+                            isOwn
+                              ? { color: "#fff" }
+                              : { color: colors.textPrimary },
+                            { marginLeft: 8 },
+                          ]}
+                        >
+                          {item.text}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <>
+                        {item.attachmentUrl && !item.voiceMessage && (
+                          <Image
+                            source={{ uri: toAbsoluteUrl(item.attachmentUrl) }}
+                            style={styles.attachmentImage}
+                          />
+                        )}
+                        <Text
+                          style={[
+                            styles.messageText,
+                            isOwn
+                              ? { color: "#fff" }
+                              : { color: colors.textPrimary },
+                          ]}
+                        >
+                          {item.text}
+                        </Text>
+                      </>
                     )}
-                    <Text
-                      style={[
-                        styles.messageText,
-                        isOwn
-                          ? { color: "#fff" }
-                          : { color: colors.textPrimary },
-                      ]}
-                    >
-                      {item.text}
-                    </Text>
                     {formattedTime && (
                       <View style={styles.timelineSection}>
                         <Text
@@ -1066,6 +1175,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "rgba(239, 68, 68, 0.1)",
     alignItems: "center",
+  },
+  voiceMessageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  voicePlayIcon: {
+    fontSize: 18,
+    marginRight: 4,
   },
 });
 
