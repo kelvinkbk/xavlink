@@ -23,12 +23,21 @@ export const useWebPush = () => {
           const subscription = await webPushService.subscribe();
           if (subscription) {
             console.log("✅ Web Push initialized successfully");
+          } else {
+            console.warn(
+              "⚠️ Web Push subscription failed - notifications won't work in this browser"
+            );
           }
         } else {
           console.log("ℹ️ User declined notification permission");
         }
       } catch (error) {
-        console.error("Error initializing Web Push:", error);
+        // Web push failures are not critical
+        console.warn(
+          "⚠️ Web Push initialization failed, but app will continue working:",
+          error.message
+        );
+        console.warn("💡 Tip: Mobile notifications will still work");
       }
     };
 
