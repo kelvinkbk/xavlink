@@ -99,7 +99,9 @@ const sendDeviceTokenToBackend = async () => {
     // Get user from AsyncStorage (saved as JSON string after login)
     const userJson = await AsyncStorage.getItem("user");
     if (!userJson) {
-      console.warn("⚠️ No user found in AsyncStorage, cannot send device token");
+      console.warn(
+        "⚠️ No user found in AsyncStorage, cannot send device token",
+      );
       return;
     }
 
@@ -122,7 +124,10 @@ const sendDeviceTokenToBackend = async () => {
         userId,
         token: token.data,
       });
-      console.log("✅ Device token sent to backend:", token.data.substring(0, 30) + "...");
+      console.log(
+        "✅ Device token sent to backend:",
+        token.data.substring(0, 30) + "...",
+      );
     } else {
       console.warn("⚠️ Socket not connected, cannot send device token");
     }
