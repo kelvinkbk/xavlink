@@ -86,7 +86,7 @@ function AppInner() {
 
   useEffect(() => {
     // Check for updates on app startup
-    UpdateService.checkOnStartup();
+    // UpdateService.checkOnStartup(); // Disabled - causing errors
     // Request notification permission
     requestNotificationPermission();
 
