@@ -243,18 +243,29 @@ exports.deleteAccount = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { name, bio, profilePic } = req.body;
+    const { name, bio, course, year, profilePic } = req.body;
+
+    // Authorization check: user can only update their own profile
+    if (req.user.id !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this profile" });
+    }
 
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
         ...(name && { name }),
         ...(bio !== undefined && { bio }),
-        ...(profilePic && { profilePic }),
+        ...(course && { course }),
+        ...(year && { year }),
+        ...(profilePic !== undefined && { profilePic }),
       },
     });
 
-    res.json(updated);
+    // Sanitize user object before sending response (remove password)
+    const { password, ...sanitized } = updated;
+    res.json(sanitized);
   } catch (error) {
     res
       .status(500)
