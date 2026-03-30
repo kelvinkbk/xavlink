@@ -48,7 +48,7 @@ const PostCard = React.memo(
         setLoadingComments(true);
         try {
           const { data } = await postService.getComments(post.id);
-          setComments(data);
+          setComments(data.comments || []);
         } catch (e) {
           console.warn("Error loading comments:", e);
         } finally {
