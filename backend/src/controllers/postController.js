@@ -223,7 +223,7 @@ exports.addComment = async (req, res, next) => {
     // Verify post exists
     const post = await prisma.post.findUnique({
       where: { id },
-      select: { id: true, authorId: true },
+      select: { id: true, userId: true },
     });
 
     if (!post) {
