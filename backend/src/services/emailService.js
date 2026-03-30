@@ -4,15 +4,30 @@ const nodemailer = require("nodemailer");
 const createTransporter = () => {
   // Use console mode when provider is not set
   const emailProvider = (process.env.EMAIL_PROVIDER || "").toLowerCase();
+  
+  console.log("📧 Email Provider:", emailProvider || "CONSOLE MODE");
+  console.log("📧 Email From:", process.env.EMAIL_FROM);
 
   if (emailProvider === "gmail") {
-    return nodemailer.createTransport({
+    console.log("🔧 Configuring Gmail SMTP...");
+    const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: process.env.EMAIL_FROM,
         pass: process.env.EMAIL_PASSWORD, // Use app-specific password for Gmail
       },
     });
+    
+    // Test the connection
+    transporter.verify((error, success) => {
+      if (error) {
+        console.error("❌ Gmail SMTP Error:", error.message);
+      } else {
+        console.log("✅ Gmail SMTP Connected!");
+      }
+    });
+    
+    return transporter;
   }
 
   if (emailProvider === "smtp") {
@@ -116,11 +131,15 @@ exports.sendVerificationEmail = async (email, name, verificationLink) => {
       `,
     };
 
+    console.log("📧 Attempting to send verification email to:", email);
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ Verification email sent to ${email}`);
+    console.log(`✅ Verification email sent to ${email}. Message ID:`, result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error("❌ Failed to send verification email:", error.message);
+    console.error("❌ Failed to send verification email to", email);
+    console.error("❌ Error Details:", error.message);
+    console.error("❌ Error Code:", error.code);
+    console.error("❌ Full Error:", error);
     return { success: false, error: error.message };
   }
 };
@@ -205,7 +224,7 @@ exports.verifyEmail = async () => {
   } catch (error) {
     console.error("⚠️ Email service error:", error.message);
     console.error(
-      "   Running in console mode. Configure .env for email sending."
+      "   Running in console mode. Configure .env for email sending.",
     );
     return false;
   }
