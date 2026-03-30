@@ -331,7 +331,7 @@ exports.sendMessage = async (req, res, next) => {
       });
 
       console.log(
-        `🚩 Auto-flagged message ${message.id} for keyword: ${flaggedWord}`
+        `🚩 Auto-flagged message ${message.id} for keyword: ${flaggedWord}`,
       );
     }
 
@@ -655,7 +655,7 @@ exports.markAsRead = async (req, res, next) => {
     const userId = req.user.id;
 
     console.log(
-      `📖 markAsRead called: messageId=${messageId}, chatId=${chatId}, userId=${userId}`
+      `📖 markAsRead called: messageId=${messageId}, chatId=${chatId}, userId=${userId}`,
     );
 
     // Verify message exists
@@ -692,7 +692,7 @@ exports.markAsRead = async (req, res, next) => {
     });
 
     console.log(
-      `✅ Read receipt created for messageId=${messageId}, userId=${userId}`
+      `✅ Read receipt created for messageId=${messageId}, userId=${userId}`,
     );
 
     // Broadcast read receipt

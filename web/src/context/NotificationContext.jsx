@@ -52,11 +52,11 @@ export const NotificationProvider = ({ children }) => {
       if (!socket) return;
       socket.emit("notification:read", { notificationId });
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)),
       );
       setUnreadCount((prev) => Math.max(prev - 1, 0));
     },
-    [socket]
+    [socket],
   );
 
   // Delete notification
@@ -65,7 +65,7 @@ export const NotificationProvider = ({ children }) => {
       if (!socket) return;
       socket.emit("notification:delete", { notificationId });
     },
-    [socket]
+    [socket],
   );
 
   // Clear all notifications
@@ -93,7 +93,7 @@ export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
     throw new Error(
-      "useNotifications must be used within a NotificationProvider"
+      "useNotifications must be used within a NotificationProvider",
     );
   }
   return context;

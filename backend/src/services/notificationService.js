@@ -355,14 +355,18 @@ exports.notifyNewPost = async ({ postId, postAuthorId, postTitle, io }) => {
         userId: follower.followerId,
         type: "new_post",
         title: `New post from ${author.name}`,
-        message: postTitle ? postTitle.substring(0, 100) : `${author.name} posted something`,
+        message: postTitle
+          ? postTitle.substring(0, 100)
+          : `${author.name} posted something`,
         relatedId: postId,
         actionUrl: `/post/${postId}`,
         io,
       });
     }
 
-    console.log(`📢 Post notification sent to ${followers.length} followers of ${author.name}`);
+    console.log(
+      `📢 Post notification sent to ${followers.length} followers of ${author.name}`,
+    );
     return true;
   } catch (error) {
     console.error("Error notifying post followers:", error);
