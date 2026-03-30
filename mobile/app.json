@@ -42,7 +42,7 @@
     },
     "runtimeVersion": "1.0.0",
     "extra": {
-      "apiUrl": "https://xavlink-backend.onrender.com/api",
+      "apiUrl": "https://api.xavlink.app/api",
       "eas": {
         "projectId": "656df391-5e12-40de-baef-e3dc148f3307"
       }

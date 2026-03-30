@@ -8,7 +8,6 @@ const {
 const crypto = require("crypto");
 
 // In-memory stores (since database tables are missing/broken)
-const commentStore = {};
 const likeStore = {}; // { postId: [userId1, userId2, ...] }
 
 exports.createPost = async (req, res, next) => {
@@ -26,8 +25,7 @@ exports.createPost = async (req, res, next) => {
 
     console.log("✅ Post created:", post.id);
 
-    // Initialize empty comment and like stores for this post (legacy fallback)
-    commentStore[post.id] = [];
+    // Initialize empty like store for this post (legacy fallback)
     likeStore[post.id] = [];
 
     // Notify followers about new post
@@ -73,14 +71,8 @@ exports.getAllPosts = async (req, res, next) => {
     const userId = req.user?.id;
     const result = await PostService.getAllPosts(userId);
 
-    // Merge with legacy in-memory store if DB comment count is missing from prisma mock
-    const mergedPosts = result.posts.map((p) => ({
-      ...p,
-      commentsCount: Math.max(p.commentsCount, commentStore[p.id]?.length || 0),
-    }));
-
     res.json({
-      posts: mergedPosts,
+      posts: result.posts,
       pagination: result.pagination,
     });
   } catch (err) {
@@ -228,44 +220,33 @@ exports.addComment = async (req, res, next) => {
       return res.status(400).json({ message: "Missing postId or userId" });
     }
 
-    // Get user info
-    let user;
-    try {
-      user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, name: true, profilePic: true },
-      });
-    } catch (err) {
-      console.error("Error fetching user:", err.message);
-      user = { id: userId, name: "Unknown User", profilePic: null };
+    // Verify post exists
+    const post = await prisma.post.findUnique({
+      where: { id },
+      select: { id: true, authorId: true },
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
     }
 
-    // Create comment and store in memory
-    const commentId = crypto.randomUUID();
-    const createdAt = new Date();
+    // Create comment in database
+    const comment = await prisma.comment.create({
+      data: {
+        postId: id,
+        userId,
+        text: text.trim(),
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, profilePic: true },
+        },
+      },
+    });
 
-    // Initialize post comments if not exists
-    if (!commentStore[id]) {
-      commentStore[id] = [];
-    }
+    console.log(`✅ Comment created in database: ${comment.id} for post ${id}`);
 
-    // Add comment to store
-    const newComment = {
-      id: commentId,
-      postId: id,
-      userId,
-      text: text.trim(),
-      user,
-      createdAt,
-      updatedAt: createdAt,
-    };
-
-    commentStore[id].push(newComment);
-    console.log(
-      `✅ Comment stored: post ${id} - total: ${commentStore[id].length}`,
-    );
-
-    // Create notification
+    // Create notification (only notify post author, not all users)
     try {
       await notifyPostComment({
         postId: id,
@@ -280,12 +261,19 @@ exports.addComment = async (req, res, next) => {
     if (global.io) {
       global.io.emit("new_comment", {
         postId: id,
-        comment: newComment,
+        comment: {
+          id: comment.id,
+          postId: comment.postId,
+          userId: comment.userId,
+          text: comment.text,
+          user: comment.user,
+          createdAt: comment.createdAt,
+        },
       });
       console.log(`📡 Broadcasted new comment for post ${id}`);
     }
 
-    return res.status(201).json(newComment);
+    return res.status(201).json(comment);
   } catch (err) {
     console.error("Error in addComment:", err.message);
     res.status(500).json({ message: "Failed to add comment" });
@@ -296,8 +284,17 @@ exports.getComments = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Return comments from memory store
-    const comments = commentStore[id] || [];
+    // Fetch comments from database
+    const comments = await prisma.comment.findMany({
+      where: { postId: id },
+      include: {
+        user: {
+          select: { id: true, name: true, profilePic: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
     console.log(`📖 Retrieved ${comments.length} comments for post ${id}`);
 
     res.json({ comments });
