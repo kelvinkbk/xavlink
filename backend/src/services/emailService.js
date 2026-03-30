@@ -1,12 +1,36 @@
 const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
 // Configure transporter based on environment
 const createTransporter = () => {
-  // Use console mode when provider is not set
   const emailProvider = (process.env.EMAIL_PROVIDER || "").toLowerCase();
 
   console.log("📧 Email Provider:", emailProvider || "CONSOLE MODE");
   console.log("📧 Email From:", process.env.EMAIL_FROM);
+
+  // Resend provider
+  if (emailProvider === "resend") {
+    console.log("🔧 Configuring Resend...");
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    return {
+      sendMail: async (mailOptions) => {
+        try {
+          const result = await resend.emails.send({
+            from: mailOptions.from || "noreply@xavlink.com",
+            to: mailOptions.to,
+            subject: mailOptions.subject,
+            html: mailOptions.html,
+          });
+          console.log("✅ Email sent via Resend", result);
+          return { messageId: result.id };
+        } catch (error) {
+          console.error("❌ Resend Error:", error);
+          throw error;
+        }
+      },
+    };
+  }
 
   if (emailProvider === "gmail") {
     console.log("🔧 Configuring Gmail SMTP...");
@@ -14,11 +38,10 @@ const createTransporter = () => {
       service: "gmail",
       auth: {
         user: process.env.EMAIL_FROM,
-        pass: process.env.EMAIL_PASSWORD, // Use app-specific password for Gmail
+        pass: process.env.EMAIL_PASSWORD,
       },
     });
 
-    // Test the connection
     transporter.verify((error, success) => {
       if (error) {
         console.error("❌ Gmail SMTP Error:", error.message);
@@ -34,7 +57,7 @@ const createTransporter = () => {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT || 587,
-      secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
+      secure: process.env.SMTP_SECURE === "true",
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASSWORD,
