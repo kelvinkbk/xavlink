@@ -17,7 +17,7 @@ const createTransporter = () => {
       sendMail: async (mailOptions) => {
         try {
           const result = await resend.emails.send({
-            from: mailOptions.from || "noreply@xavlink.com",
+            from: mailOptions.from || "onboarding@resend.dev",
             to: mailOptions.to,
             subject: mailOptions.subject,
             html: mailOptions.html,
