@@ -12,7 +12,7 @@ const createTransporter = () => {
   if (emailProvider === "resend") {
     console.log("🔧 Configuring Resend...");
     const resend = new Resend(process.env.RESEND_API_KEY);
-    
+
     return {
       sendMail: async (mailOptions) => {
         try {
