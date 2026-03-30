@@ -144,7 +144,7 @@ exports.notifyFollow = async ({ followerId, followingId, io }) => {
 exports.notifyPostLike = async ({ postId, likerId, io }) => {
   const post = await prisma.post.findUnique({
     where: { id: postId },
-    select: { authorId: true, title: true },
+    select: { userId: true, content: true },
   });
 
   if (!post) return null;
@@ -155,13 +155,13 @@ exports.notifyPostLike = async ({ postId, likerId, io }) => {
   });
 
   // Don't notify if liker is the post author
-  if (post.authorId === likerId) return null;
+  if (post.userId === likerId) return null;
 
   return exports.createNotification({
-    userId: post.authorId,
+    userId: post.userId,
     type: "post_liked",
     title: "Post Liked",
-    message: `${liker.name} liked your post: "${post.title}"`,
+    message: `${liker.name} liked your post: "${post.content}"`,
     relatedId: postId,
     actionUrl: `/post/${postId}`,
     io,
@@ -174,7 +174,7 @@ exports.notifyPostLike = async ({ postId, likerId, io }) => {
 exports.notifyPostComment = async ({ postId, commenterId, io }) => {
   const post = await prisma.post.findUnique({
     where: { id: postId },
-    select: { authorId: true, title: true },
+    select: { userId: true, content: true },
   });
 
   if (!post) return null;
@@ -185,13 +185,13 @@ exports.notifyPostComment = async ({ postId, commenterId, io }) => {
   });
 
   // Don't notify if commenter is the post author
-  if (post.authorId === commenterId) return null;
+  if (post.userId === commenterId) return null;
 
   return exports.createNotification({
-    userId: post.authorId,
+    userId: post.userId,
     type: "post_commented",
     title: "New Comment",
-    message: `${commenter.name} commented on your post: "${post.title}"`,
+    message: `${commenter.name} commented on your post: "${post.content}"`,
     relatedId: postId,
     actionUrl: `/post/${postId}`,
     io,
