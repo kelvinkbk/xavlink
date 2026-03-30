@@ -362,6 +362,15 @@ exports.sendMessage = async (req, res, next) => {
           userId: p.userId,
           unreadCount: p.unreadCount,
         });
+
+        // Send notification to recipient
+        notifyMessage({
+          chatId,
+          senderId,
+          senderName: message.sender.name,
+          messagePreview: text ? text.substring(0, 50) : "[Attachment]",
+          io: global.io,
+        });
       });
     }
 
