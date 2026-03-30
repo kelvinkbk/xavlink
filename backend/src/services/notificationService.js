@@ -332,6 +332,45 @@ exports.notifyRequestRejected = async ({
 };
 
 /**
+ * Notify followers about new post
+ */
+exports.notifyNewPost = async ({ postId, postAuthorId, postTitle, io }) => {
+  try {
+    const author = await prisma.user.findUnique({
+      where: { id: postAuthorId },
+      select: { name: true },
+    });
+
+    if (!author) return null;
+
+    // Get all followers of this user
+    const followers = await prisma.follow.findMany({
+      where: { followingId: postAuthorId },
+      select: { followerId: true },
+    });
+
+    // Notify each follower
+    for (const follower of followers) {
+      await exports.createNotification({
+        userId: follower.followerId,
+        type: "new_post",
+        title: `New post from ${author.name}`,
+        message: postTitle ? postTitle.substring(0, 100) : `${author.name} posted something`,
+        relatedId: postId,
+        actionUrl: `/post/${postId}`,
+        io,
+      });
+    }
+
+    console.log(`📢 Post notification sent to ${followers.length} followers of ${author.name}`);
+    return true;
+  } catch (error) {
+    console.error("Error notifying post followers:", error);
+    return false;
+  }
+};
+
+/**
  * Batch delete old notifications (older than 30 days)
  */
 exports.cleanupOldNotifications = async () => {

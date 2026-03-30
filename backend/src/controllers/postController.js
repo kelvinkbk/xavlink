@@ -3,6 +3,7 @@ const PostService = require("../services/postService");
 const {
   notifyPostLike,
   notifyPostComment,
+  notifyNewPost,
 } = require("../services/notificationService");
 const crypto = require("crypto");
 
@@ -28,6 +29,18 @@ exports.createPost = async (req, res, next) => {
     // Initialize empty comment and like stores for this post (legacy fallback)
     commentStore[post.id] = [];
     likeStore[post.id] = [];
+
+    // Notify followers about new post
+    try {
+      await notifyNewPost({
+        postId: post.id,
+        postAuthorId: req.user.id,
+        postTitle: post.content,
+        io: global.io,
+      });
+    } catch (notifErr) {
+      console.error("Failed to notify followers about new post:", notifErr);
+    }
 
     // Emit real-time event for new post
     if (global.io) {
