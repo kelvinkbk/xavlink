@@ -35,12 +35,12 @@ export const NotificationProvider = ({ children }) => {
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
     };
 
-    socket.on("notification:new", handleNewNotification);
+    socket.on("new_notification", handleNewNotification);
     socket.on("notification:unread-count", handleUnreadCount);
     socket.on("notification:deleted", handleNotificationDeleted);
 
     return () => {
-      socket.off("notification:new", handleNewNotification);
+      socket.off("new_notification", handleNewNotification);
       socket.off("notification:unread-count", handleUnreadCount);
       socket.off("notification:deleted", handleNotificationDeleted);
     };
