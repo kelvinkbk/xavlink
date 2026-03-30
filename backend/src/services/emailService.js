@@ -4,7 +4,7 @@ const nodemailer = require("nodemailer");
 const createTransporter = () => {
   // Use console mode when provider is not set
   const emailProvider = (process.env.EMAIL_PROVIDER || "").toLowerCase();
-  
+
   console.log("📧 Email Provider:", emailProvider || "CONSOLE MODE");
   console.log("📧 Email From:", process.env.EMAIL_FROM);
 
@@ -17,7 +17,7 @@ const createTransporter = () => {
         pass: process.env.EMAIL_PASSWORD, // Use app-specific password for Gmail
       },
     });
-    
+
     // Test the connection
     transporter.verify((error, success) => {
       if (error) {
@@ -26,7 +26,7 @@ const createTransporter = () => {
         console.log("✅ Gmail SMTP Connected!");
       }
     });
-    
+
     return transporter;
   }
 
@@ -133,7 +133,10 @@ exports.sendVerificationEmail = async (email, name, verificationLink) => {
 
     console.log("📧 Attempting to send verification email to:", email);
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ Verification email sent to ${email}. Message ID:`, result.messageId);
+    console.log(
+      `✅ Verification email sent to ${email}. Message ID:`,
+      result.messageId,
+    );
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error("❌ Failed to send verification email to", email);
