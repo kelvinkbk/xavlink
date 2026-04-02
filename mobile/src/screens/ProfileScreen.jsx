@@ -21,7 +21,15 @@ import {
   postService,
   skillService,
   enhancementService,
+  API_BASE,
 } from "../services/api";
+
+const API_ORIGIN = API_BASE.replace(/\/api$/, "");
+const toAbsoluteUrl = (url) => {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${API_ORIGIN}${url}`;
+};
 import { ReviewSection } from "../components/ReviewSection";
 import ReportModal from "../components/ReportModal";
 import PhotoGallery from "../components/PhotoGallery";
@@ -255,6 +263,23 @@ const ProfileScreen = ({ route, navigation }) => {
     fetchSkills();
   }, [isOwnProfile, user?.id]);
 
+  useEffect(() => {
+    if (!isOwnProfile || !user) return;
+    setName(user.name ?? "");
+    setBio(user.bio ?? "");
+    setCourse(user.course ?? "");
+    setYear(user.year ?? "");
+    setAvatar(user.profilePic ?? "");
+  }, [
+    isOwnProfile,
+    user?.id,
+    user?.name,
+    user?.bio,
+    user?.course,
+    user?.year,
+    user?.profilePic,
+  ]);
+
   // Save profile changes
   const handleSave = async () => {
     if (!isOwnProfile) return;
@@ -263,9 +288,11 @@ const ProfileScreen = ({ route, navigation }) => {
       const { data } = await userService.updateProfile(user.id, {
         name: name.trim(),
         bio: bio.trim(),
+        course: course.trim(),
+        year: year.trim(),
         profilePic: avatar.trim(),
       });
-      await updateUser(data);
+      await updateUser({ ...user, ...data });
       Alert.alert("Saved", "Profile updated");
     } catch (e) {
       Alert.alert("Error", "Failed to update profile");
@@ -273,6 +300,50 @@ const ProfileScreen = ({ route, navigation }) => {
       setSaving(false);
     }
   };
+
+  const handlePickAvatar = useCallback(async () => {
+    if (!isOwnProfile || !user?.id) return;
+    const { status } =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission needed",
+        "Allow photo access to change your profile picture.",
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets?.length) return;
+    const asset = result.assets[0];
+    const uri = asset.uri;
+    const fileName = uri.split("/").pop() || "profile.jpg";
+    const ext = fileName.split(".").pop();
+    const type = asset.mimeType || (ext ? `image/${ext}` : "image/jpeg");
+    const formData = new FormData();
+    formData.append("image", { uri, name: fileName, type });
+
+    setUploading(true);
+    try {
+      const { url, user: updated } =
+        await uploadService.uploadProfilePic(formData);
+      setAvatar(url);
+      if (updated) {
+        await updateUser({ ...updated, profilePic: url });
+      }
+    } catch (e) {
+      Alert.alert(
+        "Error",
+        e?.response?.data?.message || "Failed to upload photo",
+      );
+    } finally {
+      setUploading(false);
+    }
+  }, [isOwnProfile, user?.id, updateUser]);
 
   const handleFollowToggle = useCallback(async () => {
     if (isOwnProfile) return;
@@ -329,15 +400,49 @@ const ProfileScreen = ({ route, navigation }) => {
             </View>
           </View>
         )}
-        <Image
-          source={{
-            uri:
-              avatar ||
-              displayUser?.profilePic ||
-              "https://placehold.co/128x128?text=User",
-          }}
-          style={styles.avatar}
-        />
+        {isOwnProfile ? (
+          <TouchableOpacity
+            onPress={handlePickAvatar}
+            activeOpacity={0.85}
+            disabled={uploading}
+          >
+            <View style={styles.avatarWrapper}>
+              <Image
+                source={{
+                  uri:
+                    toAbsoluteUrl(avatar || displayUser?.profilePic) ||
+                    "https://placehold.co/128x128?text=User",
+                }}
+                style={styles.avatar}
+              />
+              {uploading && (
+                <View style={styles.avatarUploadingOverlay}>
+                  <ActivityIndicator color="#fff" />
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <Image
+            source={{
+              uri:
+                toAbsoluteUrl(displayUser?.profilePic) ||
+                "https://placehold.co/128x128?text=User",
+            }}
+            style={styles.avatar}
+          />
+        )}
+        {isOwnProfile && (
+          <TouchableOpacity
+            style={[styles.changePhotoBtn, { borderColor: colors.border }]}
+            onPress={handlePickAvatar}
+            disabled={uploading}
+          >
+            <Text style={{ color: colors.primary, fontWeight: "600" }}>
+              {uploading ? "Uploading…" : "Change photo"}
+            </Text>
+          </TouchableOpacity>
+        )}
         {/* Stats */}
         {displayUser && (
           <View style={styles.statsContainer}>
@@ -540,6 +645,8 @@ const ProfileScreen = ({ route, navigation }) => {
       skills,
       navigation,
       handleFollowToggle,
+      handlePickAvatar,
+      uploading,
     ],
   );
 
@@ -633,7 +740,7 @@ const ProfileScreen = ({ route, navigation }) => {
           </View>
           <View style={styles.formGroup}>
             <Text style={[styles.label, { color: colors.textPrimary }]}>
-              Avatar URL
+              Photo URL (optional)
             </Text>
             <TextInput
               value={avatar}
@@ -740,7 +847,12 @@ const ProfileScreen = ({ route, navigation }) => {
         console.error("Failed to refresh profile:", error);
       }
     } else if (isOwnProfile && user?.id) {
-      // Refresh own skills
+      try {
+        const { data: fresh } = await userService.getProfile(user.id);
+        await updateUser(fresh);
+      } catch (err) {
+        console.error("Failed to refresh profile:", err);
+      }
       try {
         const { data: skillsData } = await skillService.getSkillsByUser(
           user.id,
@@ -877,7 +989,28 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
   },
-  avatar: { width: 140, height: 140, borderRadius: 70, marginBottom: 16 },
+  avatarWrapper: {
+    width: 140,
+    height: 140,
+    marginBottom: 8,
+    borderRadius: 70,
+    overflow: "hidden",
+  },
+  avatar: { width: 140, height: 140, borderRadius: 70 },
+  avatarUploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  changePhotoBtn: {
+    marginBottom: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignSelf: "center",
+  },
   title: { fontSize: 24, fontWeight: "700", color: "#1e293b" },
   sub: { fontSize: 14, color: "#475569", marginTop: 4 },
   formGroup: { width: "100%", marginTop: 12 },

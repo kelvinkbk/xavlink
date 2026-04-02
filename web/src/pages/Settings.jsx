@@ -11,7 +11,8 @@ import ConfirmModal from "../components/ConfirmModal";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 const Settings = () => {
-  const { user, isAuthenticated, logout, token, login } = useAuth();
+  const { user, isAuthenticated, logout, token, login, updateUser } =
+    useAuth();
   const [activeTab, setActiveTab] = useState("account");
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +38,15 @@ const Settings = () => {
     bio: user?.bio || "",
     profilePic: user?.profilePic || "",
   });
+
+  useEffect(() => {
+    if (!user) return;
+    setProfileForm({
+      name: user.name ?? "",
+      bio: user.bio ?? "",
+      profilePic: user.profilePic ?? "",
+    });
+  }, [user?.id, user?.name, user?.bio, user?.profilePic]);
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: "",
     newPassword: "",
@@ -79,7 +89,11 @@ const Settings = () => {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     try {
-      await api.post(`/settings/${user.id}/update-profile`, profileForm);
+      const { data } = await api.post(
+        `/settings/${user.id}/update-profile`,
+        profileForm,
+      );
+      updateUser(data);
       setMessage("✅ Profile updated successfully");
       setTimeout(() => setMessage(""), 3000);
     } catch {
@@ -94,8 +108,11 @@ const Settings = () => {
 
     setUploadingAvatar(true);
     try {
-      const { url } = await uploadService.uploadProfilePic(file);
-      setProfileForm({ ...profileForm, profilePic: url });
+      const { url, user: updated } = await uploadService.uploadProfilePic(file);
+      setProfileForm((prev) => ({ ...prev, profilePic: url }));
+      if (updated) {
+        updateUser({ ...updated, profilePic: url });
+      }
       setMessage("✅ Avatar uploaded successfully");
       setTimeout(() => setMessage(""), 3000);
     } catch (err) {
