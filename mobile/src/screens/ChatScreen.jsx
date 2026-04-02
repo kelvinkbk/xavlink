@@ -160,8 +160,44 @@ const ChatScreen = ({ route }) => {
         m?.id ??
         `${m?.senderId}-${m?.text}-${m?.createdAt ?? m?.timestamp ?? ""}`;
       setMessages((prev) => {
-        if (prev.some((p) => keyOf(p) === keyOf(msg))) return prev;
-        const updated = [...prev, msg].sort((a, b) => {
+        const incoming = msg;
+
+        // If this is our own optimistic "pending" message, replace it instead
+        // of appending (socket echoes our message back too).
+        if (user?.id && incoming?.senderId === user.id) {
+          const normalizeAttachment = (v) => v || null;
+          const pending = prev.find(
+            (p) =>
+              p?.pending &&
+              p?.senderId === user.id &&
+              (p?.text || "") === (incoming?.text || "") &&
+              normalizeAttachment(p?.attachmentUrl) ===
+                normalizeAttachment(incoming?.attachmentUrl),
+          );
+
+          if (pending) {
+            const replaced = prev.map((p) =>
+              p?.id === pending?.id ? { ...incoming, pending: false } : p,
+            );
+            const sorted = replaced.sort((a, b) => {
+              const timeA = new Date(
+                a?.createdAt || a?.timestamp || 0,
+              ).getTime();
+              const timeB = new Date(
+                b?.createdAt || b?.timestamp || 0,
+              ).getTime();
+              return timeA - timeB;
+            });
+            return sorted;
+          }
+        }
+
+        const incomingId = incoming?.id;
+        if (incomingId && prev.some((p) => p?.id === incomingId)) return prev;
+
+        if (prev.some((p) => keyOf(p) === keyOf(incoming))) return prev;
+
+        const updated = [...prev, incoming].sort((a, b) => {
           const timeA = new Date(a.createdAt || a.timestamp || 0).getTime();
           const timeB = new Date(b.createdAt || b.timestamp || 0).getTime();
           return timeA - timeB;
@@ -220,10 +256,33 @@ const ChatScreen = ({ route }) => {
       );
     };
 
+    const handleMessageDeleted = ({ messageId, chatId: eventChatId }) => {
+      if (eventChatId && eventChatId !== chatId) return;
+      if (!messageId) return;
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    };
+
+    const handleMessageEdited = ({ message: editedMessage, chatId: eventChatId }) => {
+      if (eventChatId && eventChatId !== chatId) return;
+      if (!editedMessage?.id) return;
+      setMessages((prev) =>
+        prev.map((m) => (m.id === editedMessage.id ? { ...m, ...editedMessage } : m)),
+      );
+    };
+
+    const handleMessagePinned = ({ messageId, isPinned, chatId: eventChatId }) => {
+      if (eventChatId && eventChatId !== chatId) return;
+      if (!messageId) return;
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, isPinned } : m)));
+    };
+
     socket.on("user_typing", handleUserTyping);
     socket.on("user_stopped_typing", handleUserStoppedTyping);
     socket.on("reaction_added", handleReactionAdded);
     socket.on("reaction_removed", handleReactionRemoved);
+    socket.on("message_deleted", handleMessageDeleted);
+    socket.on("message_edited", handleMessageEdited);
+    socket.on("message_pinned", handleMessagePinned);
 
     // Mark chat as read when entering
     chatService.markChatAsRead(chatId).catch(console.error);
@@ -234,6 +293,9 @@ const ChatScreen = ({ route }) => {
       socket.off("user_stopped_typing", handleUserStoppedTyping);
       socket.off("reaction_added", handleReactionAdded);
       socket.off("reaction_removed", handleReactionRemoved);
+      socket.off("message_deleted", handleMessageDeleted);
+      socket.off("message_edited", handleMessageEdited);
+      socket.off("message_pinned", handleMessagePinned);
     };
   }, [chatId, user?.id]);
 

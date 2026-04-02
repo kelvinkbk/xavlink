@@ -135,6 +135,11 @@ const ChatListScreen = () => {
       loadChats(); // Reload to update last message and unread count
     };
 
+    const handleChatUpdateReload = () => {
+      // Reload to keep last message preview consistent (edit/delete).
+      loadChats();
+    };
+
     // Listen for unread count updates
     const handleUnreadCountUpdate = ({ chatId, userId, unreadCount }) => {
       console.log("🔢 Unread count update:", { chatId, userId, unreadCount });
@@ -162,11 +167,17 @@ const ChatListScreen = () => {
     socket.on("receive_message", handleReceiveMessage);
     socket.on("unread_count_update", handleUnreadCountUpdate);
     socket.on("chat_read", handleChatRead);
+    socket.on("message_deleted", handleChatUpdateReload);
+    socket.on("message_edited", handleChatUpdateReload);
+    socket.on("message_pinned", handleChatUpdateReload);
 
     return () => {
       socket.off("receive_message", handleReceiveMessage);
       socket.off("unread_count_update", handleUnreadCountUpdate);
       socket.off("chat_read", handleChatRead);
+      socket.off("message_deleted", handleChatUpdateReload);
+      socket.off("message_edited", handleChatUpdateReload);
+      socket.off("message_pinned", handleChatUpdateReload);
     };
   }, [user?.id]);
 
