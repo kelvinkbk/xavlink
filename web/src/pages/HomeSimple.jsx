@@ -97,7 +97,7 @@ function HomeSimple() {
           loadMorePosts();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     const sentinel = document.getElementById("scroll-sentinel");
@@ -129,16 +129,16 @@ function HomeSimple() {
         prevPosts.map((post) =>
           post.id === postId
             ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
-            : post
-        )
+            : post,
+        ),
       );
 
       setAllPosts((prevPosts) =>
         prevPosts.map((post) =>
           post.id === postId
             ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
-            : post
-        )
+            : post,
+        ),
       );
     });
 
@@ -146,40 +146,40 @@ function HomeSimple() {
     socket.on("post_liked", (data) => {
       const { postId, likesCount } = data;
       console.log(
-        `❤️ Real-time like received for post ${postId}, count: ${likesCount}`
+        `❤️ Real-time like received for post ${postId}, count: ${likesCount}`,
       );
 
       // Update like count in posts
       setPosts((prevPosts) =>
         prevPosts.map((post) =>
-          post.id === postId ? { ...post, likesCount } : post
-        )
+          post.id === postId ? { ...post, likesCount } : post,
+        ),
       );
 
       setAllPosts((prevPosts) =>
         prevPosts.map((post) =>
-          post.id === postId ? { ...post, likesCount } : post
-        )
+          post.id === postId ? { ...post, likesCount } : post,
+        ),
       );
     });
 
     socket.on("post_unliked", (data) => {
       const { postId, likesCount } = data;
       console.log(
-        `💔 Real-time unlike received for post ${postId}, count: ${likesCount}`
+        `💔 Real-time unlike received for post ${postId}, count: ${likesCount}`,
       );
 
       // Update like count in posts
       setPosts((prevPosts) =>
         prevPosts.map((post) =>
-          post.id === postId ? { ...post, likesCount } : post
-        )
+          post.id === postId ? { ...post, likesCount } : post,
+        ),
       );
 
       setAllPosts((prevPosts) =>
         prevPosts.map((post) =>
-          post.id === postId ? { ...post, likesCount } : post
-        )
+          post.id === postId ? { ...post, likesCount } : post,
+        ),
       );
     });
 
@@ -248,13 +248,13 @@ function HomeSimple() {
             try {
               const likeResponse = await axios.get(
                 `${API_URL}/posts/${post.id}/likes`,
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: { Authorization: `Bearer ${token}` } },
               );
 
               // Fetch comment count
               const commentResponse = await axios.get(
                 `${API_URL}/posts/${post.id}/comments`,
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: { Authorization: `Bearer ${token}` } },
               );
 
               return {
@@ -268,7 +268,7 @@ function HomeSimple() {
               console.error(`Error fetching data for post ${post.id}:`, err);
               return post;
             }
-          })
+          }),
         );
       }
 
@@ -306,12 +306,12 @@ function HomeSimple() {
             try {
               const likeResponse = await axios.get(
                 `${API_URL}/posts/${post.id}/likes`,
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: { Authorization: `Bearer ${token}` } },
               );
 
               const commentResponse = await axios.get(
                 `${API_URL}/posts/${post.id}/comments`,
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: { Authorization: `Bearer ${token}` } },
               );
 
               return {
@@ -325,7 +325,7 @@ function HomeSimple() {
               console.error(`Error fetching data for post ${post.id}:`, err);
               return post;
             }
-          })
+          }),
         );
       }
 
@@ -459,7 +459,7 @@ function HomeSimple() {
         `${API_URL}/notifications/unread-count`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       setUnreadNotifications(response.data.unreadCount || 0);
@@ -486,7 +486,7 @@ function HomeSimple() {
           post.user?.course?.toLowerCase().includes(lower) ||
           post.user?.year?.toString().includes(q) ||
           extractHashtags(post.content).some((tag) =>
-            tag.includes(lower.replace("#", ""))
+            tag.includes(lower.replace("#", "")),
           )
         );
       });
@@ -497,7 +497,7 @@ function HomeSimple() {
           params: { search: q },
         });
         const skillUserIds = new Set(
-          (skills || []).map((s) => s.user?.id).filter(Boolean)
+          (skills || []).map((s) => s.user?.id).filter(Boolean),
         );
         if (skillUserIds.size > 0) {
           const bySkill = allPosts.filter((p) => skillUserIds.has(p.userId));
@@ -589,13 +589,13 @@ function HomeSimple() {
         setBookmarkedPosts((prev) => prev.filter((id) => id !== postId));
         setPosts(
           posts.map((post) =>
-            post.id === postId ? { ...post, isBookmarked: false } : post
-          )
+            post.id === postId ? { ...post, isBookmarked: false } : post,
+          ),
         );
         setAllPosts(
           allPosts.map((post) =>
-            post.id === postId ? { ...post, isBookmarked: false } : post
-          )
+            post.id === postId ? { ...post, isBookmarked: false } : post,
+          ),
         );
         showToast("Post removed from bookmarks", "success");
       } else {
@@ -603,19 +603,19 @@ function HomeSimple() {
         await axios.post(
           `${API_URL}/bookmarks`,
           { postId },
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
 
         setBookmarkedPosts((prev) => [...prev, postId]);
         setPosts(
           posts.map((post) =>
-            post.id === postId ? { ...post, isBookmarked: true } : post
-          )
+            post.id === postId ? { ...post, isBookmarked: true } : post,
+          ),
         );
         setAllPosts(
           allPosts.map((post) =>
-            post.id === postId ? { ...post, isBookmarked: true } : post
-          )
+            post.id === postId ? { ...post, isBookmarked: true } : post,
+          ),
         );
         showToast("Post saved to bookmarks!", "success");
       }
@@ -636,7 +636,7 @@ function HomeSimple() {
       await axios.post(
         `${API_URL}/pins`,
         { postId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       setPinnedPosts((prev) => [...prev, postId]);
@@ -692,20 +692,20 @@ function HomeSimple() {
       const response = await axios.post(
         `${API_URL}/posts/${postId}/like`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       // Update state with server's like count
       const { likesCount } = response.data;
       setPosts(
         posts.map((post) =>
-          post.id === postId ? { ...post, isLiked: true, likesCount } : post
-        )
+          post.id === postId ? { ...post, isLiked: true, likesCount } : post,
+        ),
       );
       setAllPosts(
         allPosts.map((post) =>
-          post.id === postId ? { ...post, isLiked: true, likesCount } : post
-        )
+          post.id === postId ? { ...post, isLiked: true, likesCount } : post,
+        ),
       );
     } catch (err) {
       console.error("Error liking post:", err);
@@ -730,8 +730,8 @@ function HomeSimple() {
                 isLiked: false,
                 likesCount,
               }
-            : post
-        )
+            : post,
+        ),
       );
       setAllPosts(
         allPosts.map((post) =>
@@ -741,8 +741,8 @@ function HomeSimple() {
                 isLiked: false,
                 likesCount,
               }
-            : post
-        )
+            : post,
+        ),
       );
     } catch {
       showToast("Failed to unlike post", "error");
@@ -785,7 +785,7 @@ function HomeSimple() {
       const response = await axios.post(
         `${API_URL}/posts/${selectedPost.id}/comments`,
         { text: newComment },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       const newCommentObj = response.data;
@@ -799,15 +799,15 @@ function HomeSimple() {
         posts.map((post) =>
           post.id === selectedPost.id
             ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
-            : post
-        )
+            : post,
+        ),
       );
       setAllPosts(
         allPosts.map((post) =>
           post.id === selectedPost.id
             ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
-            : post
-        )
+            : post,
+        ),
       );
 
       showToast("Comment added successfully!", "success");
@@ -964,9 +964,20 @@ function HomeSimple() {
               >
                 {/* Post Header */}
                 <div className="flex items-center mb-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mr-3">
-                    {post.user?.name?.[0] || "U"}
-                  </div>
+                  {post.user?.profilePic ? (
+                    <img
+                      src={post.user.profilePic}
+                      alt={post.user?.name || "User"}
+                      className="w-10 h-10 rounded-full object-cover mr-3"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mr-3">
+                      {post.user?.name?.[0] || "U"}
+                    </div>
+                  )}
                   <div>
                     <p className="font-semibold">
                       {post.user?.name || "Unknown User"}
