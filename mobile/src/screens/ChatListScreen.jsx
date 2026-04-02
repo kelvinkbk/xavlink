@@ -85,6 +85,33 @@ const ChatListScreen = () => {
     }
   }, [syncEvents.newNotification]);
 
+  // Update sender avatars/names in chat list when profile changes elsewhere.
+  useEffect(() => {
+    const event = syncEvents?.userUpdated;
+    if (!event?.userId || !event?.updates) return;
+
+    const userId = event.userId;
+    const updates = event.updates;
+
+    setChats((prev) =>
+      prev.map((chat) => {
+        const participants = (chat.participants || []).map((p) => {
+          if (p?.user?.id !== userId) return p;
+          return { ...p, user: { ...p.user, ...updates } };
+        });
+
+        const messages = Array.isArray(chat.messages)
+          ? chat.messages.map((msg) => {
+              if (msg?.sender?.id !== userId) return msg;
+              return { ...msg, sender: { ...msg.sender, ...updates } };
+            })
+          : chat.messages;
+
+        return { ...chat, participants, messages };
+      }),
+    );
+  }, [syncEvents?.userUpdated]);
+
   // Listen for real-time chat events
   useEffect(() => {
     const socket = getSocket();

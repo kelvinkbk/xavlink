@@ -21,6 +21,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useScalePressAnimation } from "../utils/animations";
 import VoiceMessageService from "../services/VoiceMessageService";
+import { useSyncContext } from "../context/SyncContext";
 import {
   getSocket,
   joinRoom,
@@ -47,10 +48,11 @@ const toAbsoluteUrl = (url) => {
 
 const ChatScreen = ({ route }) => {
   const { chatId } = route.params || {};
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { colors } = useTheme();
   const navigation = useNavigation();
   const { setIsVisible } = useFABVisibility();
+  const { syncEvents } = useSyncContext();
   const {
     scaleAnim: sendScale,
     onPressIn: onSendPressIn,
@@ -234,6 +236,42 @@ const ChatScreen = ({ route }) => {
       socket.off("reaction_removed", handleReactionRemoved);
     };
   }, [chatId, user?.id]);
+
+  // Keep chat UI (sender name/avatar) in sync if someone updates their profile.
+  // Backend emits `user_updated` with `{ userId, updates }`.
+  useEffect(() => {
+    const event = syncEvents?.userUpdated;
+    if (!event?.userId || !event?.updates) return;
+
+    const userId = event.userId;
+    const updates = event.updates;
+
+    // Update auth user if the current user profile changed elsewhere.
+    if (user?.id && userId === user.id) {
+      updateUser({ ...user, ...updates });
+    }
+
+    // Update participants shown on the header / sender section.
+    setChat((prev) => {
+      if (!prev?.participants) return prev;
+      return {
+        ...prev,
+        participants: prev.participants.map((p) => {
+          if (p?.user?.id !== userId) return p;
+          return { ...p, user: { ...p.user, ...updates } };
+        }),
+      };
+    });
+
+    // Update cached sender data on existing messages.
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m?.senderId !== userId) return m;
+        if (!m?.sender) return m;
+        return { ...m, sender: { ...m.sender, ...updates } };
+      }),
+    );
+  }, [syncEvents?.userUpdated, user?.id]);
 
   const pickAttachment = async () => {
     try {
