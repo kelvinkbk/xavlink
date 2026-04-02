@@ -8,6 +8,23 @@ const API_BASE = rawApiBase
   .replace(/[\n\r\t]/g, "");
 const API_ORIGIN = API_BASE.replace(/\/api$/, "");
 
+/** Turn API-relative or protocol-relative URLs into absolute browser URLs for <img src>. */
+export function toAbsolute(url) {
+  if (!url) return url;
+  let s = url.toString().trim().replace(/[\n\r\t]/g, "");
+  if (/^https?:\/\//i.test(s)) return s;
+  if (/^\/\//.test(s)) return `https:${s}`;
+  if (s.startsWith("data:") || s.startsWith("blob:")) return s;
+  return `${API_ORIGIN}${s.startsWith("/") ? s : `/${s}`}`
+    .trim()
+    .replace(/[\n\r\t]/g, "");
+}
+
+function normalizeUserProfilePic(user) {
+  if (!user) return user;
+  return { ...user, profilePic: toAbsolute(user.profilePic) };
+}
+
 const api = axios.create({
   baseURL: API_BASE,
   headers: { "Content-Type": "application/json" },
@@ -57,7 +74,13 @@ export const authService = {
 };
 
 export const userService = {
-  getProfile: (id) => api.get(`/users/${id}`),
+  getProfile: (id) =>
+    api.get(`/users/${id}`).then((res) => ({
+      ...res,
+      data: res.data
+        ? { ...res.data, profilePic: toAbsolute(res.data.profilePic) }
+        : res.data,
+    })),
 };
 
 export const skillService = {
@@ -242,17 +265,6 @@ export const postService = {
     api.get("/posts/mute-keywords").then((res) => res.data),
 };
 
-const toAbsolute = (url) => {
-  if (!url) return url;
-  // Sanitize URL by removing whitespace and control characters
-  url = url
-    .toString()
-    .trim()
-    .replace(/[\n\r\t]/g, "");
-  if (/^https?:\/\//i.test(url)) return url;
-  return `${API_ORIGIN}${url}`.trim().replace(/[\n\r\t]/g, "");
-};
-
 export const uploadService = {
   uploadPostImage: (file) => {
     const formData = new FormData();
@@ -324,7 +336,17 @@ export const reviewService = {
 
 export const requestService = {
   sendRequest: (data) => api.post("/requests/send", data),
-  getReceived: (userId) => api.get(`/requests/received/${userId}`),
+  getReceived: (userId) =>
+    api.get(`/requests/received/${userId}`).then((res) => ({
+      ...res,
+      data: Array.isArray(res.data)
+        ? res.data.map((req) => ({
+            ...req,
+            fromUser: normalizeUserProfilePic(req.fromUser),
+            toUser: normalizeUserProfilePic(req.toUser),
+          }))
+        : res.data,
+    })),
   updateStatus: (id, status) => api.put(`/requests/update/${id}`, { status }),
 };
 
@@ -403,7 +425,16 @@ export const enhancementService = {
   filterUsers: (params = {}) =>
     api
       .get("/enhancements/discover/filter", { params })
-      .then((res) => res.data),
+      .then((res) => {
+        const d = res.data;
+        if (d?.users && Array.isArray(d.users)) {
+          return {
+            ...d,
+            users: d.users.map((u) => normalizeUserProfilePic(u)),
+          };
+        }
+        return d;
+      }),
   getTrendingSkills: (params = {}) =>
     api
       .get("/enhancements/discover/trending-skills", { params })
@@ -481,7 +512,20 @@ export const enhancementService = {
   getRequestHistory: (type = "sent") =>
     api
       .get("/enhancements/requests/history", { params: { type } })
-      .then((res) => res.data),
+      .then((res) => {
+        const d = res.data;
+        if (d?.requests && Array.isArray(d.requests)) {
+          return {
+            ...d,
+            requests: d.requests.map((req) => ({
+              ...req,
+              fromUser: normalizeUserProfilePic(req.fromUser),
+              toUser: normalizeUserProfilePic(req.toUser),
+            })),
+          };
+        }
+        return d;
+      }),
   sendCounterOffer: (requestId, data) =>
     api
       .post(`/enhancements/requests/${requestId}/counter-offer`, data)

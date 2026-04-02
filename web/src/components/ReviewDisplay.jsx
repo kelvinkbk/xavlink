@@ -1,4 +1,5 @@
 import React from "react";
+import { toAbsolute } from "../services/api";
 
 export function ReviewDisplay({ review, currentUserId, onEdit, onDelete }) {
   const isOwn = review.author.id === currentUserId;
@@ -10,7 +11,7 @@ export function ReviewDisplay({ review, currentUserId, onEdit, onDelete }) {
         <div className="flex items-center gap-3">
           <img
             src={
-              review.author.profilePic ||
+              toAbsolute(review.author.profilePic) ||
               "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect fill='%23e5e7eb' width='40' height='40'/%3E%3Ctext x='50%25' y='50%25' font-size='20' fill='%239ca3af' dominant-baseline='middle' text-anchor='middle'%3E👤%3C/text%3E%3C/svg%3E"
             }
             alt={review.author.name}

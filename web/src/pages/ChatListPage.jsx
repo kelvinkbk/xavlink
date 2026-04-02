@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { chatService } from "../services/chatService";
+import { toAbsolute } from "../services/api";
 import { socket } from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -102,7 +103,7 @@ export default function ChatListPage() {
     const otherParticipant = chat.participants.find(
       (p) => p.user.id !== user.id
     );
-    return otherParticipant?.user.profilePic || null;
+    return toAbsolute(otherParticipant?.user.profilePic) || null;
   };
 
   const getLastMessage = (chat) => {

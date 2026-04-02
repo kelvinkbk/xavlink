@@ -3,18 +3,21 @@ import { useAuth } from "../context/AuthContext";
 import { useParams } from "react-router-dom";
 import PageTransition from "../components/PageTransition";
 import ReportModal from "../components/ReportModal";
-import api from "../services/api";
+import api, {
+  uploadService,
+  enhancementService,
+  toAbsolute,
+  userService,
+} from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../context/ToastContext";
 import { useSync } from "../hooks/useSync";
-import { uploadService } from "../services/api";
 import { ReviewSection } from "../components/ReviewSection";
 import ProfileStats from "../components/ProfileStats";
 import PhotoGallery from "../components/PhotoGallery";
 import Achievements from "../components/Achievements";
 import SocialLinks from "../components/SocialLinks";
-import { enhancementService } from "../services/api";
 
 export default function Profile() {
   const { user: currentUser, updateUser } = useAuth();
@@ -64,7 +67,7 @@ export default function Profile() {
           }
           setLoading(false);
         } else {
-          const { data } = await api.get(`/users/${userId}`);
+          const { data } = await userService.getProfile(userId);
           setUser(data);
           const { data: status } = await api.get(
             `/users/${userId}/follow-status`,
@@ -106,7 +109,10 @@ export default function Profile() {
     if (!userId || isOwnProfile) return;
 
     if (syncEvents.userUpdated && syncEvents.userUpdated.userId === userId) {
-      setUser((prev) => ({ ...prev, ...syncEvents.userUpdated.updates }));
+      setUser((prev) => {
+        const merged = { ...prev, ...syncEvents.userUpdated.updates };
+        return { ...merged, profilePic: toAbsolute(merged.profilePic) };
+      });
     }
 
     if (syncEvents.userFollowed) {
@@ -172,7 +178,7 @@ export default function Profile() {
   const handleSaveProfile = async () => {
     try {
       const { data } = await api.put(`/users/${currentUser.id}`, editForm);
-      setUser(data);
+      setUser({ ...data, profilePic: toAbsolute(data.profilePic) });
       setIsEditing(false);
       updateUser(data); // Update AuthContext
       showToast("Profile updated", "success");
@@ -189,8 +195,9 @@ export default function Profile() {
       const { url, user: updated } = await uploadService.uploadProfilePic(file);
       setEditForm((prev) => ({ ...prev, profilePic: url }));
       if (updated) {
-        setUser(updated);
-        updateUser(updated); // Update AuthContext
+        const u = { ...updated, profilePic: toAbsolute(updated.profilePic) };
+        setUser(u);
+        updateUser(u); // Update AuthContext
       }
       showToast("Profile photo updated", "success");
     } catch (error) {
@@ -305,7 +312,10 @@ export default function Profile() {
         <div className="bg-white rounded-lg shadow p-8">
           <div className="flex items-start mb-6">
             <img
-              src={user.profilePic || "https://placehold.co/128x128?text=User"}
+              src={
+                toAbsolute(user.profilePic) ||
+                "https://placehold.co/128x128?text=User"
+              }
               alt={user.name || "User avatar"}
               className="w-32 h-32 rounded-full mr-6 flex-shrink-0"
             />
@@ -551,7 +561,7 @@ export default function Profile() {
                     />
                     {editForm.profilePic && (
                       <img
-                        src={editForm.profilePic}
+                        src={toAbsolute(editForm.profilePic)}
                         alt="Preview"
                         className="w-24 h-24 rounded-full object-cover border"
                       />

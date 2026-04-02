@@ -17,7 +17,7 @@ import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ReportModal from "../components/ReportModal";
 import MessageReactions from "../components/MessageReactions";
-import { uploadService, reportService } from "../services/api";
+import { uploadService, reportService, toAbsolute } from "../services/api";
 import {
   getCachedMessages,
   cacheMessages,
@@ -2095,7 +2095,7 @@ export default function ChatPage() {
                       <div className="flex items-center gap-3">
                         {participant.user.profilePic && (
                           <img
-                            src={participant.user.profilePic}
+                            src={toAbsolute(participant.user.profilePic)}
                             alt={participant.user.name}
                             className="w-8 h-8 rounded-full object-cover"
                           />

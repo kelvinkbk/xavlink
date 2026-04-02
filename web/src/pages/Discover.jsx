@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PageTransition from "../components/PageTransition";
-import api, { enhancementService } from "../services/api";
+import api, { enhancementService, toAbsolute } from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../context/ToastContext";
@@ -259,7 +259,10 @@ export default function Discover() {
           className="flex items-center gap-4 flex-1 min-w-0"
         >
           <img
-            src={cardUser.profilePic || "https://placehold.co/64x64?text=User"}
+            src={
+              toAbsolute(cardUser.profilePic) ||
+              "https://placehold.co/64x64?text=User"
+            }
             alt={cardUser.name}
             className="w-16 h-16 rounded-full object-cover"
           />

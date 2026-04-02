@@ -17,7 +17,19 @@ const toAbsolute = (url) => {
     .trim()
     .replace(/[\n\r\t]/g, "");
   if (/^https?:\/\//i.test(clean)) return clean;
-  return `${API_ORIGIN}${clean}`;
+  if (/^\/\//.test(clean)) return `https:${clean}`;
+  return `${API_ORIGIN}${clean.startsWith("/") ? clean : `/${clean}`}`;
+};
+
+const normalizePost = (post) => {
+  if (!post) return post;
+  return {
+    ...post,
+    image: toAbsolute(post.image),
+    user: post.user
+      ? { ...post.user, profilePic: toAbsolute(post.user.profilePic) }
+      : post.user,
+  };
 };
 
 // Format relative time (e.g., "2 hours ago")
@@ -183,14 +195,7 @@ function HomeSimple() {
         return;
       }
 
-      // Normalize URLs for image and profilePic
-      const normalized = {
-        ...post,
-        image: toAbsolute(post.image),
-        user: post.user
-          ? { ...post.user, profilePic: toAbsolute(post.user.profilePic) }
-          : post.user,
-      };
+      const normalized = normalizePost(post);
 
       // Only add if not already in the list (avoid duplicates)
       setPosts((prevPosts) => {
@@ -234,7 +239,7 @@ function HomeSimple() {
         params: { page: 1, limit: postsPerPage },
       });
 
-      let posts = response.data.posts || [];
+      let posts = (response.data.posts || []).map(normalizePost);
 
       // Fetch like status and comment count for each post
       if (token && posts.length > 0) {
@@ -292,7 +297,7 @@ function HomeSimple() {
         params: { page: nextPage, limit: postsPerPage },
       });
 
-      let newPosts = response.data.posts || [];
+      let newPosts = (response.data.posts || []).map(normalizePost);
 
       // Fetch like status and comment count for new posts
       if (token && newPosts.length > 0) {
@@ -669,11 +674,7 @@ function HomeSimple() {
   const handlePostCreated = (newPost) => {
     // Ensure the new post has all required fields and normalized URLs
     const postWithDefaults = {
-      ...newPost,
-      image: toAbsolute(newPost.image),
-      user: newPost.user
-        ? { ...newPost.user, profilePic: toAbsolute(newPost.user.profilePic) }
-        : newPost.user,
+      ...normalizePost(newPost),
       likesCount: newPost.likesCount || 0,
       commentsCount: newPost.commentsCount || 0,
       isLiked: newPost.isLiked || false,
