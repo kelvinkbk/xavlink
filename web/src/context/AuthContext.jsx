@@ -2,6 +2,8 @@
 import { createContext, useState, useContext } from "react";
 import { toAbsolute } from "../services/api";
 
+const AuthContext = createContext();
+
 const normalizeStoredUser = (u) => {
   if (!u || typeof u !== "object") return u;
   return { ...u, profilePic: toAbsolute(u.profilePic) };
