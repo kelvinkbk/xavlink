@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import { useNotifications } from "../context/NotificationContext";
 import {
   Bell,
@@ -76,11 +82,50 @@ const NotificationItem = ({ notification, onRead, onDelete }) => {
   );
 };
 
+const DROPDOWN_WIDTH = 384;
+const VIEW_MARGIN = 8;
+
 export default function NotificationCenter() {
   const { notifications, unreadCount, markAsRead, deleteNotification } =
     useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState({
+    top: 0,
+    left: 0,
+    width: DROPDOWN_WIDTH,
+  });
+
+  const updateDropdownPosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const width = Math.min(
+      DROPDOWN_WIDTH,
+      window.innerWidth - VIEW_MARGIN * 2
+    );
+    let left = rect.right - width;
+    left = Math.max(
+      VIEW_MARGIN,
+      Math.min(left, window.innerWidth - width - VIEW_MARGIN)
+    );
+    setDropdownPos({
+      top: rect.bottom + VIEW_MARGIN,
+      left,
+      width,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
+    };
+  }, [isOpen, updateDropdownPosition]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -98,6 +143,7 @@ export default function NotificationCenter() {
     <div className="relative" ref={dropdownRef}>
       {/* Bell Icon Button */}
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
         title="Notifications"
@@ -112,9 +158,16 @@ export default function NotificationCenter() {
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl z-50 border border-gray-200">
+        <div
+          className="fixed z-50 flex max-h-[min(36rem,calc(100dvh-1rem))] flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
+          style={{
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+          }}
+        >
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
             <h3 className="text-lg font-bold text-gray-900">Notifications</h3>
             <button
               onClick={() => setIsOpen(false)}
@@ -125,7 +178,7 @@ export default function NotificationCenter() {
           </div>
 
           {/* Notifications List */}
-          <div className="max-h-96 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="px-4 py-8 text-center text-gray-500">
                 <Bell size={32} className="mx-auto mb-2 opacity-50" />
@@ -145,7 +198,7 @@ export default function NotificationCenter() {
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="px-4 py-3 border-t border-gray-200 text-center">
+            <div className="flex-shrink-0 border-t border-gray-200 px-4 py-3 text-center">
               <a
                 href="/notifications"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
