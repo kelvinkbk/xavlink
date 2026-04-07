@@ -12,8 +12,7 @@ import NotificationSettings from "../components/NotificationSettings";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 const Settings = () => {
-  const { user, isAuthenticated, logout, token, login, updateUser } =
-    useAuth();
+  const { user, isAuthenticated, logout, token, login, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState("account");
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -168,8 +167,7 @@ const Settings = () => {
       setMessage("✅ Email changed successfully");
       setTimeout(() => setMessage(""), 3000);
     } catch (err) {
-      const errorMsg =
-        err?.response?.data?.message || "Failed to change email";
+      const errorMsg = err?.response?.data?.message || "Failed to change email";
       setMessage("❌ " + errorMsg);
       setTimeout(() => setMessage(""), 3000);
     }
@@ -223,7 +221,7 @@ const Settings = () => {
     try {
       const result = await twoFactorService.enableTwoFactor(
         twoFAState.secret,
-        twoFAState.code
+        twoFAState.code,
       );
       // Update local user
       const updatedUser = result.user;
@@ -258,7 +256,7 @@ const Settings = () => {
     setTwoFAState((s) => ({ ...s, disabling: true }));
     try {
       const result = await twoFactorService.disableTwoFactor(
-        deleteForm.password
+        deleteForm.password,
       );
       const updatedUser = result.user;
       localStorage.setItem("user", JSON.stringify(updatedUser));
@@ -535,7 +533,7 @@ const Settings = () => {
                     onChange={(e) =>
                       handleUpdateSettings(
                         "allowRequestsFromAll",
-                        e.target.checked
+                        e.target.checked,
                       )
                     }
                     className="w-5 h-5 cursor-pointer"
@@ -990,7 +988,7 @@ function DeviceManagement() {
   const handleRevokeSession = async (sessionId) => {
     if (
       !window.confirm(
-        "Revoke this device session? You'll need to log in again on that device."
+        "Revoke this device session? You'll need to log in again on that device.",
       )
     ) {
       return;
@@ -1016,7 +1014,7 @@ function DeviceManagement() {
   const handleRevokeAllOther = async () => {
     if (
       !window.confirm(
-        "Revoke all other sessions? You'll stay logged in on this device only."
+        "Revoke all other sessions? You'll stay logged in on this device only.",
       )
     ) {
       return;
