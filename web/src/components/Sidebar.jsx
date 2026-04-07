@@ -169,7 +169,7 @@ export default function Sidebar({ isOpen, onToggle }) {
               color: isActive("/home") ? "var(--text)" : "var(--text)",
             }}
           >
-            Home
+            🏠 Home
           </Link>
           <Link
             to="/discover"
@@ -197,7 +197,7 @@ export default function Sidebar({ isOpen, onToggle }) {
               color: isActive("/profile") ? "var(--text)" : "var(--text)",
             }}
           >
-            Profile
+            👤 Profile
           </Link>
           <Link
             to="/skills"
@@ -211,7 +211,7 @@ export default function Sidebar({ isOpen, onToggle }) {
               color: isActive("/skills") ? "var(--text)" : "var(--text)",
             }}
           >
-            Skills
+            🎯 Skills
           </Link>
           <Link
             to="/requests"
@@ -225,7 +225,7 @@ export default function Sidebar({ isOpen, onToggle }) {
               color: isActive("/requests") ? "var(--text)" : "var(--text)",
             }}
           >
-            Requests
+            📨 Requests
           </Link>
           <Link
             to="/chats"
@@ -337,7 +337,7 @@ export default function Sidebar({ isOpen, onToggle }) {
               color: "#FAFAFA",
             }}
           >
-            Logout
+            🚪 Logout
           </button>
         </div>
       </aside>
