@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 import { useToast } from "../context/ToastContext";
+import { authErrorMessage } from "../utils/authErrorMessage";
 import PageTransition from "../components/PageTransition";
 import LoadingSpinner from "../components/LoadingSpinner";
 
@@ -25,7 +26,7 @@ export default function ForgotPassword() {
       showToast("Check your email for reset instructions", "success");
     } catch (error) {
       showToast(
-        error.response?.data?.message || "Failed to send reset email",
+        authErrorMessage(error, "Failed to send reset email"),
         "error"
       );
     } finally {

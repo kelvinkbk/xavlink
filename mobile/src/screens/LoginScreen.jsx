@@ -8,6 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
+import { authErrorMessage } from "../utils/authErrorMessage";
 
 const LoginScreen = ({ navigation }) => {
   const { login } = useAuth();
@@ -20,10 +21,7 @@ const LoginScreen = ({ navigation }) => {
     try {
       await login({ email, password });
     } catch (e) {
-      Alert.alert(
-        "Login failed",
-        e?.response?.data?.message || "Please try again"
-      );
+      Alert.alert("Login failed", authErrorMessage(e, "Please try again"));
     } finally {
       setLoading(false);
     }
@@ -33,6 +31,9 @@ const LoginScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>XavLink</Text>
       <Text style={styles.subtitle}>Welcome back</Text>
+      <Text style={styles.hint}>
+        First sign-in after the server has been idle can take up to a minute.
+      </Text>
 
       <TextInput
         placeholder="Email"
@@ -86,7 +87,13 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: "#475569",
-    marginBottom: 24,
+    marginBottom: 8,
+  },
+  hint: {
+    fontSize: 13,
+    color: "#64748b",
+    marginBottom: 20,
+    lineHeight: 18,
   },
   input: {
     height: 48,

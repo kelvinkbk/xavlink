@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authService } from "../services/api";
+import { authErrorMessage } from "../utils/authErrorMessage";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -30,7 +31,7 @@ export default function Login() {
         navigate("/home");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      setError(authErrorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }
@@ -50,7 +51,7 @@ export default function Login() {
       login(result.user, result.token);
       navigate("/home");
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid 2FA code");
+      setError(authErrorMessage(err, "Invalid 2FA code"));
     } finally {
       setLoading(false);
     }
@@ -62,6 +63,9 @@ export default function Login() {
         <h1 className="text-3xl font-bold text-center mb-6 text-secondary">
           Login
         </h1>
+        <p className="text-center text-sm text-gray-500 mb-4">
+          First sign-in after the server has been idle can take up to a minute.
+        </p>
 
         {error && (
           <div className="bg-red-100 text-red-700 p-3 rounded mb-4">

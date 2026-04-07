@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import { authService } from "../services/api";
+import { authErrorMessage } from "../utils/authErrorMessage";
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const { colors } = useTheme();
@@ -41,8 +42,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
     } catch (e) {
       Alert.alert(
         "Error",
-        e?.response?.data?.message ||
-          "Failed to send reset email. Please try again."
+        authErrorMessage(e, "Failed to send reset email. Please try again."),
       );
     } finally {
       setLoading(false);

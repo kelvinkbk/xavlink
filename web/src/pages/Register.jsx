@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authService } from "../services/api";
 import { useToast } from "../context/ToastContext";
+import { authErrorMessage } from "../utils/authErrorMessage";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -45,7 +46,7 @@ export default function Register() {
         bio: "",
       });
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
+      setError(authErrorMessage(err, "Registration failed"));
     } finally {
       setLoading(false);
     }
@@ -62,7 +63,7 @@ export default function Register() {
       await authService.resendVerification(verificationEmail);
       showToast("Verification email sent! Check your inbox.", "success");
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to resend verification");
+      setError(authErrorMessage(err, "Failed to resend verification"));
     } finally {
       setLoading(false);
     }

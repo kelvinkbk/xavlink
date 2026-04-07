@@ -8,6 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
+import { authErrorMessage } from "../utils/authErrorMessage";
 
 const RegisterScreen = ({ navigation }) => {
   const { register } = useAuth();
@@ -38,18 +39,16 @@ const RegisterScreen = ({ navigation }) => {
       // Navigate to email verification screen
       navigation.navigate("VerifyEmail", { email: form.email });
     } catch (e) {
-      const status = e?.response?.status;
-      const msg =
-        e?.response?.data?.message ||
-        (status
-          ? `Request failed (${status})`
-          : "Please check your connection");
       console.warn("Register error", {
-        status,
+        status: e?.response?.status,
         data: e?.response?.data,
         error: String(e),
       });
-      Alert.alert("Registration failed", msg);
+      const status = e?.response?.status;
+      const fallback = status
+        ? `Request failed (${status})`
+        : "Please check your connection";
+      Alert.alert("Registration failed", authErrorMessage(e, fallback));
     } finally {
       setLoading(false);
     }

@@ -39,10 +39,18 @@ const API_ORIGIN = API_BASE.replace(/\/api$/, "");
 // Export for socket.js to reuse
 export { API_BASE };
 
+/** Default for most API calls; auth paths get a longer timeout via interceptor. */
+const DEFAULT_API_TIMEOUT_MS = 25000;
+
+/** Auth and refresh can exceed 60s when the host cold-starts (e.g. Render). */
+export const COLD_START_AUTH_TIMEOUT_MS = 120000;
+const AUTH_LONG_WAIT_PATH =
+  /^\/auth\/(login|register|refresh|forgot-password|reset-password|verify-2fa|resend-verification|verify-email)/;
+
 const api = axios.create({
   baseURL: API_BASE,
   headers: { "Content-Type": "application/json" },
-  timeout: 20000, // 20 seconds - increased for slower network connections
+  timeout: DEFAULT_API_TIMEOUT_MS,
 });
 
 // Surface base URL once for debugging connectivity issues
@@ -82,6 +90,10 @@ const handleUnauthorized = async (error) => {
 };
 
 api.interceptors.request.use(async (config) => {
+  const path = (config.url || "").split("?")[0];
+  if (AUTH_LONG_WAIT_PATH.test(path)) {
+    config.timeout = COLD_START_AUTH_TIMEOUT_MS;
+  }
   const token = await AsyncStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -136,9 +148,11 @@ api.interceptors.response.use(
           return Promise.reject(err);
         }
 
-        const response = await axios.post(`${API_BASE}/auth/refresh`, {
-          refreshToken,
-        });
+        const response = await axios.post(
+          `${API_BASE}/auth/refresh`,
+          { refreshToken },
+          { timeout: COLD_START_AUTH_TIMEOUT_MS },
+        );
         const { token } = response.data;
         await AsyncStorage.setItem("token", token);
         api.defaults.headers.common.Authorization = `Bearer ${token}`;

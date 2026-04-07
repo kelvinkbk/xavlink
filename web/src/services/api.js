@@ -30,7 +30,16 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+/** Auth and token refresh can exceed 60s when the host cold-starts (e.g. Render). */
+const COLD_START_AUTH_TIMEOUT_MS = 120000;
+const AUTH_LONG_WAIT_PATH =
+  /^\/auth\/(login|register|refresh|forgot-password|reset-password|verify-2fa|resend-verification|verify-email)/;
+
 api.interceptors.request.use((config) => {
+  const path = (config.url || "").split("?")[0];
+  if (AUTH_LONG_WAIT_PATH.test(path)) {
+    config.timeout = COLD_START_AUTH_TIMEOUT_MS;
+  }
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
