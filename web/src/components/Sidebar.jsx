@@ -42,12 +42,12 @@ export default function Sidebar({ isOpen, onToggle }) {
           (unreadByChat.current[message.chatId] || 0) + 1;
         const total = Object.values(unreadByChat.current).reduce(
           (sum, c) => sum + c,
-          0
+          0,
         );
         setUnreadTotal(total);
         console.log(
           `📬 New message in chat ${message.chatId}, unread now:`,
-          unreadByChat.current
+          unreadByChat.current,
         );
       }
     };
@@ -58,12 +58,12 @@ export default function Sidebar({ isOpen, onToggle }) {
         unreadByChat.current[chatId] = 0;
         const total = Object.values(unreadByChat.current).reduce(
           (sum, c) => sum + c,
-          0
+          0,
         );
         setUnreadTotal(total);
         console.log(
           `✓ Chat ${chatId} marked read, unread now:`,
-          unreadByChat.current
+          unreadByChat.current,
         );
       }
     };
