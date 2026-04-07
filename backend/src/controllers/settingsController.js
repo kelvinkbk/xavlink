@@ -273,3 +273,46 @@ exports.updateProfile = async (req, res) => {
       .json({ message: "Failed to update profile", error: error.message });
   }
 };
+
+exports.changeEmail = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { newEmail, password } = req.body;
+
+    if (!newEmail || !password) {
+      return res
+        .status(400)
+        .json({ message: "New email and password are required" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Password is incorrect" });
+    }
+
+    // Check if new email is already in use
+    const existingUser = await prisma.user.findUnique({
+      where: { email: newEmail },
+    });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email is already in use" });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { email: newEmail },
+    });
+
+    // Sanitize user object before sending response
+    const { password: _, ...sanitized } = updated;
+    res.json(sanitized);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to change email", error: error.message });
+  }
+};

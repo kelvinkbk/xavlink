@@ -5,6 +5,7 @@ const {
   getMySettings,
   updateMySettings,
   changePassword,
+  changeEmail,
   deleteAccount,
   updateProfile,
 } = require("../controllers/settingsController");
@@ -18,6 +19,7 @@ router.put("/me", authMiddleware, updateMySettings);
 router.get("/:userId", authMiddleware, getSettings);
 router.put("/:userId", authMiddleware, updateSettings);
 router.post("/:userId/change-password", authMiddleware, changePassword);
+router.post("/:userId/change-email", authMiddleware, changeEmail);
 router.post("/:userId/update-profile", authMiddleware, updateProfile);
 router.delete("/:userId", authMiddleware, deleteAccount);
 

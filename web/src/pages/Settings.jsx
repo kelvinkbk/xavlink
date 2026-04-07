@@ -8,6 +8,7 @@ import api, {
 } from "../services/api";
 import PageTransition from "../components/PageTransition";
 import ConfirmModal from "../components/ConfirmModal";
+import NotificationSettings from "../components/NotificationSettings";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 const Settings = () => {
@@ -53,6 +54,7 @@ const Settings = () => {
     confirmPassword: "",
   });
   const [deleteForm, setDeleteForm] = useState({ password: "" });
+  const [emailForm, setEmailForm] = useState({ newEmail: "", password: "" });
   const [confirmOpen, setConfirmOpen] = useState(false);
   // 2FA state
   const [twoFAState, setTwoFAState] = useState({
@@ -145,6 +147,29 @@ const Settings = () => {
     } catch (err) {
       const errorMsg =
         err?.response?.data?.message || "Failed to change password";
+      setMessage("❌ " + errorMsg);
+      setTimeout(() => setMessage(""), 3000);
+    }
+  };
+
+  const handleChangeEmail = async (e) => {
+    e.preventDefault();
+    if (!emailForm.newEmail || !emailForm.password) {
+      setMessage("❌ Email and password are required");
+      return;
+    }
+    try {
+      const { data } = await api.post(
+        `/settings/${user.id}/change-email`,
+        emailForm,
+      );
+      updateUser(data);
+      setEmailForm({ newEmail: "", password: "" });
+      setMessage("✅ Email changed successfully");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      const errorMsg =
+        err?.response?.data?.message || "Failed to change email";
       setMessage("❌ " + errorMsg);
       setTimeout(() => setMessage(""), 3000);
     }
@@ -395,13 +420,45 @@ const Settings = () => {
               <h2 className="text-xl font-semibold text-secondary mb-4">
                 📧 Email
               </h2>
-              <p className="text-gray-600">{user?.email}</p>
-              <button
-                disabled
-                className="mt-4 px-6 py-2 bg-gray-300 text-gray-600 rounded-lg cursor-not-allowed"
-              >
-                Coming Soon
-              </button>
+              <p className="text-gray-600 mb-4">Current: {user?.email}</p>
+              <form onSubmit={handleChangeEmail} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    New Email
+                  </label>
+                  <input
+                    type="email"
+                    value={emailForm.newEmail}
+                    onChange={(e) =>
+                      setEmailForm({ ...emailForm, newEmail: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter new email"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password (to confirm)
+                  </label>
+                  <input
+                    type="password"
+                    value={emailForm.password}
+                    onChange={(e) =>
+                      setEmailForm({ ...emailForm, password: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Change Email
+                </button>
+              </form>
             </div>
           </div>
         )}
@@ -539,6 +596,13 @@ const Settings = () => {
                   />
                 </div>
               ))}
+              <hr className="my-4" />
+              <div>
+                <h3 className="font-semibold text-secondary mb-3">
+                  🖥️ Desktop Notifications
+                </h3>
+                <NotificationSettings />
+              </div>
             </div>
           </div>
         )}
