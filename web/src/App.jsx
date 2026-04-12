@@ -200,10 +200,10 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Show loading screen for 1.5 seconds on startup
+    // Show loading screen for 5 seconds on startup
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1500);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, []);
