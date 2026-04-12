@@ -24,7 +24,7 @@ XavLink is a full-stack application consisting of three main components:
 
 ## 🛠️ Technology Stack
 
-### Backend
+### Backend Stack
 
 - **Runtime**: Node.js
 - **Framework**: Express.js
@@ -32,7 +32,7 @@ XavLink is a full-stack application consisting of three main components:
 - **Database**: PostgreSQL
 - **Authentication**: Custom middleware
 
-### Web
+### Web Stack
 
 - **Framework**: React 18+
 - **Build Tool**: Vite
@@ -40,7 +40,7 @@ XavLink is a full-stack application consisting of three main components:
 - **Routing**: React Router
 - **State Management**: React Context
 
-### Mobile
+### Mobile Stack
 
 - **Framework**: React Native
 - **Platform**: Expo
@@ -170,7 +170,7 @@ npm run seed
 npm start
 ```
 
-### 3. Web Setup
+### 3. Frontend Setup
 
 ```bash
 cd ../web
