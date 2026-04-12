@@ -5,12 +5,13 @@ import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import RootNavigator from "./src/navigation/RootNavigator";
-import { AuthProvider } from "./src/context/AuthContext";
+import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import UpdateService from "./src/services/UpdateService";
 import { FABVisibilityProvider } from "./src/context/FABVisibilityContext";
 import { SyncProvider } from "./src/context/SyncContext";
 import ErrorBoundary from "./src/components/ErrorBoundary";
+import SplashScreen from "./src/components/SplashScreen";
 
 // Create Android notification channel for high-priority notifications
 const createNotificationChannel = async () => {
@@ -83,6 +84,12 @@ const requestNotificationPermission = async () => {
 
 function AppInner() {
   const { isDark } = useTheme();
+  const { loading } = useAuth();
+
+  // Show splash screen while app is loading
+  if (loading) {
+    return <SplashScreen />;
+  }
 
   useEffect(() => {
     // Check for updates on app startup
