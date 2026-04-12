@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -16,6 +16,7 @@ import AddSkillModal from "./components/AddSkillModal";
 import MainLayout from "./components/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import useWebPush from "./hooks/useWebPush";
+import LoadingScreen from "./components/LoadingScreen";
 
 // Lazy-loaded pages for optimized code splitting
 const Login = lazy(() => import("./pages/Login"));
@@ -196,6 +197,21 @@ function AppContent() {
   );
 }
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Show loading screen for 1.5 seconds on startup
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <ErrorBoundary>
       <ToastProvider>
