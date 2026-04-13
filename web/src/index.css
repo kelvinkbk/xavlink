@@ -670,3 +670,13 @@ html {
     border-radius: 0 !important;
   }
 }
+
+/* Hide scrollbars while keeping scrolling functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

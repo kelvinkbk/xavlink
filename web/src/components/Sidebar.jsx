@@ -111,7 +111,7 @@ export default function Sidebar({ isOpen, onToggle }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed sm:static w-56 sm:w-64 md:w-72 shadow-lg min-h-screen p-3 sm:p-4 md:p-6 transform transition-transform duration-300 z-40 ${
+        className={`fixed sm:static w-56 sm:w-64 md:w-72 shadow-lg min-h-screen p-3 sm:p-4 md:p-6 transform transition-transform duration-300 z-40 flex flex-col ${
           isOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
         }`}
         style={{
@@ -119,7 +119,7 @@ export default function Sidebar({ isOpen, onToggle }) {
           color: "var(--text)",
         }}
       >
-        <div className="flex items-center justify-between mb-6 sm:mb-8">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 flex-shrink-0">
           <button
             className="text-xl sm:text-2xl font-bold text-primary flex-1 text-left"
             onClick={() => {
@@ -157,7 +157,7 @@ export default function Sidebar({ isOpen, onToggle }) {
           </button>
         </div>
 
-        <nav className="space-y-2">
+        <nav className="space-y-2 flex-1 overflow-y-auto scrollbar-hide pb-4">
           <SidebarLink
             to="/home"
             label="🏠 Home"
@@ -228,12 +228,12 @@ export default function Sidebar({ isOpen, onToggle }) {
         </nav>
 
         <div
-          className="pt-4 sm:pt-6 md:pt-8 border-t mt-6 sm:mt-8"
+          className="pt-3 sm:pt-4 border-t flex-shrink-0"
           style={{ borderColor: "var(--border)" }}
         >
           <button
             onClick={logout}
-            className="w-full px-3 sm:px-4 py-2 rounded transition hover:opacity-90 font-medium text-sm sm:text-base"
+            className="w-full px-3 sm:px-4 py-2.5 rounded transition hover:opacity-90 font-medium text-sm sm:text-base mt-3 sm:mt-4"
             style={{
               backgroundColor: "#DC2626",
               color: "#FAFAFA",
