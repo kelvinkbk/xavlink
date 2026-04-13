@@ -111,7 +111,7 @@ export default function Sidebar({ isOpen, onToggle }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed sm:static w-56 sm:w-64 md:w-72 shadow-lg min-h-screen p-3 sm:p-4 md:p-6 transform transition-transform duration-300 z-40 flex flex-col ${
+        className={`fixed sm:static w-56 sm:w-64 md:w-72 shadow-lg h-screen sm:h-auto sm:min-h-screen p-3 sm:p-4 md:p-6 transform transition-transform duration-300 z-40 flex flex-col overflow-hidden ${
           isOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
         }`}
         style={{
