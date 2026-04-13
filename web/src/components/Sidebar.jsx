@@ -157,91 +157,94 @@ export default function Sidebar({ isOpen, onToggle }) {
           </button>
         </div>
 
-        <nav className="space-y-2 flex-1 overflow-y-auto scrollbar-hide pb-24 sm:pb-6">
-          <SidebarLink
-            to="/home"
-            label="🏠 Home"
-            isActive={isActive("/home")}
-          />
-          <SidebarLink
-            to="/discover"
-            label="🔍 Discover"
-            isActive={isActive("/discover")}
-          />
-          <SidebarLink
-            to="/profile"
-            label="👤 Profile"
-            isActive={isActive("/profile")}
-          />
-          <SidebarLink
-            to="/skills"
-            label="🎯 Skills"
-            isActive={isActive("/skills")}
-          />
-          <SidebarLink
-            to="/requests"
-            label="📨 Requests"
-            isActive={isActive("/requests")}
-          />
-
-          <SidebarLinkWithBadge
-            to="/chats"
-            label="💬 Messages"
-            badge={unreadTotal}
-            isActive={
-              isActive("/chats") || location.pathname.startsWith("/chat")
-            }
-          />
-
-          <SidebarLink
-            to="/notifications"
-            label="🔔 Notifications"
-            isActive={isActive("/notifications")}
-          />
-
-          {(user?.role === "admin" || user?.role === "moderator") && (
+        <nav className="space-y-2 flex-1 overflow-y-auto scrollbar-hide flex flex-col">
+          <div className="space-y-2 flex-1">
             <SidebarLink
-              to="/moderation"
-              label="🛡️ Moderation"
-              isActive={isActive("/moderation")}
+              to="/home"
+              label="🏠 Home"
+              isActive={isActive("/home")}
             />
-          )}
-
-          {user?.role === "admin" && (
             <SidebarLink
-              to="/admin"
-              label="🧰 Admin"
-              isActive={isActive("/admin")}
+              to="/discover"
+              label="🔍 Discover"
+              isActive={isActive("/discover")}
             />
-          )}
+            <SidebarLink
+              to="/profile"
+              label="👤 Profile"
+              isActive={isActive("/profile")}
+            />
+            <SidebarLink
+              to="/skills"
+              label="🎯 Skills"
+              isActive={isActive("/skills")}
+            />
+            <SidebarLink
+              to="/requests"
+              label="📨 Requests"
+              isActive={isActive("/requests")}
+            />
 
-          <SidebarLink
-            to="/enhancements"
-            label="✨ Enhancements"
-            isActive={isActive("/enhancements")}
-          />
-          <SidebarLink
-            to="/settings"
-            label="⚙️ Settings"
-            isActive={isActive("/settings")}
-          />
-        </nav>
+            <SidebarLinkWithBadge
+              to="/chats"
+              label="💬 Messages"
+              badge={unreadTotal}
+              isActive={
+                isActive("/chats") || location.pathname.startsWith("/chat")
+              }
+            />
 
-        <div
-          className="pt-3 sm:pt-4 border-t flex-shrink-0 mt-auto"
-          style={{ borderColor: "var(--border)" }}
-        >
-          <button
-            onClick={logout}
-            className="w-full px-3 sm:px-4 py-2.5 rounded transition hover:opacity-90 font-medium text-sm sm:text-base mt-3 sm:mt-4"
-            style={{
-              backgroundColor: "#DC2626",
-              color: "#FAFAFA",
-            }}
+            <SidebarLink
+              to="/notifications"
+              label="🔔 Notifications"
+              isActive={isActive("/notifications")}
+            />
+
+            {(user?.role === "admin" || user?.role === "moderator") && (
+              <SidebarLink
+                to="/moderation"
+                label="🛡️ Moderation"
+                isActive={isActive("/moderation")}
+              />
+            )}
+
+            {user?.role === "admin" && (
+              <SidebarLink
+                to="/admin"
+                label="🧰 Admin"
+                isActive={isActive("/admin")}
+              />
+            )}
+
+            <SidebarLink
+              to="/enhancements"
+              label="✨ Enhancements"
+              isActive={isActive("/enhancements")}
+            />
+            <SidebarLink
+              to="/settings"
+              label="⚙️ Settings"
+              isActive={isActive("/settings")}
+            />
+          </div>
+
+          {/* Logout button inside scrollable area */}
+          <div
+            className="pt-3 sm:pt-4 border-t mt-4 flex-shrink-0"
+            style={{ borderColor: "var(--border)" }}
           >
-            🚪 Logout
-          </button>
-        </div>
+            <button
+              onClick={logout}
+              className="w-full px-3 sm:px-4 py-2.5 rounded transition hover:opacity-90 font-medium text-sm sm:text-base mt-3 sm:mt-3"
+              style={{
+                backgroundColor: "#DC2626",
+                color: "#FAFAFA",
+              }}
+            >
+              🚪 Logout
+            </button>
+          </div>
+        </nav>
       </aside>
     </>
   );
