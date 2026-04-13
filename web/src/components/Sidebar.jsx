@@ -157,7 +157,7 @@ export default function Sidebar({ isOpen, onToggle }) {
           </button>
         </div>
 
-        <nav className="space-y-2 flex-1 overflow-y-auto scrollbar-hide pb-4">
+        <nav className="space-y-2 flex-1 overflow-y-auto scrollbar-hide pb-24 sm:pb-6">
           <SidebarLink
             to="/home"
             label="🏠 Home"
@@ -228,7 +228,7 @@ export default function Sidebar({ isOpen, onToggle }) {
         </nav>
 
         <div
-          className="pt-3 sm:pt-4 border-t flex-shrink-0"
+          className="pt-3 sm:pt-4 border-t flex-shrink-0 mt-auto"
           style={{ borderColor: "var(--border)" }}
         >
           <button
