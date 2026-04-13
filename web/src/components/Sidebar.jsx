@@ -158,7 +158,7 @@ export default function Sidebar({ isOpen, onToggle }) {
         </div>
 
         <nav className="space-y-2 flex-1 overflow-y-auto scrollbar-hide flex flex-col">
-          <div className="space-y-2 flex-1">
+          <div className="space-y-2">
             <SidebarLink
               to="/home"
               label="🏠 Home"
@@ -230,12 +230,12 @@ export default function Sidebar({ isOpen, onToggle }) {
 
           {/* Logout button inside scrollable area */}
           <div
-            className="pt-3 sm:pt-4 border-t mt-4 flex-shrink-0"
+            className="pt-2 sm:pt-3 border-t mt-2 flex-shrink-0"
             style={{ borderColor: "var(--border)" }}
           >
             <button
               onClick={logout}
-              className="w-full px-3 sm:px-4 py-2.5 rounded transition hover:opacity-90 font-medium text-sm sm:text-base mt-3 sm:mt-3"
+              className="w-full px-3 sm:px-4 py-2.5 rounded transition hover:opacity-90 font-medium text-sm sm:text-base mt-2 sm:mt-2"
               style={{
                 backgroundColor: "#DC2626",
                 color: "#FAFAFA",
