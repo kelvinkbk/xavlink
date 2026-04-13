@@ -158,31 +158,73 @@ export default function Sidebar({ isOpen, onToggle }) {
         </div>
 
         <nav className="space-y-2">
-          <SidebarLink to="/home" label="🏠 Home" isActive={isActive("/home")} />
-          <SidebarLink to="/discover" label="🔍 Discover" isActive={isActive("/discover")} />
-          <SidebarLink to="/profile" label="👤 Profile" isActive={isActive("/profile")} />
-          <SidebarLink to="/skills" label="🎯 Skills" isActive={isActive("/skills")} />
-          <SidebarLink to="/requests" label="📨 Requests" isActive={isActive("/requests")} />
-          
+          <SidebarLink
+            to="/home"
+            label="🏠 Home"
+            isActive={isActive("/home")}
+          />
+          <SidebarLink
+            to="/discover"
+            label="🔍 Discover"
+            isActive={isActive("/discover")}
+          />
+          <SidebarLink
+            to="/profile"
+            label="👤 Profile"
+            isActive={isActive("/profile")}
+          />
+          <SidebarLink
+            to="/skills"
+            label="🎯 Skills"
+            isActive={isActive("/skills")}
+          />
+          <SidebarLink
+            to="/requests"
+            label="📨 Requests"
+            isActive={isActive("/requests")}
+          />
+
           <SidebarLinkWithBadge
             to="/chats"
             label="💬 Messages"
             badge={unreadTotal}
-            isActive={isActive("/chats") || location.pathname.startsWith("/chat")}
+            isActive={
+              isActive("/chats") || location.pathname.startsWith("/chat")
+            }
           />
-          
-          <SidebarLink to="/notifications" label="🔔 Notifications" isActive={isActive("/notifications")} />
-          
+
+          <SidebarLink
+            to="/notifications"
+            label="🔔 Notifications"
+            isActive={isActive("/notifications")}
+          />
+
           {(user?.role === "admin" || user?.role === "moderator") && (
-            <SidebarLink to="/moderation" label="🛡️ Moderation" isActive={isActive("/moderation")} />
+            <SidebarLink
+              to="/moderation"
+              label="🛡️ Moderation"
+              isActive={isActive("/moderation")}
+            />
           )}
-          
+
           {user?.role === "admin" && (
-            <SidebarLink to="/admin" label="🧰 Admin" isActive={isActive("/admin")} />
+            <SidebarLink
+              to="/admin"
+              label="🧰 Admin"
+              isActive={isActive("/admin")}
+            />
           )}
-          
-          <SidebarLink to="/enhancements" label="✨ Enhancements" isActive={isActive("/enhancements")} />
-          <SidebarLink to="/settings" label="⚙️ Settings" isActive={isActive("/settings")} />
+
+          <SidebarLink
+            to="/enhancements"
+            label="✨ Enhancements"
+            isActive={isActive("/enhancements")}
+          />
+          <SidebarLink
+            to="/settings"
+            label="⚙️ Settings"
+            isActive={isActive("/settings")}
+          />
         </nav>
 
         <div
@@ -244,3 +286,4 @@ function SidebarLinkWithBadge({ to, label, badge, isActive }) {
       )}
     </Link>
   );
+}
