@@ -168,9 +168,9 @@ body,
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--surface);
@@ -243,7 +243,8 @@ button {
   background-color: rgba(0, 0, 0, 0.1) !important;
 }
 .shadow-lg {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
     0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
 }
 
@@ -328,24 +329,48 @@ select:focus {
   body {
     font-size: 14px;
   }
-  
+
   /* Smaller padding on mobile */
-  .px-4 { @apply px-3; }
-  .px-6 { @apply px-4; }
-  .px-8 { @apply px-5; }
-  .py-4 { @apply py-3; }
-  .py-6 { @apply py-4; }
-  .py-8 { @apply py-5; }
-  
+  .px-4 {
+    @apply px-3;
+  }
+  .px-6 {
+    @apply px-4;
+  }
+  .px-8 {
+    @apply px-5;
+  }
+  .py-4 {
+    @apply py-3;
+  }
+  .py-6 {
+    @apply py-4;
+  }
+  .py-8 {
+    @apply py-5;
+  }
+
   /* Smaller gaps */
-  .gap-4 { @apply gap-2; }
-  .gap-5 { @apply gap-3; }
-  .gap-6 { @apply gap-4; }
-  
+  .gap-4 {
+    @apply gap-2;
+  }
+  .gap-5 {
+    @apply gap-3;
+  }
+  .gap-6 {
+    @apply gap-4;
+  }
+
   /* Smaller margins/padding for headings */
-  h1 { @apply text-xl; }
-  h2 { @apply text-lg; }
-  h3 { @apply text-base; }
+  h1 {
+    @apply text-xl;
+  }
+  h2 {
+    @apply text-lg;
+  }
+  h3 {
+    @apply text-base;
+  }
 }
 
 /* Container responsive widths */
@@ -404,7 +429,8 @@ select:focus {
 }
 
 /* Responsive touch-friendly buttons */
-button, a {
+button,
+a {
   min-height: 44px; /* Mobile touch target min size */
   min-width: 44px;
 }
@@ -535,11 +561,11 @@ select {
     flex-direction: row;
     gap: 1.5rem;
   }
-  
+
   .layout-sidebar-content > :first-child {
     flex: 0 0 250px;
   }
-  
+
   .layout-sidebar-content > :last-child {
     flex: 1;
   }
@@ -568,7 +594,8 @@ html {
 }
 
 /* Prevent horizontal scroll */
-body, html {
+body,
+html {
   overflow-x: hidden;
   width: 100%;
 }
@@ -629,7 +656,8 @@ body, html {
 
 /* Ensure proper stacking of modals on mobile */
 @media (max-width: 640px) {
-  .modal, [role="dialog"] {
+  .modal,
+  [role="dialog"] {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
