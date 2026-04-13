@@ -318,3 +318,327 @@ select:focus {
 .text-gray-900 {
   color: var(--text) !important;
 }
+
+/* ============================= */
+/* RESPONSIVE UTILITIES & FIXES */
+/* ============================= */
+
+/* Responsive spacing */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+  
+  /* Smaller padding on mobile */
+  .px-4 { @apply px-3; }
+  .px-6 { @apply px-4; }
+  .px-8 { @apply px-5; }
+  .py-4 { @apply py-3; }
+  .py-6 { @apply py-4; }
+  .py-8 { @apply py-5; }
+  
+  /* Smaller gaps */
+  .gap-4 { @apply gap-2; }
+  .gap-5 { @apply gap-3; }
+  .gap-6 { @apply gap-4; }
+  
+  /* Smaller margins/padding for headings */
+  h1 { @apply text-xl; }
+  h2 { @apply text-lg; }
+  h3 { @apply text-base; }
+}
+
+/* Container responsive widths */
+.container-responsive {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 0.75rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    max-width: 640px;
+    padding: 0 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    max-width: 768px;
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    max-width: 1024px;
+    padding: 0 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-responsive {
+    max-width: 1280px;
+    padding: 0 2.5rem;
+  }
+}
+
+/* Responsive grid layouts */
+.grid-responsive {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .grid-responsive {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-responsive {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Responsive touch-friendly buttons */
+button, a {
+  min-height: 44px; /* Mobile touch target min size */
+  min-width: 44px;
+}
+
+/* Reduce button vertical padding on mobile */
+@media (max-width: 640px) {
+  button:not([aria-label]):not(.icon-button) {
+    min-height: 40px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* Responsive form inputs */
+input,
+textarea,
+select {
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    padding: 0.625rem 0.875rem;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+}
+
+/* Responsive modal */
+.modal-responsive {
+  width: 90vw;
+  max-width: 90vw;
+  max-height: 90vh;
+  padding: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .modal-responsive {
+    width: 80vw;
+    max-width: 500px;
+    padding: 2rem;
+  }
+}
+
+.modal-responsive-lg {
+  width: 95vw;
+  max-width: 95vw;
+  max-height: 95vh;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .modal-responsive-lg {
+    width: 90vw;
+    max-width: 900px;
+    padding: 2rem;
+  }
+}
+
+/* Responsive typography */
+.text-responsive-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+@media (max-width: 640px) {
+  .text-responsive-xl {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+}
+
+.text-responsive-2xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+@media (max-width: 640px) {
+  .text-responsive-2xl {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+}
+
+.text-responsive-3xl {
+  font-size: 2rem;
+  line-height: 2.5rem;
+}
+
+@media (max-width: 640px) {
+  .text-responsive-3xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+}
+
+/* Responsive card layouts */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Responsive sidebar + content layout */
+.layout-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .layout-sidebar-content {
+    flex-direction: row;
+    gap: 1.5rem;
+  }
+  
+  .layout-sidebar-content > :first-child {
+    flex: 0 0 250px;
+  }
+  
+  .layout-sidebar-content > :last-child {
+    flex: 1;
+  }
+}
+
+/* Fix for overflow on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure proper text rendering */
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+/* Responsive image handling */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent horizontal scroll */
+body, html {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Additional responsive fixes for common patterns */
+
+/* Responsive page padding */
+.page-padding {
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .page-padding {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-padding {
+    padding: 2rem;
+  }
+}
+
+/* Flexible columns that stack on mobile */
+.flex-col-responsive {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .flex-col-responsive {
+    flex-direction: row;
+    gap: 1.5rem;
+  }
+}
+
+/* Two-column layout that stacks */
+.two-col-responsive {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .two-col-responsive {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Safe area padding for notched devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}
+
+/* Ensure proper stacking of modals on mobile */
+@media (max-width: 640px) {
+  .modal, [role="dialog"] {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    border-radius: 0 !important;
+  }
+}

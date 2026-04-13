@@ -10,6 +10,7 @@ export default function Navbar() {
   const { setShowCreatePostModal, setShowAddSkillModal } = useModal();
   const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && user?.id) {
@@ -25,7 +26,7 @@ export default function Navbar() {
       const fetchUnreadCount = async () => {
         try {
           const { data } = await api.get(
-            `/notifications/${user.id}/unread-count`
+            `/notifications/${user.id}/unread-count`,
           );
           setUnreadCount(data.unreadCount);
         } catch (error) {
@@ -41,7 +42,7 @@ export default function Navbar() {
         setUnreadCount((prev) => prev + 1);
         // Show toast or notification UI
         window.dispatchEvent(
-          new CustomEvent("new-notification", { detail: notification })
+          new CustomEvent("new-notification", { detail: notification }),
         );
       };
 
@@ -62,125 +63,269 @@ export default function Navbar() {
   }, [isAuthenticated, user?.id]);
 
   return (
-    <nav className="bg-secondary text-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <Link to="/" className="text-2xl font-bold text-primary">
+    <nav className="bg-secondary text-white shadow-lg sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex justify-between items-center h-14 sm:h-16">
+          {/* Logo */}
+          <Link
+            to="/"
+            className="text-lg sm:text-2xl font-bold text-primary flex-shrink-0"
+          >
             XavLink
           </Link>
 
-          <div className="flex gap-4 items-center">
+          {/* Desktop menu */}
+          <div className="hidden md:flex gap-2 lg:gap-4 items-center">
             {isAuthenticated ? (
               <>
-                <Link
+                <NavLink
                   to="/home"
-                  className={`px-2 py-1 rounded transition ${
-                    location.pathname === "/home"
-                      ? "text-primary font-semibold bg-white/10"
-                      : "hover:text-primary"
-                  }`}
-                >
-                  Home
-                </Link>
-                <Link
+                  label="Home"
+                  isActive={location.pathname === "/home"}
+                />
+                <NavLink
                   to="/discover"
-                  className={`px-2 py-1 rounded transition ${
-                    location.pathname === "/discover"
-                      ? "text-primary font-semibold bg-white/10"
-                      : "hover:text-primary"
-                  }`}
-                >
-                  Discover
-                </Link>
-                <Link
+                  label="Discover"
+                  isActive={location.pathname === "/discover"}
+                />
+                <NavLink
                   to="/skills"
-                  className={`px-2 py-1 rounded transition ${
-                    location.pathname === "/skills"
-                      ? "text-primary font-semibold bg-white/10"
-                      : "hover:text-primary"
-                  }`}
-                >
-                  Skills
-                </Link>
-                <Link
+                  label="Skills"
+                  isActive={location.pathname === "/skills"}
+                />
+                <NavLink
                   to="/requests"
-                  className={`px-2 py-1 rounded transition ${
-                    location.pathname === "/requests"
-                      ? "text-primary font-semibold bg-white/10"
-                      : "hover:text-primary"
-                  }`}
-                >
-                  Requests
-                </Link>
-                <Link
+                  label="Requests"
+                  isActive={location.pathname === "/requests"}
+                />
+                <NotificationLink
                   to="/notifications"
-                  className={`relative px-2 py-1 rounded transition group ${
-                    location.pathname === "/notifications"
-                      ? "text-primary font-semibold bg-white/10"
-                      : "hover:text-primary"
-                  }`}
-                >
-                  <span className="text-xl">🔔</span>
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center group-hover:bg-red-700">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
-                </Link>
+                  unreadCount={unreadCount}
+                  isActive={location.pathname === "/notifications"}
+                />
                 <button
                   onClick={() => setShowCreatePostModal(true)}
-                  className="px-3 py-1 rounded bg-green-600 hover:bg-green-700 transition font-medium text-sm"
+                  className="px-2 lg:px-3 py-1.5 rounded bg-green-600 hover:bg-green-700 transition font-medium text-xs lg:text-sm whitespace-nowrap"
                 >
                   + Post
                 </button>
                 <button
                   onClick={() => setShowAddSkillModal(true)}
-                  className="px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 transition font-medium text-sm"
+                  className="px-2 lg:px-3 py-1.5 rounded bg-purple-600 hover:bg-purple-700 transition font-medium text-xs lg:text-sm whitespace-nowrap"
                 >
                   + Skill
                 </button>
-                <Link to="/profile" className="hover:text-primary transition">
-                  {user?.name}
-                </Link>
+                <NavLink
+                  to="/profile"
+                  label={user?.name || "Profile"}
+                  isActive={location.pathname === "/profile"}
+                />
                 {(user?.role === "admin" || user?.role === "moderator") && (
-                  <Link
+                  <NavLink
                     to="/moderation"
-                    className="hover:text-primary transition"
-                  >
-                    🛡️ Moderation
-                  </Link>
+                    label="🛡️ Mod"
+                    isActive={location.pathname === "/moderation"}
+                  />
                 )}
                 {user?.role === "admin" && (
-                  <Link to="/admin" className="hover:text-primary transition">
-                    🧰 Admin
-                  </Link>
+                  <NavLink
+                    to="/admin"
+                    label="🧰 Admin"
+                    isActive={location.pathname === "/admin"}
+                  />
                 )}
-                <Link to="/settings" className="hover:text-primary transition">
-                  ⚙️
-                </Link>
+                <NavLink
+                  to="/settings"
+                  label="⚙️"
+                  isActive={location.pathname === "/settings"}
+                />
                 <button
                   onClick={logout}
-                  className="bg-red-600 px-4 py-2 rounded hover:bg-red-700 transition"
+                  className="bg-red-600 px-3 py-1.5 rounded hover:bg-red-700 transition text-sm"
                 >
                   Logout
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="hover:text-primary transition">
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="bg-primary px-4 py-2 rounded hover:bg-blue-600 transition"
-                >
-                  Register
-                </Link>
+                <NavLink
+                  to="/login"
+                  label="Login"
+                  isActive={location.pathname === "/login"}
+                />
+                <button className="bg-primary px-4 py-2 rounded hover:bg-blue-600 transition text-sm">
+                  <Link to="/register">Register</Link>
+                </button>
               </>
             )}
           </div>
+
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded hover:bg-white/10 transition flex-shrink-0"
+            aria-label="Toggle menu"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d={
+                  mobileMenuOpen
+                    ? "M6 18L18 6M6 6l12 12"
+                    : "M4 6h16M4 12h16M4 18h16"
+                }
+              />
+            </svg>
+          </button>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && isAuthenticated && (
+          <div className="md:hidden border-t border-white/10 py-2 space-y-1">
+            <MobileNavLink
+              to="/home"
+              label="Home"
+              isActive={location.pathname === "/home"}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <MobileNavLink
+              to="/discover"
+              label="Discover"
+              isActive={location.pathname === "/discover"}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <MobileNavLink
+              to="/skills"
+              label="Skills"
+              isActive={location.pathname === "/skills"}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <MobileNavLink
+              to="/requests"
+              label="Requests"
+              isActive={location.pathname === "/requests"}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <MobileNavLink
+              to="/notifications"
+              label={`Notifications ${unreadCount > 0 ? `(${unreadCount})` : ""}`}
+              isActive={location.pathname === "/notifications"}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <MobileNavLink
+              to="/profile"
+              label="Profile"
+              isActive={location.pathname === "/profile"}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            {(user?.role === "admin" || user?.role === "moderator") && (
+              <MobileNavLink
+                to="/moderation"
+                label="🛡️ Moderation"
+                isActive={location.pathname === "/moderation"}
+                onClick={() => setMobileMenuOpen(false)}
+              />
+            )}
+            {user?.role === "admin" && (
+              <MobileNavLink
+                to="/admin"
+                label="🧰 Admin"
+                isActive={location.pathname === "/admin"}
+                onClick={() => setMobileMenuOpen(false)}
+              />
+            )}
+            <MobileNavLink
+              to="/settings"
+              label="Settings"
+              isActive={location.pathname === "/settings"}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div className="pt-2 border-t border-white/10 space-y-2">
+              <button
+                onClick={() => {
+                  setShowCreatePostModal(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full px-3 py-2 rounded bg-green-600 hover:bg-green-700 transition font-medium text-sm text-left"
+              >
+                + Create Post
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddSkillModal(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full px-3 py-2 rounded bg-purple-600 hover:bg-purple-700 transition font-medium text-sm text-left"
+              >
+                + Add Skill
+              </button>
+              <button
+                onClick={logout}
+                className="w-full bg-red-600 px-3 py-2 rounded hover:bg-red-700 transition font-medium text-sm text-left"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
+  );
+}
+
+// Helper components
+function NavLink({ to, label, isActive }) {
+  return (
+    <Link
+      to={to}
+      className={`px-2 py-1.5 rounded transition text-sm whitespace-nowrap ${
+        isActive
+          ? "text-primary font-semibold bg-white/10"
+          : "hover:text-primary"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function NotificationLink({ to, unreadCount, isActive }) {
+  return (
+    <Link
+      to={to}
+      className={`relative px-2 py-1.5 rounded transition group ${
+        isActive
+          ? "text-primary font-semibold bg-white/10"
+          : "hover:text-primary"
+      }`}
+    >
+      <span className="text-lg">🔔</span>
+      {unreadCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center group-hover:bg-red-700">
+          {unreadCount > 9 ? "9+" : unreadCount}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function MobileNavLink({ to, label, isActive, onClick }) {
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={`block px-3 py-2 rounded transition text-sm ${
+        isActive ? "text-primary font-semibold bg-white/10" : "hover:bg-white/5"
+      }`}
+    >
+      {label}
+    </Link>
   );
 }

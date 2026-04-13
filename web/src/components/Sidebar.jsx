@@ -104,44 +104,45 @@ export default function Sidebar({ isOpen, onToggle }) {
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-30"
+          className="fixed inset-0 bg-black/50 sm:hidden z-30"
           onClick={onToggle}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:static w-64 shadow-lg min-h-screen p-6 transform transition-transform duration-300 z-40 ${
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        className={`fixed sm:static w-56 sm:w-64 md:w-72 shadow-lg min-h-screen p-3 sm:p-4 md:p-6 transform transition-transform duration-300 z-40 ${
+          isOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
         }`}
         style={{
           backgroundColor: "var(--card)",
           color: "var(--text)",
         }}
       >
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6 sm:mb-8">
           <button
-            className="text-2xl font-bold text-primary text-left flex-1"
+            className="text-xl sm:text-2xl font-bold text-primary flex-1 text-left"
             onClick={() => {
-              // Navigate to home and force refresh
               if (window?.location?.pathname === "/home") {
                 window.location.reload();
               } else {
                 window.location.href = "/home";
               }
             }}
+            title="Go to home"
           >
             XavLink
           </button>
           <NotificationCenter />
           <button
             onClick={onToggle}
-            className="md:hidden p-1 hover:opacity-80 transition"
+            className="sm:hidden p-1 hover:opacity-80 transition ml-1"
             style={{ color: "var(--muted)" }}
             title="Close sidebar"
+            aria-label="Close sidebar"
           >
             <svg
-              className="w-6 h-6"
+              className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -156,182 +157,41 @@ export default function Sidebar({ isOpen, onToggle }) {
           </button>
         </div>
 
-        <nav className="space-y-3">
-          <Link
-            to="/home"
-            className={`block px-4 py-2 rounded transition ${
-              isActive("/home") ? "bg-primary" : "hover:opacity-80"
-            }`}
-            style={{
-              backgroundColor: isActive("/home")
-                ? "var(--primary)"
-                : "transparent",
-              color: isActive("/home") ? "var(--text)" : "var(--text)",
-            }}
-          >
-            🏠 Home
-          </Link>
-          <Link
-            to="/discover"
-            className={`block px-4 py-2 rounded transition ${
-              isActive("/discover") ? "bg-primary" : "hover:opacity-80"
-            }`}
-            style={{
-              backgroundColor: isActive("/discover")
-                ? "var(--primary)"
-                : "transparent",
-              color: isActive("/discover") ? "var(--text)" : "var(--text)",
-            }}
-          >
-            🔍 Discover
-          </Link>
-          <Link
-            to="/profile"
-            className={`block px-4 py-2 rounded transition ${
-              isActive("/profile") ? "bg-primary" : "hover:opacity-80"
-            }`}
-            style={{
-              backgroundColor: isActive("/profile")
-                ? "var(--primary)"
-                : "transparent",
-              color: isActive("/profile") ? "var(--text)" : "var(--text)",
-            }}
-          >
-            👤 Profile
-          </Link>
-          <Link
-            to="/skills"
-            className={`block px-4 py-2 rounded transition ${
-              isActive("/skills") ? "bg-primary" : "hover:opacity-80"
-            }`}
-            style={{
-              backgroundColor: isActive("/skills")
-                ? "var(--primary)"
-                : "transparent",
-              color: isActive("/skills") ? "var(--text)" : "var(--text)",
-            }}
-          >
-            🎯 Skills
-          </Link>
-          <Link
-            to="/requests"
-            className={`block px-4 py-2 rounded transition ${
-              isActive("/requests") ? "bg-primary" : "hover:opacity-80"
-            }`}
-            style={{
-              backgroundColor: isActive("/requests")
-                ? "var(--primary)"
-                : "transparent",
-              color: isActive("/requests") ? "var(--text)" : "var(--text)",
-            }}
-          >
-            📨 Requests
-          </Link>
-          <Link
+        <nav className="space-y-2">
+          <SidebarLink to="/home" label="🏠 Home" isActive={isActive("/home")} />
+          <SidebarLink to="/discover" label="🔍 Discover" isActive={isActive("/discover")} />
+          <SidebarLink to="/profile" label="👤 Profile" isActive={isActive("/profile")} />
+          <SidebarLink to="/skills" label="🎯 Skills" isActive={isActive("/skills")} />
+          <SidebarLink to="/requests" label="📨 Requests" isActive={isActive("/requests")} />
+          
+          <SidebarLinkWithBadge
             to="/chats"
-            className={`flex items-center justify-between px-4 py-2 rounded transition ${
-              isActive("/chats") || location.pathname.startsWith("/chat")
-                ? "bg-primary"
-                : "hover:opacity-80"
-            }`}
-            style={{
-              backgroundColor:
-                isActive("/chats") || location.pathname.startsWith("/chat")
-                  ? "var(--primary)"
-                  : "transparent",
-              color: "var(--text)",
-            }}
-          >
-            <span>💬 Messages</span>
-            {unreadTotal > 0 && (
-              <span className="ml-2 text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">
-                {unreadTotal}
-              </span>
-            )}
-          </Link>
-          <Link
-            to="/notifications"
-            className={`block px-4 py-2 rounded transition ${
-              isActive("/notifications") ? "bg-primary" : "hover:opacity-80"
-            }`}
-            style={{
-              backgroundColor: isActive("/notifications")
-                ? "var(--primary)"
-                : "transparent",
-              color: "var(--text)",
-            }}
-          >
-            🔔 Notifications
-          </Link>
+            label="💬 Messages"
+            badge={unreadTotal}
+            isActive={isActive("/chats") || location.pathname.startsWith("/chat")}
+          />
+          
+          <SidebarLink to="/notifications" label="🔔 Notifications" isActive={isActive("/notifications")} />
+          
           {(user?.role === "admin" || user?.role === "moderator") && (
-            <Link
-              to="/moderation"
-              className={`block px-4 py-2 rounded transition ${
-                isActive("/moderation") ? "bg-primary" : "hover:opacity-80"
-              }`}
-              style={{
-                backgroundColor: isActive("/moderation")
-                  ? "var(--primary)"
-                  : "transparent",
-                color: "var(--text)",
-              }}
-            >
-              🛡️ Moderation
-            </Link>
+            <SidebarLink to="/moderation" label="🛡️ Moderation" isActive={isActive("/moderation")} />
           )}
+          
           {user?.role === "admin" && (
-            <Link
-              to="/admin"
-              className={`block px-4 py-2 rounded transition ${
-                isActive("/admin") ? "bg-primary" : "hover:opacity-80"
-              }`}
-              style={{
-                backgroundColor: isActive("/admin")
-                  ? "var(--primary)"
-                  : "transparent",
-                color: "var(--text)",
-              }}
-            >
-              🧰 Admin
-            </Link>
+            <SidebarLink to="/admin" label="🧰 Admin" isActive={isActive("/admin")} />
           )}
-          <Link
-            to="/enhancements"
-            className={`block px-4 py-2 rounded transition ${
-              isActive("/enhancements") ? "bg-primary" : "hover:opacity-80"
-            }`}
-            style={{
-              backgroundColor: isActive("/enhancements")
-                ? "var(--primary)"
-                : "transparent",
-              color: "var(--text)",
-            }}
-          >
-            ✨ Enhancements
-          </Link>
-          <Link
-            to="/settings"
-            className={`block px-4 py-2 rounded transition ${
-              isActive("/settings") ? "bg-primary" : "hover:opacity-80"
-            }`}
-            style={{
-              backgroundColor: isActive("/settings")
-                ? "var(--primary)"
-                : "transparent",
-              color: "var(--text)",
-            }}
-          >
-            ⚙️ Settings
-          </Link>
+          
+          <SidebarLink to="/enhancements" label="✨ Enhancements" isActive={isActive("/enhancements")} />
+          <SidebarLink to="/settings" label="⚙️ Settings" isActive={isActive("/settings")} />
         </nav>
 
         <div
-          className="pt-8 border-t mt-8"
+          className="pt-4 sm:pt-6 md:pt-8 border-t mt-6 sm:mt-8"
           style={{ borderColor: "var(--border)" }}
         >
           <button
             onClick={logout}
-            className="w-full px-4 py-2 rounded transition hover:opacity-90"
+            className="w-full px-3 sm:px-4 py-2 rounded transition hover:opacity-90 font-medium text-sm sm:text-base"
             style={{
               backgroundColor: "#DC2626",
               color: "#FAFAFA",
@@ -344,3 +204,43 @@ export default function Sidebar({ isOpen, onToggle }) {
     </>
   );
 }
+
+// Helper component for sidebar links
+function SidebarLink({ to, label, isActive }) {
+  return (
+    <Link
+      to={to}
+      className={`block px-3 sm:px-4 py-2 rounded transition text-sm sm:text-base ${
+        isActive ? "font-semibold" : "hover:opacity-80"
+      }`}
+      style={{
+        backgroundColor: isActive ? "var(--primary)" : "transparent",
+        color: "var(--text)",
+      }}
+    >
+      {label}
+    </Link>
+  );
+}
+
+// Helper component for sidebar links with badge
+function SidebarLinkWithBadge({ to, label, badge, isActive }) {
+  return (
+    <Link
+      to={to}
+      className={`flex items-center justify-between px-3 sm:px-4 py-2 rounded transition text-sm sm:text-base ${
+        isActive ? "font-semibold" : "hover:opacity-80"
+      }`}
+      style={{
+        backgroundColor: isActive ? "var(--primary)" : "transparent",
+        color: "var(--text)",
+      }}
+    >
+      <span>{label}</span>
+      {badge > 0 && (
+        <span className="ml-2 text-xs bg-red-600 text-white px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
+    </Link>
+  );

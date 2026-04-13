@@ -4,26 +4,27 @@ import Sidebar from "./Sidebar";
 
 export default function MainLayout({ children }) {
   const { isAuthenticated } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex">
+    <div className="flex h-screen">
       {isAuthenticated && (
         <Sidebar
           isOpen={sidebarOpen}
           onToggle={() => setSidebarOpen(!sidebarOpen)}
         />
       )}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {isAuthenticated && (
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="md:hidden p-3 transition hover:opacity-80"
+            className="sm:hidden p-3 transition hover:opacity-80 sticky top-0 z-20"
             style={{
               color: "var(--text)",
-              backgroundColor: "transparent",
+              backgroundColor: "var(--surface)",
             }}
             title="Toggle sidebar"
+            aria-label="Toggle sidebar"
           >
             <svg
               className="w-6 h-6"
@@ -41,7 +42,7 @@ export default function MainLayout({ children }) {
           </button>
         )}
         <main
-          className="flex-1"
+          className="flex-1 overflow-y-auto"
           style={{ backgroundColor: "var(--surface)" }}
         >
           {children}
