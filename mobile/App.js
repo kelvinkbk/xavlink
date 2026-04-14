@@ -125,15 +125,20 @@ function AppInner() {
 
   // Show splash screen for minimum 8 seconds or until loading is done
   useEffect(() => {
+    // Always start with splash visible
+    setShowSplash(true);
+
     if (loading) {
-      setShowSplash(true);
-    } else {
-      // Keep splash visible for at least 8 seconds after auth loads
-      const timer = setTimeout(() => {
-        setShowSplash(false);
-      }, 8000);
-      return () => clearTimeout(timer);
+      // Auth is still loading, keep splash visible
+      return;
     }
+
+    // Auth loaded, keep splash for 8 more seconds
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 8000);
+
+    return () => clearTimeout(timer);
   }, [loading]);
 
   // Show splash screen while app is loading or minimum time not reached
