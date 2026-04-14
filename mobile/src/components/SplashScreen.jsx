@@ -24,7 +24,7 @@ const SplashScreen = () => {
     <View style={styles.container}>
       {!isVideoError ? (
         <Video
-          source={require("../../assets/startup.mp4")}
+          source={require("../../assets/startup.MP4")}
           rate={1.0}
           volume={0.0}
           isMuted={true}
