@@ -86,11 +86,6 @@ function AppInner() {
   const { isDark } = useTheme();
   const { loading } = useAuth();
 
-  // Show splash screen while app is loading
-  if (loading) {
-    return <SplashScreen />;
-  }
-
   useEffect(() => {
     // Check for updates on app startup
     // UpdateService.checkOnStartup(); // Disabled - causing errors
@@ -126,6 +121,11 @@ function AppInner() {
       responseSubscription.remove();
     };
   }, []);
+
+  // Show splash screen while app is loading
+  if (loading) {
+    return <SplashScreen />;
+  }
 
   return (
     <>
