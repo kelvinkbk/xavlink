@@ -85,6 +85,7 @@ const requestNotificationPermission = async () => {
 function AppInner() {
   const { isDark } = useTheme();
   const { loading } = useAuth();
+  const [showSplash, setShowSplash] = React.useState(true);
 
   useEffect(() => {
     // Check for updates on app startup
@@ -122,8 +123,21 @@ function AppInner() {
     };
   }, []);
 
-  // Show splash screen while app is loading
-  if (loading) {
+  // Show splash screen for minimum 8 seconds or until loading is done
+  useEffect(() => {
+    if (loading) {
+      setShowSplash(true);
+    } else {
+      // Keep splash visible for at least 8 seconds after auth loads
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  // Show splash screen while app is loading or minimum time not reached
+  if (showSplash) {
     return <SplashScreen />;
   }
 
