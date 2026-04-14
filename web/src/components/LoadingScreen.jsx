@@ -9,7 +9,7 @@ const LoadingScreen = () => {
         muted
         loop
         className="w-full h-full object-cover"
-        src="/Loading_Animation_with_Floral_Swirls.mp4"
+        src="/startup.mp4"
       >
         Your browser does not support the video tag.
       </video>
