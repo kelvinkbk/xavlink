@@ -17,7 +17,8 @@ export default function SkillRecommendations() {
       setRecommendations(data?.recommendations || []);
       setLastGenerated(data?.lastGenerated);
     } catch (err) {
-      const errorMsg = err.response?.data?.message || "Failed to load recommendations";
+      const errorMsg =
+        err.response?.data?.message || "Failed to load recommendations";
       setError(errorMsg);
       console.error("Error loading recommendations:", err);
     } finally {
@@ -33,7 +34,9 @@ export default function SkillRecommendations() {
       setRecommendations(data?.recommendations || []);
       setLastGenerated(new Date().toISOString());
     } catch (err) {
-      const errorMsg = err.response?.data?.message || "Failed to generate recommendations. Please try again.";
+      const errorMsg =
+        err.response?.data?.message ||
+        "Failed to generate recommendations. Please try again.";
       setError(errorMsg);
       console.error("Error generating recommendations:", err);
     } finally {
@@ -134,7 +137,7 @@ export default function SkillRecommendations() {
                 </div>
                 <div
                   className={`px-4 py-2 rounded-lg text-right ml-4 ${getScoreBgColor(
-                    rec.score
+                    rec.score,
                   )}`}
                   aria-label={`Recommendation score: ${(rec.score * 100).toFixed(0)}%`}
                 >

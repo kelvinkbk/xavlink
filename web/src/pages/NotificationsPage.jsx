@@ -35,7 +35,9 @@ export default function NotificationsPage() {
       <div className="max-w-2xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Notifications</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Notifications
+          </h1>
           <p className="text-gray-600">
             Stay updated with your latest activities and interactions
           </p>
@@ -107,7 +109,7 @@ export default function NotificationsPage() {
               </p>
             </div>
           ) : (
-              sortedNotifications.map((notification) => (
+            sortedNotifications.map((notification) => (
               <div
                 key={notification.id}
                 className={`p-4 rounded-lg border ${

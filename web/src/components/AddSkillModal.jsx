@@ -24,7 +24,7 @@ const AddSkillModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleAddSkill = async (e) => {
     e.preventDefault();
-    
+
     // Validation
     if (!title?.trim()) {
       setError("Skill name is required");
@@ -61,7 +61,8 @@ const AddSkillModal = ({ isOpen, onClose, onSuccess }) => {
       onSuccess?.();
       onClose();
     } catch (err) {
-      const errorMsg = err.response?.data?.message || "Failed to add skill. Please try again.";
+      const errorMsg =
+        err.response?.data?.message || "Failed to add skill. Please try again.";
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -103,7 +104,10 @@ const AddSkillModal = ({ isOpen, onClose, onSuccess }) => {
             )}
 
             <div className="mb-4">
-              <label htmlFor="skill-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="skill-title"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Skill Name *
               </label>
               <input
@@ -115,22 +119,32 @@ const AddSkillModal = ({ isOpen, onClose, onSuccess }) => {
                 maxLength="100"
                 placeholder="e.g., React, UI Design"
                 className={`w-full p-3 border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition ${
-                  error && title === "" ? "border-red-500 dark:border-red-500" : "border-gray-300 dark:border-slate-600"
+                  error && title === ""
+                    ? "border-red-500 dark:border-red-500"
+                    : "border-gray-300 dark:border-slate-600"
                 }`}
                 aria-label="Skill name"
                 aria-describedby="title-help"
                 required
               />
               <div className="flex justify-between mt-1">
-                <p id="title-help" className="text-xs text-gray-500 dark:text-gray-400">
+                <p
+                  id="title-help"
+                  className="text-xs text-gray-500 dark:text-gray-400"
+                >
                   What skill would you like to add?
                 </p>
-                <span className="text-xs text-gray-400">{title.length}/100</span>
+                <span className="text-xs text-gray-400">
+                  {title.length}/100
+                </span>
               </div>
             </div>
 
             <div className="mb-4">
-              <label htmlFor="skill-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="skill-category"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Category *
               </label>
               <select
@@ -151,7 +165,10 @@ const AddSkillModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="skill-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="skill-description"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Description (Optional)
               </label>
               <textarea
@@ -167,15 +184,23 @@ const AddSkillModal = ({ isOpen, onClose, onSuccess }) => {
                 aria-describedby="description-help"
               />
               <div className="flex justify-between mt-1">
-                <p id="description-help" className="text-xs text-gray-500 dark:text-gray-400">
+                <p
+                  id="description-help"
+                  className="text-xs text-gray-500 dark:text-gray-400"
+                >
                   Describe your experience level with this skill
                 </p>
-                <span className="text-xs text-gray-400">{description.length}/500</span>
+                <span className="text-xs text-gray-400">
+                  {description.length}/500
+                </span>
               </div>
             </div>
 
             <div className="mb-4">
-              <label htmlFor="skill-proficiency" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="skill-proficiency"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Proficiency Level *
               </label>
               <select

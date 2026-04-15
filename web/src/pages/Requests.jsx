@@ -18,11 +18,16 @@ function RequestCard({ request, onStatusUpdate, isReceived }) {
     try {
       await requestService.updateStatus(request.id, status);
       onStatusUpdate();
-      const actionText = status === "accepted" ? "Request accepted successfully" : "Request rejected";
+      const actionText =
+        status === "accepted"
+          ? "Request accepted successfully"
+          : "Request rejected";
       showToast(actionText, "success");
     } catch (e) {
       console.error("Error updating status:", e);
-      const errorMsg = e.response?.data?.message || "Failed to update request status. Please try again.";
+      const errorMsg =
+        e.response?.data?.message ||
+        "Failed to update request status. Please try again.";
       showToast(errorMsg, "error");
     } finally {
       setUpdating(false);
@@ -36,10 +41,13 @@ function RequestCard({ request, onStatusUpdate, isReceived }) {
       return;
     }
     if (counterOffer.trim().length < 10) {
-      showToast("Counter-offer message must be at least 10 characters", "error");
+      showToast(
+        "Counter-offer message must be at least 10 characters",
+        "error",
+      );
       return;
     }
-    
+
     setUpdating(true);
     try {
       await enhancementService.sendCounterOffer(request.id, {
@@ -53,7 +61,9 @@ function RequestCard({ request, onStatusUpdate, isReceived }) {
       showToast("Counter-offer sent successfully!", "success");
     } catch (e) {
       console.error("Error sending counter-offer:", e);
-      const errorMsg = e.response?.data?.message || "Failed to send counter-offer. Please try again.";
+      const errorMsg =
+        e.response?.data?.message ||
+        "Failed to send counter-offer. Please try again.";
       showToast(errorMsg, "error");
     } finally {
       setUpdating(false);
@@ -69,7 +79,9 @@ function RequestCard({ request, onStatusUpdate, isReceived }) {
       showToast("Request marked as completed successfully!", "success");
     } catch (e) {
       console.error("Error completing request:", e);
-      const errorMsg = e.response?.data?.message || "Failed to complete request. Please try again.";
+      const errorMsg =
+        e.response?.data?.message ||
+        "Failed to complete request. Please try again.";
       showToast(errorMsg, "error");
     } finally {
       setUpdating(false);
@@ -87,8 +99,8 @@ function RequestCard({ request, onStatusUpdate, isReceived }) {
         isOverdue
           ? "border-2 border-red-500"
           : isUrgent
-          ? "border-2 border-orange-500"
-          : ""
+            ? "border-2 border-orange-500"
+            : ""
       }`}
     >
       <div className="flex items-center justify-between mb-4">
@@ -97,7 +109,7 @@ function RequestCard({ request, onStatusUpdate, isReceived }) {
             src={
               request.fromUser?.profilePic ||
               `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                request.fromUser?.name || "User"
+                request.fromUser?.name || "User",
               )}&background=3b82f6&color=fff`
             }
             alt={request.fromUser?.name}
@@ -121,10 +133,10 @@ function RequestCard({ request, onStatusUpdate, isReceived }) {
               request.status === "pending"
                 ? "bg-yellow-100 text-yellow-800"
                 : request.status === "accepted"
-                ? "bg-green-100 text-green-800"
-                : request.status === "completed"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-red-100 text-red-800"
+                  ? "bg-green-100 text-green-800"
+                  : request.status === "completed"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-red-100 text-red-800"
             }`}
           >
             {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
@@ -303,7 +315,7 @@ export default function Requests() {
       showToast("Template message must be at least 10 characters", "error");
       return;
     }
-    
+
     try {
       await enhancementService.createRequestTemplate({
         title: newTemplate.title.trim(),
@@ -317,7 +329,9 @@ export default function Requests() {
       showToast("Template created successfully!", "success");
     } catch (e) {
       console.error("Error creating template:", e);
-      const errorMsg = e.response?.data?.message || "Failed to create template. Please try again.";
+      const errorMsg =
+        e.response?.data?.message ||
+        "Failed to create template. Please try again.";
       showToast(errorMsg, "error");
     }
   };
@@ -330,7 +344,9 @@ export default function Requests() {
       showToast("Template deleted successfully", "success");
     } catch (e) {
       console.error("Error deleting template:", e);
-      const errorMsg = e.response?.data?.message || "Failed to delete template. Please try again.";
+      const errorMsg =
+        e.response?.data?.message ||
+        "Failed to delete template. Please try again.";
       showToast(errorMsg, "error");
     }
   };

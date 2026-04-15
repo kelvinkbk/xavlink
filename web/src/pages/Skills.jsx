@@ -19,7 +19,7 @@ function SkillCard({
 }) {
   const [endorsed, setEndorsed] = useState(false);
   const [endorsementCount, setEndorsementCount] = useState(
-    skill.endorsementCount || 0
+    skill.endorsementCount || 0,
   );
 
   const proficiencyColors = {
@@ -202,7 +202,7 @@ export default function Skills() {
   const handleAddSkill = async (e) => {
     e.preventDefault();
     setError("");
-    
+
     // Validation
     if (!newSkill.title?.trim()) {
       setError("Skill title is required");
@@ -216,7 +216,7 @@ export default function Skills() {
       setError("Category is required");
       return;
     }
-    
+
     setSubmitting(true);
 
     try {
@@ -242,7 +242,8 @@ export default function Skills() {
       showToast("Skill added successfully!", "success");
     } catch (e) {
       console.error("Error adding skill:", e);
-      const errorMsg = e.response?.data?.message || "Failed to add skill. Please try again.";
+      const errorMsg =
+        e.response?.data?.message || "Failed to add skill. Please try again.";
       setError(errorMsg);
       showToast(errorMsg, "error");
     } finally {
@@ -308,16 +309,13 @@ export default function Skills() {
 
     setAddingCert(true);
     try {
-      await enhancementService.addCertification(
-        selectedSkillForCert.id,
-        {
-          certificateTitle: newCertification.certificateTitle.trim(),
-          issuingOrganization: newCertification.issuingOrganization.trim(),
-          issueDate: newCertification.issueDate,
-          expiryDate: newCertification.expiryDate || null,
-          credentialUrl: newCertification.credentialUrl?.trim() || null,
-        }
-      );
+      await enhancementService.addCertification(selectedSkillForCert.id, {
+        certificateTitle: newCertification.certificateTitle.trim(),
+        issuingOrganization: newCertification.issuingOrganization.trim(),
+        issueDate: newCertification.issueDate,
+        expiryDate: newCertification.expiryDate || null,
+        credentialUrl: newCertification.credentialUrl?.trim() || null,
+      });
       showToast("Certification added successfully!", "success");
       setShowCertificationModal(false);
       setNewCertification({
@@ -330,7 +328,7 @@ export default function Skills() {
       // Refetch certifications
       const { certifications: certsData } =
         await enhancementService.getSkillCertifications(
-          selectedSkillForCert.id
+          selectedSkillForCert.id,
         );
       setCertifications({
         ...certifications,
@@ -338,7 +336,9 @@ export default function Skills() {
       });
     } catch (e) {
       console.error("Error adding certification:", e);
-      const errorMsg = e.response?.data?.message || "Failed to add certification. Please try again.";
+      const errorMsg =
+        e.response?.data?.message ||
+        "Failed to add certification. Please try again.";
       showToast(errorMsg, "error");
     } finally {
       setAddingCert(false);
@@ -590,7 +590,7 @@ export default function Skills() {
                     value={selectedTemplate?.id || ""}
                     onChange={(e) => {
                       const template = templates.find(
-                        (t) => t.id === e.target.value
+                        (t) => t.id === e.target.value,
                       );
                       setSelectedTemplate(template || null);
                     }}
@@ -802,7 +802,7 @@ export default function Skills() {
                               {new Date(cert.issueDate).toLocaleDateString()}
                               {cert.expiryDate &&
                                 ` • Expires: ${new Date(
-                                  cert.expiryDate
+                                  cert.expiryDate,
                                 ).toLocaleDateString()}`}
                             </p>
                             {cert.credentialUrl && (

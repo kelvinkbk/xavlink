@@ -7,7 +7,7 @@ import {
 
 export default function NotificationSettings() {
   const [permission, setPermission] = useState(() =>
-    notificationsSupported() ? getNotificationPermission() : "denied"
+    notificationsSupported() ? getNotificationPermission() : "denied",
   );
   const [soundEnabled, setSoundEnabled] = useState(() => {
     try {
@@ -64,15 +64,15 @@ export default function NotificationSettings() {
                   permission === "granted"
                     ? "enabled"
                     : permission === "denied"
-                    ? "blocked"
-                    : "default"
+                      ? "blocked"
+                      : "default"
                 }`}
               >
                 {permission === "granted"
                   ? "✓ Enabled"
                   : permission === "denied"
-                  ? "✗ Blocked"
-                  : "⋯ Default"}
+                    ? "✗ Blocked"
+                    : "⋯ Default"}
               </span>
             </p>
           </div>

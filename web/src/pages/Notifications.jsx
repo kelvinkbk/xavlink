@@ -111,7 +111,7 @@ const Notifications = () => {
     try {
       await api.put(`/notifications/${id}/read`);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
@@ -129,7 +129,8 @@ const Notifications = () => {
       showToast("Notification pinned successfully", "success");
     } catch (error) {
       console.error("Failed to pin notification:", error);
-      const errorMsg = error.response?.data?.message || "Failed to pin notification";
+      const errorMsg =
+        error.response?.data?.message || "Failed to pin notification";
       showToast(errorMsg, "error");
     }
   };
@@ -146,7 +147,8 @@ const Notifications = () => {
       showToast("Notification archived successfully", "success");
     } catch (error) {
       console.error("Failed to archive notification:", error);
-      const errorMsg = error.response?.data?.message || "Failed to archive notification";
+      const errorMsg =
+        error.response?.data?.message || "Failed to archive notification";
       showToast(errorMsg, "error");
     }
   };
@@ -160,7 +162,9 @@ const Notifications = () => {
       showToast("All notifications marked as read", "success");
     } catch (error) {
       console.error("Failed to mark all as read:", error);
-      const errorMsg = error.response?.data?.message || "Failed to mark all notifications as read";
+      const errorMsg =
+        error.response?.data?.message ||
+        "Failed to mark all notifications as read";
       showToast(errorMsg, "error");
     }
   };
@@ -177,7 +181,8 @@ const Notifications = () => {
       showToast("Notification deleted successfully", "success");
     } catch (error) {
       console.error("Failed to delete notification:", error);
-      const errorMsg = error.response?.data?.message || "Failed to delete notification";
+      const errorMsg =
+        error.response?.data?.message || "Failed to delete notification";
       showToast(errorMsg, "error");
     }
   };
