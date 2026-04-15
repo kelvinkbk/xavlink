@@ -12,7 +12,7 @@ function NotFound() {
 
     // Update page metadata
     document.title = "404 - Page Not Found | XavLink";
-    
+
     return () => {
       document.head.removeChild(metaTag);
     };

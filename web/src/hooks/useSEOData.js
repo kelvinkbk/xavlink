@@ -7,7 +7,9 @@ import { useEffect } from "react";
 export const useSEOData = (pageData) => {
   useEffect(() => {
     // Remove old script if exists
-    const oldScript = document.querySelector('script[type="application/ld+json"]');
+    const oldScript = document.querySelector(
+      'script[type="application/ld+json"]',
+    );
     if (oldScript) {
       oldScript.remove();
     }
@@ -120,7 +122,7 @@ export const XAVLINK_SCHEMAS = {
 export const addOrganizationSchema = () => {
   // Remove existing schema
   const existing = document.querySelector(
-    'script[type="application/ld+json"][data-schema="organization"]'
+    'script[type="application/ld+json"][data-schema="organization"]',
   );
   if (existing) {
     existing.remove();
