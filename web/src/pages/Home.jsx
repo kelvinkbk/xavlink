@@ -591,22 +591,46 @@ export default function Home() {
 
   const handleCreatePost = async (e) => {
     e.preventDefault();
-    if (!newPost.content.trim()) return;
+
+    // Validation
+    if (!newPost.content?.trim()) {
+      setError("Post content is required");
+      showToast("Please write something to post", "error");
+      return;
+    }
+
+    if (newPost.content.trim().length < 3) {
+      setError("Post must be at least 3 characters");
+      showToast("Post content is too short", "error");
+      return;
+    }
+
+    if (newPost.content.trim().length > 5000) {
+      setError("Post cannot exceed 5000 characters");
+      showToast("Post content is too long", "error");
+      return;
+    }
 
     setPosting(true);
+    setError("");
+
     try {
-      const { data } = await postService.createPost(newPost);
+      const { data } = await postService.createPost({
+        content: newPost.content.trim(),
+        image: newPost.image?.trim() || null,
+      });
       setPosts([
         { ...data, likesCount: 0, commentsCount: 0, isLiked: false },
         ...posts,
       ]);
       setNewPost({ content: "", image: "" });
-      setError("");
-      showToast("Post created", "success");
+      showToast("Post created successfully!", "success");
     } catch (e) {
       console.error("Error creating post:", e);
-      setError("Failed to create post");
-      showToast("Failed to create post", "error");
+      const errorMsg =
+        e.response?.data?.message || "Failed to create post. Please try again.";
+      setError(errorMsg);
+      showToast(errorMsg, "error");
     } finally {
       setPosting(false);
     }
@@ -690,16 +714,19 @@ export default function Home() {
     setPosts(
       posts.map((p) =>
         p.id === postId
-          ? { ...p, commentsCount: p.commentsCount + countChange }
+          ? { ...p, commentsCount: (p.commentsCount || 0) + countChange }
           : p,
       ),
     );
+
     if (countChange > 0) {
-      showToast("Comment posted", "success");
+      showToast("Comment posted successfully!", "success");
     }
+
     // Update unread badge
     try {
-      const userId = JSON.parse(localStorage.getItem("user"))?.id;
+      const userStr = localStorage.getItem("user");
+      const userId = userStr ? JSON.parse(userStr)?.id : null;
       if (userId) {
         api.get(`/notifications/${userId}/unread-count`).then(({ data }) =>
           window.dispatchEvent(
@@ -709,8 +736,9 @@ export default function Home() {
           ),
         );
       }
-    } catch {
+    } catch (err) {
       // Silently ignore notification update errors
+      console.warn("Failed to update notification badge:", err?.message);
     }
   };
 
@@ -718,17 +746,32 @@ export default function Home() {
     try {
       await postService.deletePost(postId);
       setPosts(posts.filter((p) => p.id !== postId));
-      showToast("Post deleted", "success");
+      showToast("Post deleted successfully", "success");
     } catch (e) {
       console.error("Error deleting post:", e);
-      showToast("Failed to delete post", "error");
+      const errorMsg =
+        e.response?.data?.message || "Failed to delete post. Please try again.";
+      showToast(errorMsg, "error");
     }
   };
 
   const handleEditPost = (postId, newContent) => {
+    if (!newContent?.trim()) {
+      showToast("Post content cannot be empty", "error");
+      return;
+    }
+
+    if (newContent.trim().length > 5000) {
+      showToast("Post content is too long (max 5000 characters)", "error");
+      return;
+    }
+
     setPosts(
-      posts.map((p) => (p.id === postId ? { ...p, content: newContent } : p)),
+      posts.map((p) =>
+        p.id === postId ? { ...p, content: newContent.trim() } : p,
+      ),
     );
+    showToast("Post updated successfully", "success");
   };
 
   const handleBookmark = async (postId) => {
@@ -854,29 +897,64 @@ export default function Home() {
           <h2 className="text-lg font-semibold text-secondary mb-4">
             Create a Post
           </h2>
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleCreatePost} className="space-y-4">
-            <textarea
-              value={newPost.content}
-              onChange={(e) =>
-                setNewPost({ ...newPost, content: e.target.value })
-              }
-              placeholder="What's on your mind?"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none"
-              rows="3"
-            />
-            <input
-              type="url"
-              value={newPost.image}
-              onChange={(e) =>
-                setNewPost({ ...newPost, image: e.target.value })
-              }
-              placeholder="Image URL (optional)"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-            />
+            <div>
+              <label htmlFor="post-content" className="block text-sm font-medium text-gray-700 mb-2">
+                What's on your mind? *
+              </label>
+              <textarea
+                id="post-content"
+                value={newPost.content}
+                onChange={(e) =>
+                  setNewPost({ ...newPost, content: e.target.value })
+                }
+                placeholder="Share your thoughts, ask questions, or start a discussion..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none text-gray-900"
+                rows="3"
+                maxLength="5000"
+                aria-label="Post content"
+                aria-describedby="post-content-help"
+                required
+              />
+              <div className="flex justify-between mt-1">
+                <p id="post-content-help" className="text-xs text-gray-500">
+                  Share your thoughts with the campus community
+                </p>
+                <span className="text-xs text-gray-400">{newPost.content.length}/5000</span>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="post-image" className="block text-sm font-medium text-gray-700 mb-2">
+                Image URL (optional)
+              </label>
+              <input
+                id="post-image"
+                type="url"
+                value={newPost.image}
+                onChange={(e) =>
+                  setNewPost({ ...newPost, image: e.target.value })
+                }
+                placeholder="https://example.com/image.jpg"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-gray-900"
+                aria-label="Image URL"
+                aria-describedby="post-image-help"
+              />
+              <p id="post-image-help" className="text-xs text-gray-500 mt-1">
+                Must be a valid image URL (jpg, png, gif)
+              </p>
+            </div>
+
             <button
               type="submit"
               disabled={posting || !newPost.content.trim()}
-              className="w-full bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition disabled:opacity-50"
+              className="w-full bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              aria-busy={posting}
             >
               {posting ? "Posting..." : "Post"}
             </button>
@@ -884,8 +962,11 @@ export default function Home() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded mb-4 flex items-center justify-between">
-            <span>{error}</span>
+          <div className="bg-red-50 border border-red-300 text-red-700 p-4 rounded mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚠️</span>
+              <span>{error}</span>
+            </div>
             <button
               onClick={() => {
                 setError("");
@@ -893,19 +974,25 @@ export default function Home() {
                 // re-run fetch for current filter
                 (async () => {
                   try {
-                    const { data } = await postService.getAllPosts(feedFilter);
-                    setPosts(data);
+                    const { data } = await postService.getAllPosts(
+                      feedFilter,
+                      sortBy,
+                      currentPage,
+                      10,
+                    );
+                    setPosts(data.posts);
                     showToast("Feed refreshed", "success");
                   } catch (e) {
                     console.error("Retry failed:", e);
-                    setError("Failed to load posts");
-                    showToast("Failed to load posts", "error");
+                    setError("Failed to load posts. Please try again.");
+                    showToast("Failed to refresh feed", "error");
                   } finally {
                     setLoading(false);
                   }
                 })();
               }}
-              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-semibold"
+              aria-label="Retry loading posts"
             >
               Retry
             </button>

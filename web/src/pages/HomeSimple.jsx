@@ -775,8 +775,14 @@ function HomeSimple() {
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) {
+    // Validation
+    if (!newComment?.trim()) {
       showToast("Comment cannot be empty", "error");
+      return;
+    }
+    
+    if (newComment.trim().length > 1000) {
+      showToast("Comment is too long (max 1000 characters)", "error");
       return;
     }
 
@@ -784,7 +790,7 @@ function HomeSimple() {
       const token = localStorage.getItem("token");
       const response = await axios.post(
         `${API_URL}/posts/${selectedPost.id}/comments`,
-        { text: newComment },
+        { text: newComment.trim() },
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
@@ -813,7 +819,8 @@ function HomeSimple() {
       showToast("Comment added successfully!", "success");
     } catch (err) {
       console.error("Error adding comment:", err);
-      showToast("Failed to add comment", "error");
+      const errorMsg = err.response?.data?.message || "Failed to add comment. Please try again.";
+      showToast(errorMsg, "error");
     }
   };
 
@@ -839,13 +846,24 @@ function HomeSimple() {
 
         {/* Search & Filter Bar */}
         <div className="mb-6 space-y-3">
-          <input
-            type="text"
-            placeholder="🔍 Search posts, users, hashtags, courses..."
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none transition"
-          />
+          <div>
+            <label htmlFor="search-posts" className="sr-only">
+              Search posts, users, hashtags, courses
+            </label>
+            <input
+              id="search-posts"
+              type="text"
+              placeholder="🔍 Search posts, users, hashtags, courses..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none transition"
+              aria-label="Search posts and users"
+              aria-describedby="search-help"
+            />
+            <p id="search-help" className="text-xs text-gray-400 mt-1">
+              Search by content, name, course, hashtags, or skills
+            </p>
+          </div>
           {searchQuery && (
             <p className="text-gray-400 text-sm">
               Found {posts.length} result{posts.length !== 1 ? "s" : ""}
@@ -861,6 +879,9 @@ function HomeSimple() {
                   ? "bg-blue-600 text-white"
                   : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
+              aria-pressed={sortBy === "recent"}
+              aria-label="Sort by most recent posts"
+              title="Most recent posts first"
             >
               🕐 Recent
             </button>
@@ -871,6 +892,9 @@ function HomeSimple() {
                   ? "bg-blue-600 text-white"
                   : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
+              aria-pressed={sortBy === "trending"}
+              aria-label="Sort by trending posts"
+              title="Most trending/engaging posts"
             >
               🔥 Trending
             </button>
@@ -881,6 +905,9 @@ function HomeSimple() {
                   ? "bg-blue-600 text-white"
                   : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
+              aria-pressed={sortBy === "mostLiked"}
+              aria-label="Sort by most liked posts"
+              title="Posts with the most likes"
             >
               👍 Most Liked
             </button>
@@ -897,6 +924,9 @@ function HomeSimple() {
                   ? "bg-purple-600 text-white"
                   : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
+              aria-pressed={showFollowingOnly}
+              aria-label="Toggle following only filter"
+              title={showFollowingOnly ? "Showing latest posts from people you follow" : "Show posts from people you follow"}
             >
               👥 Following Only
             </button>
@@ -930,8 +960,10 @@ function HomeSimple() {
         <button
           onClick={() => setShowCreateModal(true)}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg mb-6 transition"
+          aria-label="Create a new post"
+          title="Share your thoughts with the campus community"
         >
-          Create a Post
+          ✍️ Create a Post
         </button>
 
         {/* Posts Feed */}
@@ -1236,21 +1268,37 @@ function HomeSimple() {
 
               {/* Add Comment Form */}
               <div className="border-t border-gray-700 pt-4">
+                <label htmlFor="comment-input" className="block text-sm font-medium text-gray-300 mb-2">
+                  Add a Comment *
+                </label>
                 <div className="flex gap-3">
                   <input
+                    id="comment-input"
                     type="text"
-                    placeholder="Write a comment..."
+                    placeholder="Share your thoughts..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
+                    onKeyPress={(e) => e.key === "Enter" && newComment.trim() && handleAddComment()}
+                    maxLength="1000"
                     className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Write a comment"
+                    aria-describedby="comment-help"
                   />
                   <button
                     onClick={handleAddComment}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold"
+                    disabled={!newComment.trim()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Post comment"
+                    title="Post your comment"
                   >
                     Post
                   </button>
+                </div>
+                <div className="flex justify-between mt-2">
+                  <p id="comment-help" className="text-xs text-gray-400">
+                    Keep comments respectful and relevant
+                  </p>
+                  <span className="text-xs text-gray-400">{newComment.length}/1000</span>
                 </div>
               </div>
             </div>
