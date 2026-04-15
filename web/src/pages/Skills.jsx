@@ -202,10 +202,31 @@ export default function Skills() {
   const handleAddSkill = async (e) => {
     e.preventDefault();
     setError("");
+    
+    // Validation
+    if (!newSkill.title?.trim()) {
+      setError("Skill title is required");
+      return;
+    }
+    if (!newSkill.description?.trim()) {
+      setError("Description is required");
+      return;
+    }
+    if (!newSkill.category) {
+      setError("Category is required");
+      return;
+    }
+    
     setSubmitting(true);
 
     try {
-      await skillService.addSkill(newSkill);
+      await skillService.addSkill({
+        ...newSkill,
+        title: newSkill.title.trim(),
+        description: newSkill.description.trim(),
+        subcategory: newSkill.subcategory?.trim() || "",
+        priceRange: newSkill.priceRange?.trim() || "",
+      });
       setNewSkill({
         title: "",
         description: "",
@@ -217,12 +238,13 @@ export default function Skills() {
       setShowForm(false);
       // Refetch skills after adding new skill
       const { data } = await skillService.searchSkills(search);
-      setSkills(data);
-      showToast("Skill added", "success");
+      setSkills(data || []);
+      showToast("Skill added successfully!", "success");
     } catch (e) {
       console.error("Error adding skill:", e);
-      setError(e.response?.data?.message || "Failed to add skill");
-      showToast(e.response?.data?.message || "Failed to add skill", "error");
+      const errorMsg = e.response?.data?.message || "Failed to add skill. Please try again.";
+      setError(errorMsg);
+      showToast(errorMsg, "error");
     } finally {
       setSubmitting(false);
     }
@@ -270,12 +292,17 @@ export default function Skills() {
   };
 
   const handleAddCertification = async () => {
-    if (
-      !newCertification.certificateTitle.trim() ||
-      !newCertification.issuingOrganization.trim() ||
-      !newCertification.issueDate
-    ) {
-      showToast("Please fill in all required fields", "error");
+    // Validate required fields
+    if (!newCertification.certificateTitle?.trim()) {
+      showToast("Certificate title is required", "error");
+      return;
+    }
+    if (!newCertification.issuingOrganization?.trim()) {
+      showToast("Issuing organization is required", "error");
+      return;
+    }
+    if (!newCertification.issueDate) {
+      showToast("Issue date is required", "error");
       return;
     }
 
@@ -283,9 +310,15 @@ export default function Skills() {
     try {
       await enhancementService.addCertification(
         selectedSkillForCert.id,
-        newCertification
+        {
+          certificateTitle: newCertification.certificateTitle.trim(),
+          issuingOrganization: newCertification.issuingOrganization.trim(),
+          issueDate: newCertification.issueDate,
+          expiryDate: newCertification.expiryDate || null,
+          credentialUrl: newCertification.credentialUrl?.trim() || null,
+        }
       );
-      showToast("Certification added", "success");
+      showToast("Certification added successfully!", "success");
       setShowCertificationModal(false);
       setNewCertification({
         certificateTitle: "",
@@ -305,7 +338,8 @@ export default function Skills() {
       });
     } catch (e) {
       console.error("Error adding certification:", e);
-      showToast("Failed to add certification", "error");
+      const errorMsg = e.response?.data?.message || "Failed to add certification. Please try again.";
+      showToast(errorMsg, "error");
     } finally {
       setAddingCert(false);
     }

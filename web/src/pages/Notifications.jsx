@@ -111,12 +111,12 @@ const Notifications = () => {
     try {
       await api.put(`/notifications/${id}/read`);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error("Failed to mark as read:", error);
-      showToast("Failed to mark as read", "error");
+      showToast("Failed to mark notification as read", "error");
     }
   };
 
@@ -126,9 +126,11 @@ const Notifications = () => {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isPinned: !n.isPinned } : n)),
       );
+      showToast("Notification pinned successfully", "success");
     } catch (error) {
       console.error("Failed to pin notification:", error);
-      showToast("Failed to pin notification", "error");
+      const errorMsg = error.response?.data?.message || "Failed to pin notification";
+      showToast(errorMsg, "error");
     }
   };
 
@@ -136,10 +138,16 @@ const Notifications = () => {
     try {
       await enhancementService.archiveNotification(id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
-      showToast("Notification archived", "success");
+      // Update unread count if archived notification was unread
+      const notification = notifications.find((n) => n.id === id);
+      if (notification && !notification.read) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+      showToast("Notification archived successfully", "success");
     } catch (error) {
       console.error("Failed to archive notification:", error);
-      showToast("Failed to archive notification", "error");
+      const errorMsg = error.response?.data?.message || "Failed to archive notification";
+      showToast(errorMsg, "error");
     }
   };
 
@@ -152,7 +160,8 @@ const Notifications = () => {
       showToast("All notifications marked as read", "success");
     } catch (error) {
       console.error("Failed to mark all as read:", error);
-      showToast("Failed to mark all as read", "error");
+      const errorMsg = error.response?.data?.message || "Failed to mark all notifications as read";
+      showToast(errorMsg, "error");
     }
   };
 
@@ -160,10 +169,16 @@ const Notifications = () => {
     try {
       await api.delete(`/notifications/${id}`);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
-      showToast("Notification deleted", "success");
+      // Update unread count if deleted notification was unread
+      const notification = notifications.find((n) => n.id === id);
+      if (notification && !notification.read) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+      showToast("Notification deleted successfully", "success");
     } catch (error) {
       console.error("Failed to delete notification:", error);
-      showToast("Failed to delete notification", "error");
+      const errorMsg = error.response?.data?.message || "Failed to delete notification";
+      showToast(errorMsg, "error");
     }
   };
 

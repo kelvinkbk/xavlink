@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Brain, RefreshCw, Loader } from "lucide-react";
+import { Brain, RefreshCw, Loader, AlertCircle } from "lucide-react";
 import { enhancementService } from "../services/api";
 
 export default function SkillRecommendations() {
@@ -12,12 +12,14 @@ export default function SkillRecommendations() {
   const loadRecommendations = async () => {
     try {
       setIsLoading(true);
+      setError("");
       const data = await enhancementService.getSkillRecommendations();
-      setRecommendations(data.recommendations || []);
-      setLastGenerated(data.lastGenerated);
+      setRecommendations(data?.recommendations || []);
+      setLastGenerated(data?.lastGenerated);
     } catch (err) {
-      setError("Failed to load recommendations");
-      console.error(err);
+      const errorMsg = err.response?.data?.message || "Failed to load recommendations";
+      setError(errorMsg);
+      console.error("Error loading recommendations:", err);
     } finally {
       setIsLoading(false);
     }
@@ -28,12 +30,12 @@ export default function SkillRecommendations() {
       setIsGenerating(true);
       setError("");
       const data = await enhancementService.generateSkillRecommendations();
-      setRecommendations(data.recommendations || []);
+      setRecommendations(data?.recommendations || []);
       setLastGenerated(new Date().toISOString());
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to generate recommendations"
-      );
+      const errorMsg = err.response?.data?.message || "Failed to generate recommendations. Please try again.";
+      setError(errorMsg);
+      console.error("Error generating recommendations:", err);
     } finally {
       setIsGenerating(false);
     }
@@ -69,7 +71,9 @@ export default function SkillRecommendations() {
         <button
           onClick={generateRecommendations}
           disabled={isGenerating}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 transition"
+          aria-label="Regenerate skill recommendations"
+          title="Generate new recommendations based on your profile"
         >
           {isGenerating ? (
             <>
@@ -95,7 +99,19 @@ export default function SkillRecommendations() {
         </div>
       )}
 
-      <div className="divide-y">
+      {error && (
+        <div className="px-6 py-4 bg-red-50 border-b border-red-200 text-red-700 flex items-center gap-2">
+          <AlertCircle size={18} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div className="divide-y" role="list">
+        {isLoading && (
+          <div className="flex justify-center p-6">
+            <Loader className="animate-spin text-purple-500" size={32} />
+          </div>
+        )}
         {recommendations.length === 0 && !isLoading ? (
           <div className="p-6 text-center text-gray-500">
             <p>
@@ -104,7 +120,11 @@ export default function SkillRecommendations() {
           </div>
         ) : (
           recommendations.map((rec) => (
-            <div key={rec.id} className="p-4 hover:bg-gray-50">
+            <div
+              key={rec.id}
+              className="p-4 hover:bg-gray-50 transition"
+              role="listitem"
+            >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -113,9 +133,10 @@ export default function SkillRecommendations() {
                   <p className="text-gray-600 text-sm mt-1">{rec.reason}</p>
                 </div>
                 <div
-                  className={`px-4 py-2 rounded-lg text-right ${getScoreBgColor(
+                  className={`px-4 py-2 rounded-lg text-right ml-4 ${getScoreBgColor(
                     rec.score
                   )}`}
+                  aria-label={`Recommendation score: ${(rec.score * 100).toFixed(0)}%`}
                 >
                   <p
                     className={`font-bold text-sm ${getScoreColor(rec.score)}`}
@@ -128,14 +149,6 @@ export default function SkillRecommendations() {
           ))
         )}
       </div>
-
-      {error && <div className="p-4 bg-red-50 text-red-700">{error}</div>}
-
-      {isLoading && (
-        <div className="flex justify-center p-6">
-          <Loader className="animate-spin text-purple-500" />
-        </div>
-      )}
     </div>
   );
 }

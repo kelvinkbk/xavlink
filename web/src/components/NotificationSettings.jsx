@@ -49,7 +49,7 @@ export default function NotificationSettings() {
               🔔 Desktop Notifications
             </h3>
             <p className="text-sm text-blue-800 dark:text-blue-300">
-              Get notified when you receive new messages.
+              Get notified when you receive new messages and updates.
             </p>
             <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
               Status:{" "}
@@ -58,6 +58,14 @@ export default function NotificationSettings() {
                   permission === "granted"
                     ? "text-green-600 dark:text-green-400"
                     : "text-red-600 dark:text-red-400"
+                }`}
+                aria-live="polite"
+                aria-label={`Desktop notifications are ${
+                  permission === "granted"
+                    ? "enabled"
+                    : permission === "denied"
+                    ? "blocked"
+                    : "default"
                 }`}
               >
                 {permission === "granted"
@@ -71,7 +79,8 @@ export default function NotificationSettings() {
           {permission !== "granted" && (
             <button
               onClick={handleRequestPermission}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium whitespace-nowrap"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium whitespace-nowrap transition"
+              aria-label="Enable desktop notifications"
             >
               Enable Notifications
             </button>
@@ -86,7 +95,8 @@ export default function NotificationSettings() {
               type="checkbox"
               checked={soundEnabled}
               onChange={(e) => handleSoundToggle(e.target.checked)}
-              className="w-4 h-4 accent-blue-600"
+              className="w-4 h-4 accent-blue-600 cursor-pointer"
+              aria-label="Enable notification sounds"
             />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               🔊 Play notification sound

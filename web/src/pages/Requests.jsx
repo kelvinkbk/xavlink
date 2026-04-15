@@ -18,37 +18,43 @@ function RequestCard({ request, onStatusUpdate, isReceived }) {
     try {
       await requestService.updateStatus(request.id, status);
       onStatusUpdate();
-      showToast(
-        status === "accepted" ? "Request accepted" : "Request rejected",
-        "success"
-      );
+      const actionText = status === "accepted" ? "Request accepted successfully" : "Request rejected";
+      showToast(actionText, "success");
     } catch (e) {
       console.error("Error updating status:", e);
-      showToast("Failed to update request status", "error");
+      const errorMsg = e.response?.data?.message || "Failed to update request status. Please try again.";
+      showToast(errorMsg, "error");
     } finally {
       setUpdating(false);
     }
   };
 
   const handleSendCounterOffer = async () => {
-    if (!counterOffer.trim()) {
+    // Validation
+    if (!counterOffer?.trim()) {
       showToast("Please enter a counter-offer message", "error");
       return;
     }
+    if (counterOffer.trim().length < 10) {
+      showToast("Counter-offer message must be at least 10 characters", "error");
+      return;
+    }
+    
     setUpdating(true);
     try {
       await enhancementService.sendCounterOffer(request.id, {
-        counterOffer,
-        counterPrice: counterPrice || null,
+        counterOffer: counterOffer.trim(),
+        counterPrice: counterPrice?.trim() || null,
       });
       setShowCounterOffer(false);
       setCounterOffer("");
       setCounterPrice("");
       onStatusUpdate();
-      showToast("Counter-offer sent", "success");
+      showToast("Counter-offer sent successfully!", "success");
     } catch (e) {
       console.error("Error sending counter-offer:", e);
-      showToast("Failed to send counter-offer", "error");
+      const errorMsg = e.response?.data?.message || "Failed to send counter-offer. Please try again.";
+      showToast(errorMsg, "error");
     } finally {
       setUpdating(false);
     }
@@ -60,10 +66,11 @@ function RequestCard({ request, onStatusUpdate, isReceived }) {
     try {
       await enhancementService.completeRequest(request.id);
       onStatusUpdate();
-      showToast("Request marked as completed", "success");
+      showToast("Request marked as completed successfully!", "success");
     } catch (e) {
       console.error("Error completing request:", e);
-      showToast("Failed to complete request", "error");
+      const errorMsg = e.response?.data?.message || "Failed to complete request. Please try again.";
+      showToast(errorMsg, "error");
     } finally {
       setUpdating(false);
     }
@@ -279,21 +286,39 @@ export default function Requests() {
   }, [user?.id]);
 
   const handleCreateTemplate = async () => {
-    if (!newTemplate.title.trim() || !newTemplate.message.trim()) {
-      showToast("Please fill in all fields", "error");
+    // Validation
+    if (!newTemplate.title?.trim()) {
+      showToast("Template title is required", "error");
       return;
     }
+    if (!newTemplate.message?.trim()) {
+      showToast("Template message is required", "error");
+      return;
+    }
+    if (newTemplate.title.trim().length < 3) {
+      showToast("Template title must be at least 3 characters", "error");
+      return;
+    }
+    if (newTemplate.message.trim().length < 10) {
+      showToast("Template message must be at least 10 characters", "error");
+      return;
+    }
+    
     try {
-      await enhancementService.createRequestTemplate(newTemplate);
+      await enhancementService.createRequestTemplate({
+        title: newTemplate.title.trim(),
+        message: newTemplate.message.trim(),
+      });
       setNewTemplate({ title: "", message: "" });
       setShowTemplateModal(false);
       const { templates: templatesData } =
         await enhancementService.getRequestTemplates();
       setTemplates(templatesData || []);
-      showToast("Template created", "success");
+      showToast("Template created successfully!", "success");
     } catch (e) {
       console.error("Error creating template:", e);
-      showToast("Failed to create template", "error");
+      const errorMsg = e.response?.data?.message || "Failed to create template. Please try again.";
+      showToast(errorMsg, "error");
     }
   };
 
@@ -302,10 +327,11 @@ export default function Requests() {
     try {
       await enhancementService.deleteRequestTemplate(templateId);
       setTemplates(templates.filter((t) => t.id !== templateId));
-      showToast("Template deleted", "success");
+      showToast("Template deleted successfully", "success");
     } catch (e) {
       console.error("Error deleting template:", e);
-      showToast("Failed to delete template", "error");
+      const errorMsg = e.response?.data?.message || "Failed to delete template. Please try again.";
+      showToast(errorMsg, "error");
     }
   };
 

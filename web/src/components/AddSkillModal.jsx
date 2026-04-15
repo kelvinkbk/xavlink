@@ -24,8 +24,22 @@ const AddSkillModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleAddSkill = async (e) => {
     e.preventDefault();
-    if (!title.trim()) {
+    
+    // Validation
+    if (!title?.trim()) {
       setError("Skill name is required");
+      return;
+    }
+    if (title.trim().length < 2) {
+      setError("Skill name must be at least 2 characters");
+      return;
+    }
+    if (title.trim().length > 100) {
+      setError("Skill name must not exceed 100 characters");
+      return;
+    }
+    if (!category) {
+      setError("Category is required");
       return;
     }
 
@@ -47,7 +61,8 @@ const AddSkillModal = ({ isOpen, onClose, onSuccess }) => {
       onSuccess?.();
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to add skill");
+      const errorMsg = err.response?.data?.message || "Failed to add skill. Please try again.";
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -88,28 +103,44 @@ const AddSkillModal = ({ isOpen, onClose, onSuccess }) => {
             )}
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="skill-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Skill Name *
               </label>
               <input
+                id="skill-title"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={loading}
+                maxLength="100"
                 placeholder="e.g., React, UI Design"
-                className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                className={`w-full p-3 border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition ${
+                  error && title === "" ? "border-red-500 dark:border-red-500" : "border-gray-300 dark:border-slate-600"
+                }`}
+                aria-label="Skill name"
+                aria-describedby="title-help"
+                required
               />
+              <div className="flex justify-between mt-1">
+                <p id="title-help" className="text-xs text-gray-500 dark:text-gray-400">
+                  What skill would you like to add?
+                </p>
+                <span className="text-xs text-gray-400">{title.length}/100</span>
+              </div>
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="skill-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Category *
               </label>
               <select
+                id="skill-category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 disabled={loading}
-                className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                aria-label="Skill category"
+                required
               >
                 {SKILL_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -120,28 +151,41 @@ const AddSkillModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="skill-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Description (Optional)
               </label>
               <textarea
+                id="skill-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={loading}
                 placeholder="Tell us about this skill..."
-                className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition resize-none"
                 rows="3"
+                maxLength="500"
+                aria-label="Skill description"
+                aria-describedby="description-help"
               />
+              <div className="flex justify-between mt-1">
+                <p id="description-help" className="text-xs text-gray-500 dark:text-gray-400">
+                  Describe your experience level with this skill
+                </p>
+                <span className="text-xs text-gray-400">{description.length}/500</span>
+              </div>
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="skill-proficiency" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Proficiency Level *
               </label>
               <select
+                id="skill-proficiency"
                 value={proficiency}
                 onChange={(e) => setProficiency(e.target.value)}
                 disabled={loading}
-                className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                aria-label="Skill proficiency level"
+                required
               >
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Intermediate</option>
@@ -156,14 +200,17 @@ const AddSkillModal = ({ isOpen, onClose, onSuccess }) => {
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg font-medium disabled:opacity-50"
+                className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg font-medium disabled:opacity-50 transition"
+                aria-label="Close add skill form"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading || !title.trim()}
-                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                aria-busy={loading}
+                aria-label="Add skill to your profile"
               >
                 {loading ? "Adding..." : "Add Skill"}
               </button>
