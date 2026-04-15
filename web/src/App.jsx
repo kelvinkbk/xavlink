@@ -36,6 +36,7 @@ const ChatPage = lazy(() => import("./pages/ChatPage"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Moderation = lazy(() => import("./pages/Moderation"));
 const EnhancementsPage = lazy(() => import("./pages/EnhancementsPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Simple loading fallback
 const PageLoader = () => (
@@ -178,7 +179,7 @@ function AppContent() {
           />
 
           {/* Catch-all route */}
-          <Route path="*" element={<Navigate to="/home" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
 
