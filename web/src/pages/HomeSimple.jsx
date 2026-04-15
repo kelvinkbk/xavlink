@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "../context/ToastContext";
 import CreatePostModal from "../components/CreatePostModal";
+import ReportModal from "../components/ReportModal";
 import axios from "axios";
 import { socket } from "../services/socket";
 
@@ -73,6 +74,14 @@ function HomeSimple() {
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
   const [followingUserIds, setFollowingUserIds] = useState([]);
   const [trendingHashtags, setTrendingHashtags] = useState([]);
+
+  // Menu and editing state
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [editingPostId, setEditingPostId] = useState(null);
+  const [editingPostContent, setEditingPostContent] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportPostContent, setReportPostContent] = useState("");
+  const [reportPostId, setReportPostId] = useState(null);
 
   useEffect(() => {
     fetchPosts();
@@ -826,6 +835,81 @@ function HomeSimple() {
     }
   };
 
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_URL}/posts/${postId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Remove post from local state
+      setPosts(posts.filter((p) => p.id !== postId));
+      setAllPosts(allPosts.filter((p) => p.id !== postId));
+      setOpenMenuId(null);
+      showToast("Post deleted successfully", "success");
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      const errorMsg =
+        err.response?.data?.message ||
+        "Failed to delete post. Please try again.";
+      showToast(errorMsg, "error");
+    }
+  };
+
+  const handleEditPost = async (postId) => {
+    if (!editingPostContent?.trim()) {
+      showToast("Post content cannot be empty", "error");
+      return;
+    }
+
+    if (editingPostContent.trim().length > 5000) {
+      showToast("Post is too long (max 5000 characters)", "error");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `${API_URL}/posts/${postId}`,
+        { content: editingPostContent.trim() },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      // Update post in local state
+      setPosts(
+        posts.map((p) =>
+          p.id === postId ? { ...p, content: editingPostContent.trim() } : p,
+        ),
+      );
+      setAllPosts(
+        allPosts.map((p) =>
+          p.id === postId ? { ...p, content: editingPostContent.trim() } : p,
+        ),
+      );
+      setEditingPostId(null);
+      setEditingPostContent("");
+      setOpenMenuId(null);
+      showToast("Post updated successfully", "success");
+    } catch (err) {
+      console.error("Error updating post:", err);
+      const errorMsg =
+        err.response?.data?.message ||
+        "Failed to update post. Please try again.";
+      showToast(errorMsg, "error");
+    }
+  };
+
+  const handleReportPost = (postId, postPreview) => {
+    setReportPostId(postId);
+    setReportPostContent(postPreview);
+    setShowReportModal(true);
+    setOpenMenuId(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="max-w-2xl mx-auto px-4 py-8">
@@ -1001,36 +1085,128 @@ function HomeSimple() {
                 className="bg-gray-800 rounded-lg p-6 hover:bg-gray-750 transition"
               >
                 {/* Post Header */}
-                <div className="flex items-center mb-4">
-                  {post.user?.profilePic ? (
-                    <img
-                      src={post.user.profilePic}
-                      alt={post.user?.name || "User"}
-                      className="w-10 h-10 rounded-full object-cover mr-3"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                      }}
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mr-3">
-                      {post.user?.name?.[0] || "U"}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    {post.user?.profilePic ? (
+                      <img
+                        src={post.user.profilePic}
+                        alt={post.user?.name || "User"}
+                        className="w-10 h-10 rounded-full object-cover mr-3"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mr-3">
+                        {post.user?.name?.[0] || "U"}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-semibold">
+                        {post.user?.name || "Unknown User"}
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        {post.user?.course || "Student"} •{" "}
+                        {formatRelativeTime(post.createdAt)}
+                      </p>
                     </div>
-                  )}
-                  <div>
-                    <p className="font-semibold">
-                      {post.user?.name || "Unknown User"}
-                    </p>
-                    <p className="text-sm text-gray-400">
-                      {post.user?.course || "Student"} •{" "}
-                      {formatRelativeTime(post.createdAt)}
-                    </p>
+                  </div>
+
+                  {/* Post Menu */}
+                  <div className="relative">
+                    <button
+                      onClick={() =>
+                        setOpenMenuId(openMenuId === post.id ? null : post.id)
+                      }
+                      className="text-gray-400 hover:text-white text-xl px-2"
+                      aria-label="Post options menu"
+                      title="More options"
+                    >
+                      ⋮
+                    </button>
+                    {openMenuId === post.id && (
+                      <div className="absolute right-0 mt-2 w-48 bg-gray-700 border border-gray-600 rounded-lg shadow-lg z-50">
+                        {String(post.userId) ===
+                        String(localStorage.getItem("userId")) ? (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingPostId(post.id);
+                                setEditingPostContent(post.content);
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-blue-400 hover:bg-gray-600 transition"
+                            >
+                              ✏️ Edit Post
+                            </button>
+                            <button
+                              onClick={() => handleDeletePost(post.id)}
+                              className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-600 border-t border-gray-600 transition"
+                            >
+                              🗑️ Delete Post
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              handleReportPost(
+                                post.id,
+                                post.content?.substring(0, 50) + "..." ||
+                                  "Post",
+                              )
+                            }
+                            className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-600 transition"
+                          >
+                            🚩 Report Post
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Post Content */}
-                <p className="text-gray-200 mb-4 whitespace-pre-wrap">
-                  {post.content}
-                </p>
+                {editingPostId === post.id ? (
+                  <div className="mb-4">
+                    <textarea
+                      value={editingPostContent}
+                      onChange={(e) => setEditingPostContent(e.target.value)}
+                      maxLength="5000"
+                      className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none transition"
+                      rows="4"
+                      aria-label="Edit post content"
+                      aria-describedby="edit-char-count"
+                    />
+                    <div className="flex justify-between items-center mt-2">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditPost(post.id)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingPostId(null);
+                            setEditingPostContent("");
+                          }}
+                          className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <span
+                        id="edit-char-count"
+                        className="text-xs text-gray-400"
+                      >
+                        {editingPostContent.length}/5000
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-200 mb-4 whitespace-pre-wrap">
+                    {post.content}
+                  </p>
+                )}
 
                 {/* Post Image */}
                 {post.image && (
@@ -1319,6 +1495,21 @@ function HomeSimple() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Report Modal */}
+      {showReportModal && (
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => {
+            setShowReportModal(false);
+            setReportPostId(null);
+            setReportPostContent("");
+          }}
+          contentId={reportPostId}
+          contentPreview={reportPostContent}
+          contentType="post"
+        />
       )}
     </div>
   );
