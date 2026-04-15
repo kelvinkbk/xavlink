@@ -780,7 +780,7 @@ function HomeSimple() {
       showToast("Comment cannot be empty", "error");
       return;
     }
-    
+
     if (newComment.trim().length > 1000) {
       showToast("Comment is too long (max 1000 characters)", "error");
       return;
@@ -819,7 +819,9 @@ function HomeSimple() {
       showToast("Comment added successfully!", "success");
     } catch (err) {
       console.error("Error adding comment:", err);
-      const errorMsg = err.response?.data?.message || "Failed to add comment. Please try again.";
+      const errorMsg =
+        err.response?.data?.message ||
+        "Failed to add comment. Please try again.";
       showToast(errorMsg, "error");
     }
   };
@@ -926,7 +928,11 @@ function HomeSimple() {
               }`}
               aria-pressed={showFollowingOnly}
               aria-label="Toggle following only filter"
-              title={showFollowingOnly ? "Showing latest posts from people you follow" : "Show posts from people you follow"}
+              title={
+                showFollowingOnly
+                  ? "Showing latest posts from people you follow"
+                  : "Show posts from people you follow"
+              }
             >
               👥 Following Only
             </button>
@@ -1268,7 +1274,10 @@ function HomeSimple() {
 
               {/* Add Comment Form */}
               <div className="border-t border-gray-700 pt-4">
-                <label htmlFor="comment-input" className="block text-sm font-medium text-gray-300 mb-2">
+                <label
+                  htmlFor="comment-input"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
                   Add a Comment *
                 </label>
                 <div className="flex gap-3">
@@ -1278,7 +1287,11 @@ function HomeSimple() {
                     placeholder="Share your thoughts..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && newComment.trim() && handleAddComment()}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" &&
+                      newComment.trim() &&
+                      handleAddComment()
+                    }
                     maxLength="1000"
                     className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label="Write a comment"
@@ -1298,7 +1311,9 @@ function HomeSimple() {
                   <p id="comment-help" className="text-xs text-gray-400">
                     Keep comments respectful and relevant
                   </p>
-                  <span className="text-xs text-gray-400">{newComment.length}/1000</span>
+                  <span className="text-xs text-gray-400">
+                    {newComment.length}/1000
+                  </span>
                 </div>
               </div>
             </div>

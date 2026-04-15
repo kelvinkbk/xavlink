@@ -904,7 +904,10 @@ export default function Home() {
           )}
           <form onSubmit={handleCreatePost} className="space-y-4">
             <div>
-              <label htmlFor="post-content" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="post-content"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 What's on your mind? *
               </label>
               <textarea
@@ -925,12 +928,17 @@ export default function Home() {
                 <p id="post-content-help" className="text-xs text-gray-500">
                   Share your thoughts with the campus community
                 </p>
-                <span className="text-xs text-gray-400">{newPost.content.length}/5000</span>
+                <span className="text-xs text-gray-400">
+                  {newPost.content.length}/5000
+                </span>
               </div>
             </div>
 
             <div>
-              <label htmlFor="post-image" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="post-image"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Image URL (optional)
               </label>
               <input
