@@ -643,8 +643,8 @@ function HomeSimple() {
       }
 
       await axios.post(
-        `${API_URL}/pins`,
-        { postId },
+        `${API_URL}/posts/${postId}/pin`,
+        {},
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
@@ -654,7 +654,7 @@ function HomeSimple() {
       showToast("Post pinned to top!", "success");
     } catch (err) {
       console.error("Error pinning post:", err);
-      showToast(err.response?.data?.error || "Failed to pin post", "error");
+      showToast(err.response?.data?.message || "Failed to pin post", "error");
     }
   };
 
@@ -666,7 +666,7 @@ function HomeSimple() {
         return;
       }
 
-      await axios.delete(`${API_URL}/pins/${postId}`, {
+      await axios.delete(`${API_URL}/posts/${postId}/pin`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -676,7 +676,7 @@ function HomeSimple() {
       showToast("Post unpinned", "success");
     } catch (err) {
       console.error("Error unpinning post:", err);
-      showToast(err.response?.data?.error || "Failed to unpin post", "error");
+      showToast(err.response?.data?.message || "Failed to unpin post", "error");
     }
   };
 
@@ -873,7 +873,7 @@ function HomeSimple() {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.put(
+      await axios.patch(
         `${API_URL}/posts/${postId}`,
         { content: editingPostContent.trim() },
         { headers: { Authorization: `Bearer ${token}` } },
